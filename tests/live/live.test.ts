@@ -7,7 +7,7 @@ import { Engine } from '../../src/engine';
 import { liveApi } from '../../src/live/client';
 import type { LiveRequest, LiveResponse } from '../../src/live/http';
 import { LivePoller } from '../../src/live/poller';
-import { encodeId, interactionToReply, sanitizeDetails, toHumanReply, type LiveReply } from '../../src/live/protocol';
+import { TIME_CHOICES, encodeId, interactionToReply, parseNotifyBody, sanitizeDetails, toHumanReply, type LiveReply } from '../../src/live/protocol';
 import { MemoryReplyStore } from '../../src/live/store';
 import { verifyDiscordSignature } from '../../src/live/verify';
 
@@ -206,5 +206,19 @@ describe('live Discord: offline fallback', () => {
     expect(sent).not.toContain('phish');
     expect(sent).not.toContain('@everyone');
     expect(sanitizeDetails({ window: 'x'.repeat(500), gives: 'DSA' })).toEqual({ gives: 'DSA' });
+  });
+
+  it('every prompt the engine asks Aditya after a Discord answer can be DMed (incl. own_conflict at 8:30 PM)', () => {
+    const answers = [{ kind: 'accept' as const }, ...TIME_CHOICES.map((t) => ({ kind: 'counter' as const, text: t }))];
+    for (const answer of answers) {
+      const engine = new Engine();
+      engine.simulateInterviewInvite();
+      engine.reply('a1', answer);
+      for (const m of engine.phone('a1')) {
+        if (!m.actions.length || (m.kind !== 'proposal' && m.kind !== 'counter')) continue;
+        expect(parseNotifyBody({ session: SESSION, prompt: m.id, kind: m.kind, details: m.details ?? {} }), `${JSON.stringify(answer)} -> ${JSON.stringify(m.details)}`).not.toBeNull();
+      }
+    }
+    expect(sanitizeDetails({ status: 'own_conflict' })).toEqual({ status: 'own_conflict' });
   });
 });
