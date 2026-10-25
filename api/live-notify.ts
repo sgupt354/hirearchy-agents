@@ -1,7 +1,7 @@
 import { PIPELINE } from '../src/engine/seed.js';
 import { sendDm, sendDmResult } from '../src/live/discord.js';
 import type { LiveRequest, LiveResponse } from '../src/live/http.js';
-import { ACK, RATING_COPY, RATING_PROMPT, asPhoneMessage, helpButtons, helpCopy, parseNotifyBody, parseRatingNotify, promptButtons, ratingSelects } from '../src/live/protocol.js';
+import { ACK, RATING_COPY, RATING_PROMPT, asPhoneMessage, helpButtons, helpCopy, nudgeButtons, nudgeCopy, parseNotifyBody, parseRatingNotify, promptButtons, ratingSelects } from '../src/live/protocol.js';
 import { discordUsersFromEnv } from '../src/live/students.js';
 import { MAX_DMS_PER_SESSION, storeFromEnv, type ReplyStore } from '../src/live/store.js';
 import { studentCopy } from '../src/ui/copy.js';
@@ -74,9 +74,13 @@ export function createNotifyHandler(deps: NotifyDeps) {
     try {
       const content = n.kind === 'help'
         ? `Hirearchy Agent\n${helpCopy(n.details)}`
+        : n.kind === 'nudge'
+        ? `Hirearchy Agent\n${nudgeCopy(n.details)}`
         : `Hirearchy Agent\n${clean(studentCopy(asPhoneMessage(n), n.details.company || PIPELINE.company))}\n${ACK.help}`;
       const components = n.kind === 'help'
         ? helpButtons(n.session, n.prompt, student)
+        : n.kind === 'nudge'
+        ? nudgeButtons(n.session, n.prompt, student)
         : n.kind === 'proposal' || (n.kind === 'counter' && n.details.status !== 'proposing')
           ? promptButtons(n.session, n.prompt, student)
           : [];

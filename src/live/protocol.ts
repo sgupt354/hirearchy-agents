@@ -105,6 +105,24 @@ export const helpButtons = (session: string, prompt: number, student: LiveStuden
   },
 ];
 
+/** Proactive nudge: yes (do it) or not now. */
+export const nudgeButtons = (session: string, prompt: number, student: LiveStudent = 'a1') => [
+  {
+    type: 1,
+    components: [
+      { type: 2, style: 3, label: 'Yes', custom_id: encodeId(session, prompt, 'in', student) },
+      { type: 2, style: 2, label: 'Not now', custom_id: encodeId(session, prompt, 'not', student) },
+    ],
+  },
+];
+
+/** The nudge's DM, built only from structured fields (never from free text): no names. */
+export function nudgeCopy(d: Record<string, string>): string {
+  if (d.status === 'mock') return `Under 48 hours to your ${d.company} interview. A student in your pipeline who's strong in ${d.text} is free tonight, ${d.window}. Want a mock? Tap a button, or reply yes or no.`;
+  if (d.status === 'circle') return `Your ${d.company} interview is in ${d.text} days and you don't have a prep circle yet. Want me to find one? Tap a button, or reply yes or no.`;
+  return `${d.text} anonymous ${d.company} interview reports are waiting. Read them before your interview? Tap a button, or reply yes or no.`;
+}
+
 /** The mentor's DM, built only from the anonymous listing (no name, deadline already abstracted). */
 export const helpCopy = (d: Record<string, string>) =>
   `A newcomer needs help with ${d.text} for a ${d.company}${d.role ? ` ${d.role.toLowerCase()}` : ''} round this week. It fits your rules: 45 minutes tonight, ${d.window}. Names unlock only if you both say yes. Help them? Tap a button, or reply yes or no.`;
@@ -161,7 +179,7 @@ export function sanitizeDetails(details: unknown): Record<string, string> {
   return out;
 }
 
-export type NotifyKind = 'proposal' | 'counter' | 'help';
+export type NotifyKind = 'proposal' | 'counter' | 'help' | 'nudge';
 
 export interface NotifyBody {
   session: string;
@@ -176,12 +194,13 @@ export function parseNotifyBody(body: unknown): NotifyBody | null {
   const b = body as Record<string, unknown>;
   const student = b.student === undefined ? 'a1' : b.student;
   if (!isSessionId(b.session) || !isPromptId(b.prompt) || !isLiveStudent(student)) return null;
-  if (b.kind !== 'proposal' && b.kind !== 'counter' && b.kind !== 'help') return null;
+  if (b.kind !== 'proposal' && b.kind !== 'counter' && b.kind !== 'help' && b.kind !== 'nudge') return null;
   const details = sanitizeDetails(b.details);
   // Each kind needs its fields to build a sensible message.
   if (b.kind === 'proposal' && !(details.window && details.gives && details.gets)) return null;
   if (b.kind === 'counter' && !['proposing', 'rejected', 'own_conflict', 'unreadable'].includes(details.status)) return null;
   if (b.kind === 'help' && !(details.company && details.text && details.window)) return null;
+  if (b.kind === 'nudge' && !(details.company && details.text && ['mock', 'circle', 'intel'].includes(details.status) && (details.status !== 'mock' || details.window))) return null;
   return { session: b.session, prompt: b.prompt, student, kind: b.kind, details };
 }
 

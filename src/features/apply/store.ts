@@ -3,6 +3,7 @@ import type { ScoredPosting } from './jobs/match';
 import { DEMO_PROFILE, type Profile } from './resume/profile';
 import type { TrackerStatus } from './tracker/stages';
 import { addLink, applicationId, mergeApplication, newApplication, type Application, type JourneyLink, type Stage } from './applications';
+import type { Nudge, NudgeState } from '../journey/nudges';
 
 // Session-only state for the apply suite: tracked postings, the student's profile and the posting being applied to.
 // Nothing is persisted; global Reset clears it.
@@ -41,6 +42,8 @@ class ApplyStore {
   #resetKey = 0;
   #apps: Application[] = [];
   #now = DEMO_NOW;
+  #nudges: NudgeState = { sent: [], muted: [], mutedAll: false };
+  #answers: Record<string, 'yes' | 'no'> = {};
 
   tracked(): TrackedPosting[] {
     return [...this.#tracked];
@@ -108,6 +111,37 @@ class ApplyStore {
     this.#emit();
   }
 
+  // ---- proactive nudges (planned by journey/nudges.ts; the store only keeps what was sent and the mutes) ----
+
+  nudges(): NudgeState {
+    return structuredClone(this.#nudges);
+  }
+
+  /** Record nudges as sent. Ignores any for a muted application, so a mute always wins. */
+  recordNudges(list: Nudge[]): Nudge[] {
+    const fresh = list.filter((n) => !this.#nudges.mutedAll && !this.#nudges.muted.includes(n.appId) && !this.#nudges.sent.some((s) => s.id === n.id));
+    if (!fresh.length) return [];
+    this.#nudges = { ...this.#nudges, sent: [...this.#nudges.sent, ...structuredClone(fresh)] };
+    this.#emit();
+    return fresh;
+  }
+
+  mute(appId: string | 'all', on = true): void {
+    if (appId === 'all') this.#nudges = { ...this.#nudges, mutedAll: on };
+    else this.#nudges = { ...this.#nudges, muted: on ? [...new Set([...this.#nudges.muted, appId])] : this.#nudges.muted.filter((m) => m !== appId) };
+    this.#emit();
+  }
+
+  answerNudge(id: string, answer: 'yes' | 'no'): void {
+    if (this.#answers[id]) return;
+    this.#answers = { ...this.#answers, [id]: answer };
+    this.#emit();
+  }
+
+  nudgeAnswer(id: string): 'yes' | 'no' | null {
+    return this.#answers[id] ?? null;
+  }
+
   #upsert(key: ApplicationKey, postingId: string | null = null): string {
     const id = applicationId(key.owner, key.company, key.role);
     const existing = this.#apps.find((a) => a.id === id);
@@ -163,6 +197,8 @@ class ApplyStore {
     this.#selected = null;
     this.#apps = [];
     this.#now = DEMO_NOW;
+    this.#nudges = { sent: [], muted: [], mutedAll: false };
+    this.#answers = {};
     this.#emit();
   }
 

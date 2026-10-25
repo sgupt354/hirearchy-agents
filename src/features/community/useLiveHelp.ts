@@ -11,19 +11,27 @@ const newSession = () => crypto.randomUUID();
  * live-notify path (buttons, or typed yes / no), and his answer is applied once, like a tap on his phone.
  * Any failure flips to 'unavailable' and the simulated phone keeps working.
  */
-export function useLiveHelp({ enabled, runKey, pending, onReply }: {
+export function useLiveHelp({ enabled, runKey, pending, onReply, kind = 'help', yesBubble = 'I can help · via Discord', noBubble = 'Not this time · via Discord' }: {
   enabled: boolean;
   /** Changes on every new run: a new demo session id, nothing carried over. */
   runKey: number;
   /** Aditya's open ask (its phone message id, and the anonymous details for the DM), else null. */
   pending: { prompt: number; details: Record<string, string> } | null;
   onReply: (choice: 'accept' | 'decline', bubble: string) => void;
+  /** 'help' (Pay it forward) or 'nudge' (proactive agent): same flow, different DM copy and buttons. */
+  kind?: 'help' | 'nudge';
+  yesBubble?: string;
+  noBubble?: string;
 }): LiveHelpStatus {
   const [status, setStatus] = useState<LiveHelpStatus>(enabled ? 'connecting' : 'off');
   const session = useRef(newSession());
   const notified = useRef(new Set<number>());
   const onReplyRef = useRef(onReply);
   onReplyRef.current = onReply;
+  const yesBubbleRef = useRef(yesBubble);
+  yesBubbleRef.current = yesBubble;
+  const noBubbleRef = useRef(noBubble);
+  noBubbleRef.current = noBubble;
   const api = useRef(liveApi()).current;
   const poller = useRef<LivePoller | null>(null);
 
@@ -34,7 +42,7 @@ export function useLiveHelp({ enabled, runKey, pending, onReply }: {
     poller.current = new LivePoller({
       fetchReply: api.reply,
       // A typed time ("8pm") means they want to help; the slot their agent already found is kept.
-      apply: (r) => onReplyRef.current(r.action === 'decline' ? 'decline' : 'accept', r.action === 'decline' ? 'Not this time · via Discord' : 'I can help · via Discord'),
+      apply: (r) => onReplyRef.current(r.action === 'decline' ? 'decline' : 'accept', r.action === 'decline' ? noBubbleRef.current : yesBubbleRef.current),
       onUnavailable: () => setStatus('unavailable'),
     });
     let alive = true;
@@ -50,7 +58,7 @@ export function useLiveHelp({ enabled, runKey, pending, onReply }: {
     if (status !== 'live' || !pending || notified.current.has(pending.prompt)) return;
     notified.current.add(pending.prompt);
     api
-      .notify({ session: session.current, prompt: pending.prompt, student: 'a1', kind: 'help', details: pending.details })
+      .notify({ session: session.current, prompt: pending.prompt, student: 'a1', kind, details: pending.details })
       .then((ok) => !ok && setStatus('unavailable'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, prompt, runKey]);

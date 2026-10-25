@@ -158,8 +158,8 @@ tab-bar spacing so ten tabs fit at 1280px.
 |---|---|---|
 | 1 | One application record per job + "Applications" tab | done |
 | 2 | Readiness score per interview | done |
-| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | next |
-| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | |
+| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | done |
+| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | next |
 
 Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/features/journey/ApplicationsTab.tsx`):
 - **Record:** owner (trust person id), company, role, stage (the tracker's Saved / Applied / OA / Interview / Offer /
@@ -188,6 +188,25 @@ Phase 2, as built (`src/features/journey/readiness.ts`, shown in the Application
 - Shows "Ready: 48%. Next: one System Design mock", each part with its detail and points, days left, and a button to
   the tab that does the next step ("tonight" when 2 days or fewer are left).
 - New sabotage: readiness counts a mock that never happened (caught by 3 tests). 590 tests, 16/16 sabotages.
+
+Phase 3, as built (`src/features/journey/nudges.ts`; phone + controls in the Applications tab):
+- **Planned, not improvised:** `planNudges(apps, now, state)` is pure. Kinds, in priority order: a mock when under 48 h
+  remain and readiness has a gap; a prep circle within 7 days if none is linked; intel within 7 days if some is
+  unread. The mock peer comes from the mock network (company, strong in the missing topic, free in the evening, and
+  not someone the student has already practiced with up to the network's repeat limit): Jordan for Aditya.
+- **Anonymous until consent:** the nudge says "a student in your pipeline who's strong in System Design is free
+  tonight, 7:00–9:30 PM", not the name (the original example used "Jordan"; names unlock only after both agree).
+- **Rate limits:** each kind once per job; at most 1 per job per day and 2 per student per day. **Mute** per job (in
+  the journey card, or "Mute these" on the nudge) or everything (hero button); the store also refuses to record a
+  nudge for a muted job.
+- **Delivery:** the student's agent phone in the Applications tab (do it / not now / mute). The tab is always
+  mounted, so planning runs whichever tab is open. In live mode Aditya's open nudge also goes out as a Discord DM
+  (`nudge` kind in live-notify: copy built server-side from status / company / topic / window only; Yes / Not now
+  buttons; typed yes / no through the existing ingestion). `useLiveHelp` gained a `kind` parameter for this.
+- **Demo clock:** "Now: Sun, Oct 25 · 6:00 PM" and "Skip to 2 days before the interview" in the hero.
+- New sabotage: a nudge is sent for a muted job (caught). 596 tests, 17/17 sabotages. Browser: the skip produces
+  exactly the mock nudge; "Set up the mock" opens Mock; mute stops further nudges; mocked live mode sends one
+  `nudge` DM and a Discord yes lands as "Yes · via Discord".
 
 ### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
 Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains

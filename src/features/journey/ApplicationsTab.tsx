@@ -4,6 +4,11 @@ import type { TabProps } from '../types';
 import { STAGES, nextSteps, type Application, type JourneyLink } from '../apply/applications';
 import { STUDENT, useApplyStore } from '../apply/store';
 import { readiness, type Readiness } from './readiness';
+import { planNudges, type Nudge } from './nudges';
+import { CommunityPhone, type CommunityChatItem } from '../community/CommunityPhone';
+import { useLiveHelp } from '../community/useLiveHelp';
+import { isLiveRequested } from '../../live/client';
+import { SPEEDS, clock } from '../../ui/kit';
 
 /** Each student's own view of their own records, so their own name is fine here. */
 export const OWNER_NAMES: Record<string, string> = { p1: 'Aditya', p4: 'Jordan', p9: 'Priya', p10: 'Theo' };
@@ -18,6 +23,16 @@ const LINK_TEXT: Record<JourneyLink['kind'], string> = {
   community: 'Community',
 };
 
+/** "Sun, Oct 25 · 6:00 PM" for the demo clock. */
+export function clockText(iso: string): string {
+  const [d, t] = iso.split('T');
+  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date(`${d}T00:00:00Z`).getUTCDay()];
+  const [h, m] = t.split(':').map(Number);
+  return `${day}, ${shortDate(d)} · ${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+const addDays = (ymd: string, n: number) => new Date(Date.parse(`${ymd}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
 /** "Oct 25" from YYYY-MM-DD, without the real clock or the viewer's time zone getting involved. */
 export function shortDate(ymd: string): string {
   const [, m, d] = ymd.split('-').map(Number);
@@ -25,24 +40,82 @@ export function shortDate(ymd: string): string {
 }
 
 /** My applications: one record per job, with everything the other tabs did for it. */
-export function ApplicationsTab({ resetKey }: TabProps) {
+export function ApplicationsTab({ speed, resetKey }: TabProps) {
   const store = useApplyStore();
   const [owner, setOwner] = useState(STUDENT);
   const [selected, setSelected] = useState<string | null>(null);
+  const [said, setSaid] = useState<Record<string, { text: string; time: string }>>({});
+  const run = useRef(0);
 
   const firstReset = useRef(resetKey);
   useEffect(() => {
     if (resetKey === firstReset.current) return;
     store.resetFor(resetKey);
+    run.current += 1;
     setOwner(STUDENT);
     setSelected(null);
+    setSaid({});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
+
+  // The proactive agent: plan on every change (this tab is always mounted, so it runs whichever tab is open).
+  const version = store.getVersion();
+  useEffect(() => {
+    store.recordNudges(planNudges(store.applications(), store.now(), store.nudges()));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [version]);
+
+  const answer = (n: Nudge, yes: boolean, bubble: string) => {
+    if (store.nudgeAnswer(n.id)) return;
+    store.answerNudge(n.id, yes ? 'yes' : 'no');
+    setSaid((s) => ({ ...s, [n.id]: { text: bubble, time: clock() } }));
+    if (yes) openTab(n.action.tab);
+  };
+  const mute = (n: Nudge) => {
+    store.mute(n.appId);
+    store.answerNudge(n.id, 'no');
+    setSaid((s) => ({ ...s, [n.id]: { text: `Mute ${n.details.company} nudges`, time: clock() } }));
+  };
+
+  // Live mode: Aditya's open nudge also goes to Discord (yes / not now, or typed).
+  const sent = store.nudges().sent;
+  const openNudge = sent.filter((n) => n.owner === STUDENT && !store.nudgeAnswer(n.id)).at(-1);
+  useLiveHelp({
+    enabled: isLiveRequested(),
+    runKey: run.current,
+    kind: 'nudge',
+    yesBubble: 'Yes · via Discord',
+    noBubble: 'Not now · via Discord',
+    pending: openNudge ? { prompt: sent.indexOf(openNudge) + 1, details: openNudge.details } : null,
+    onReply: (choice, bubble) => openNudge && answer(openNudge, choice === 'accept', bubble),
+  });
 
   const all = store.applications();
   const owners = [...new Set([STUDENT, ...all.map((a) => a.owner)])];
   const mine = all.filter((a) => a.owner === owner);
   const app = mine.find((a) => a.id === selected) ?? mine[0] ?? null;
+
+  function agentChat(who: string): CommunityChatItem[] {
+    const items: CommunityChatItem[] = [
+      { key: 'intro', from: 'agent', text: "I watch your applications and nudge you when something needs doing: at most 2 a day, and you can mute anytime." },
+    ];
+    for (const n of sent.filter((x) => x.owner === who)) {
+      const answered = store.nudgeAnswer(n.id);
+      items.push({
+        key: n.id,
+        from: 'agent',
+        text: n.text,
+        needsHuman: !answered,
+        replies: answered ? undefined : [
+          { label: n.action.label, tone: 'yes', onClick: () => answer(n, true, n.action.label) },
+          { label: 'Not now', onClick: () => answer(n, false, 'Not now') },
+          { label: 'Mute these', tone: 'no', onClick: () => mute(n) },
+        ],
+      });
+      if (said[n.id]) items.push({ key: `${n.id}-me`, from: 'me', text: said[n.id].text, time: said[n.id].time });
+    }
+    return items;
+  }
 
   return (
     <div className="app started">
@@ -50,6 +123,15 @@ export function ApplicationsTab({ resetKey }: TabProps) {
         <h1>One record per job. <span className="accent">Your whole journey in one place.</span></h1>
         <p className="sub">Track a job in Find and every step after it lands here: prep circle, mocks, intel, referral and community help. Each student's agent keeps their own.</p>
         <div className="cta-row">
+          <span className="live-status human">Now: {clockText(store.now())}</span>
+          {app?.interviewDate && store.now() < `${addDays(app.interviewDate, -2)}T19:00` && (
+            <button type="button" className="ghost" onClick={() => store.setNow(`${addDays(app.interviewDate!, -2)}T19:00`)}>
+              Skip to 2 days before the interview
+            </button>
+          )}
+          <button type="button" className="ghost" aria-pressed={store.nudges().mutedAll} onClick={() => store.mute('all', !store.nudges().mutedAll)}>
+            {store.nudges().mutedAll ? 'Unmute nudges' : 'Mute all nudges'}
+          </button>
           {owners.length > 1 && (
             <div className="segmented" role="group" aria-label="Whose applications">
               {owners.map((o) => (
@@ -63,6 +145,7 @@ export function ApplicationsTab({ resetKey }: TabProps) {
       </header>
 
       <main className="phones">
+        <CommunityPhone key={`${run.current}:${owner}`} owner={nameOf(owner)} caption="their agent, nudging" items={agentChat(owner)} interactive pace={SPEEDS[speed].pace} />
         <section className="card apps-card" aria-label={`${nameOf(owner)}'s applications`}>
           <h3>{nameOf(owner)}'s applications</h3>
           {mine.length === 0 ? (
@@ -83,13 +166,21 @@ export function ApplicationsTab({ resetKey }: TabProps) {
             </ul>
           )}
         </section>
-        {app && <JourneyCard app={app} today={store.today()} onStage={(s) => store.setStage(app.id, s)} />}
+        {app && (
+          <JourneyCard
+            app={app}
+            today={store.today()}
+            onStage={(s) => store.setStage(app.id, s)}
+            muted={store.nudges().mutedAll || store.nudges().muted.includes(app.id)}
+            onMute={(on) => store.mute(app.id, on)}
+          />
+        )}
       </main>
     </div>
   );
 }
 
-function JourneyCard({ app, today, onStage }: { app: Application; today: string; onStage: (s: Application['stage']) => void }) {
+function JourneyCard({ app, today, onStage, muted, onMute }: { app: Application; today: string; onStage: (s: Application['stage']) => void; muted: boolean; onMute: (on: boolean) => void }) {
   const steps = nextSteps(app);
   const ready = app.stage === 'OA' || app.stage === 'Interview' ? readiness(app, today) : null;
   const path = STAGES.filter((s) => s !== 'Rejected' || app.stage === 'Rejected');
@@ -125,6 +216,9 @@ function JourneyCard({ app, today, onStage }: { app: Application; today: string;
           ))}
         </ul>
       )}
+      <label className="check mute-row">
+        <input type="checkbox" checked={muted} onChange={(e) => onMute(e.target.checked)} /> Mute nudges for this job
+      </label>
       <h3>Next steps</h3>
       {steps.length === 0 ? (
         <p className="board-note">{app.stage === 'Offer' ? 'Offer in hand. Congratulations.' : app.stage === 'Rejected' ? 'Closed. Everything you did still counts in your proof of work.' : 'Nothing pressing.'}</p>

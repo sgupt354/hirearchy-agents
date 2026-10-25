@@ -109,6 +109,12 @@ const SABOTAGES: Sabotage[] = [
     find: "  const mocks = linked('mock').length;",
     replace: "  const mocks = Math.max(1, linked('mock').length);",
   },
+  {
+    name: 'A nudge is sent for a muted job',
+    file: 'src/features/journey/nudges.ts',
+    find: '    if (state.mutedAll || state.muted.includes(app.id)) continue;',
+    replace: '    if (false) continue;',
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';
