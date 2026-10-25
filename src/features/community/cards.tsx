@@ -26,7 +26,7 @@ export function PerksTable() {
           );
         })}
       </ul>
-      <p className="board-note">Points unlock matching priority, a badge and question packs. They never unlock a referral.</p>
+      <p className="board-note">Higher levels mean more reach, a stronger mentor profile and packs alumni can trust when they decide who to refer.</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function PointsCard({ entry, before }: { entry: PointEntry; before: numbe
       <span className="pts">{entry.capped ? '+0' : `+${entry.points}`} points</span>
       <small>{entry.capped ? entry.reason : `${entry.base} base x ${entry.multiplier}: ${entry.reason}. Both of you confirmed.`}</small>
       <LevelProgress name="You" points={before + entry.points} />
-      {entry.levelAfter !== entry.levelBefore && <small>New level: {entry.levelAfter}. You get matching priority, a badge and more question packs. Never a referral.</small>}
+      {entry.levelAfter !== entry.levelBefore && <small>New level: {entry.levelAfter}. You get matching priority, a badge, more packs and a stronger mentor profile.</small>}
     </div>
   );
 }

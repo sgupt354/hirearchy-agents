@@ -7,12 +7,12 @@ import { trust as sharedTrust } from '../trust/network';
 import { personOf } from '../trust/people';
 import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
-import { CommunityHub, PointsCannotBuyReferralError, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
+import { CommunityHub, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
 import { ProjectBoardView } from './ProjectBoardView';
 import { LevelProgress, PacksCard, PerksTable, PointsCard, RulesCard } from './cards';
 import { PACKS, unlockedPacks } from './packs';
-import { BASE_POINTS, levelOf, perksFor, type PointEntry } from './points';
+import { levelOf, perksFor, type PointEntry } from './points';
 import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createCommunitySeed, MENTOR_RULES } from './seed';
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
 import { applyStore } from '../apply/store';
@@ -50,7 +50,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const [cursor, setCursor] = useState(0);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
-  const [refusal, setRefusal] = useState('');
   const [needId, setNeedId] = useState<string | null>(null);
   const [view, setView] = useState<'help' | 'projects'>('help');
   const [thankDraft, setThankDraft] = useState('');
@@ -96,7 +95,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     setNeedId(null);
     setCursor(0);
     setReplies({});
-    setRefusal('');
     setView('help');
     setThankDraft('');
     setThanked(false);
@@ -116,7 +114,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     run.current += 1;
     hub.reset();
     setReplies({});
-    setRefusal('');
     setThankDraft('');
     setThanked(false);
     setCursor(0);
@@ -289,7 +286,7 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
       <div className={`app ${idle ? '' : 'started'}`} hidden={view !== 'help'}>
         <header className="hero">
           <h1>Pay it forward. <span className="accent">Help a newcomer, earn your way up.</span></h1>
-          <p className="sub">Newcomers post what they need. Mentor agents decide from their human's private rules. Points come only when both sides confirm, and never buy a referral.</p>
+          <p className="sub">Newcomers post what they need. Mentor agents decide from private rules. Confirm a session to earn points — more for helping beginners — and grow reach, trust and your mentor profile.</p>
           <div className="cta-row">
             {viewSwitch}
             {idle ? (
@@ -327,7 +324,7 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
           ))}
           <section className="card cm-side" aria-label="Points, levels and perks">
             <h3>Points and levels</h3>
-            <p className="board-note">Help a newcomer, both confirm, earn {BASE_POINTS} base points (3x for newcomers). Levels unlock perks below — never a referral.</p>
+            <p className="board-note">Both sides confirm → you earn points. Helping a beginner pays more (up to 3x); helping someone at your level or above pays less. Levels unlock reach, packs and a stronger mentor profile alumni can trust.</p>
             <LevelProgress name="Aditya" points={mentorPoints} />
             {entries.length ? (
               <ul className="board-list">
@@ -372,19 +369,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
                 );
               })}
             </ul>
-            <button
-              className="ghost small"
-              onClick={() => {
-                try {
-                  hub.redeemForReferral(MENTOR);
-                } catch (e) {
-                  if (e instanceof PointsCannotBuyReferralError) setRefusal(e.message);
-                }
-              }}
-            >
-              Trade points for a referral?
-            </button>
-            {refusal && <p className="cm-refusal" role="status">{refusal}</p>}
           </section>
         </main>
 

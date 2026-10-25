@@ -51,7 +51,7 @@ export function describeCommunity(e: AgentEvent, ctx: FeedContext): EventView {
           ? { title: 'Session counted, no points', icon: '⭐', tone: 'muted', body: `${ctx.label(e.to[0])}: ${x.reason}.` }
           : { title: `+${x.points} points`, icon: '⭐', tone: 'good', body: `${ctx.label(e.to[0])}: ${x.base} base x ${x.multiplier} (${x.reason}). Both sides confirmed; deterministic, no model involved.` };
       }
-      if (p.kind === 'level-up') return { title: `Level up: ${p.to}`, icon: '⭐', tone: 'good', body: `${ctx.label(e.to[0])} went from ${p.from} to ${p.to}. Perks: matching priority, a badge, more question packs. Never a referral.` };
+      if (p.kind === 'level-up') return { title: `Level up: ${p.to}`, icon: '⭐', tone: 'good', body: `${ctx.label(e.to[0])} went from ${p.from} to ${p.to}. Perks: matching priority, a badge, more packs and a stronger mentor profile.` };
       if (p.kind === 'rated') return { title: 'Rated privately', icon: '✓', tone: 'good', body: `${who} rated the other side. Only aggregates are ever shown.` };
       break;
   }
