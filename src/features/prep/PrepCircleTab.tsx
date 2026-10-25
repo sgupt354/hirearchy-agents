@@ -4,7 +4,8 @@ import { prettify, studentCopy, windowText } from '../../ui/copy';
 import { USE_LLM_COPY, downloadIcs, generateMessage, notifyPhone, parseInvite } from '../../ui/integrations';
 import { InviteModal } from '../../ui/InviteModal';
 import { IPhone, type ChatItem } from '../../ui/IPhone';
-import { inviteOutcome, messagesAvailable, stateAt, type InviteOutcome } from '../../ui/view';
+import { UnderTheHood } from '../../ui/UnderTheHood';
+import { deriveGraph, inviteOutcome, messagesAvailable, stateAt, type InviteOutcome, type Lens } from '../../ui/view';
 import { SPEEDS } from '../../app/speed';
 import type { TabProps } from '../types';
 import { isLiveRequested } from '../../live/client';
@@ -49,6 +50,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [error, setError] = useState('');
+  const [howItWorks, setHowItWorks] = useState(false);
+  const [lenses, setLenses] = useState<Lens[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePending, setInvitePending] = useState(false);
   const [inviteStatus, setInviteStatus] = useState<InviteOutcome | null>(null);
@@ -63,8 +66,11 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
 
   const events = engine.events();
   const caughtUp = cursor >= events.length;
+  const shown = events.slice(0, cursor);
   const state = stateAt(engine.history(), cursor);
   const labels = engine.labels();
+  const label = (id: string) => (id === VIEWER ? 'You' : id === 'broker' ? 'Broker' : (labels[id] ?? id));
+  const view = deriveGraph(shown, IDS, VIEWER);
 
   // Replay new events one by one so the agents' conversation unfolds live.
   useEffect(() => {
@@ -73,6 +79,12 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     return () => clearTimeout(t);
   }, [cursor, caughtUp, speed]);
 
+  useEffect(() => {
+    if (!howItWorks) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setHowItWorks(false);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [howItWorks]);
 
   // Each phone only shows messages whose causing event has been replayed.
   const inbox: Record<string, PhoneMessage[]> = {};
@@ -123,6 +135,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     }
     return names;
   };
+  const graphNames = view.revealed ? namesFor(VIEWER) : {};
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -165,6 +178,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     setInviteOpen(false);
     setInvitePending(false);
     setInviteStatus(null);
+    setHowItWorks(false);
+    setLenses([]);
     act(() => {});
   };
 
@@ -323,11 +338,10 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
             </span>
           )}
         </div>
-        {live !== 'off' && (
-          <div className="hero-meta">
-            <LiveBadge status={live} />
-          </div>
-        )}
+        <div className="hero-meta">
+          <button type="button" className="ghost small" onClick={() => setHowItWorks(true)}>How it works</button>
+          {live !== 'off' && <LiveBadge status={live} />}
+        </div>
       </header>
 
       <main className="phones">
@@ -358,6 +372,19 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
         }}
       />
 
+      <UnderTheHood
+        open={howItWorks}
+        onClose={() => setHowItWorks(false)}
+        state={state}
+        events={shown}
+        ids={IDS}
+        labels={labels}
+        label={label}
+        view={view}
+        names={graphNames}
+        lenses={lenses}
+        onToggleLens={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
+      />
     </div>
   );
 }

@@ -1,14 +1,35 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { SPEEDS, clock } from '../../ui/kit';
+import type { AgentEvent } from '../../engine/types';
+import { Drawer, Inspector, JudgeLegend, SPEEDS, clock, type Lens } from '../../ui/kit';
 import type { TabProps } from '../types';
 import { trust as sharedTrust } from '../trust/network';
 import { ApplicationPacket, JORDAN_PROFILE } from '../apply/packet';
+import { describePacket } from '../apply/packetCopy';
 import { DEMO_POSTINGS } from '../apply/postings';
 import { PacketCard } from '../apply/ui/PacketCard';
+import { describeReferral } from './copy';
 import { ReferralBridge, type ReferralState, type StateChange } from './referralBridge';
 import { ReferralPhone, type ReferralAction, type ReferralChatItem } from './ReferralPhone';
+import type { RuleResult } from './rules';
 import { DECOY, OPENING, REFERRER, SEEKER } from './seed';
 import { applyStore } from '../apply/store';
+
+const STATE_TEXT: Record<ReferralState, string> = {
+  IDLE: 'Ready',
+  OFFERED: 'Offered',
+  WITHDRAWN: 'Withdrawn',
+  FIT_CHECK: 'Fit check',
+  NOT_A_FIT: 'Not a fit',
+  NEGOTIATING: 'Negotiating',
+  AWAITING_HUMANS: 'Awaiting humans',
+  AWAITING_CONSENT: 'Awaiting consent',
+  DECLINED: 'Declined',
+  CONFIRMED: 'Confirmed',
+  CHAT_DONE: 'Chat done',
+  REFERRED: 'Referred',
+  NOT_YET: 'Not yet',
+  NO_REFERRAL: 'No referral',
+};
 
 const PEOPLE: Record<string, string> = { p4: 'Jordan', p10: 'Theo', r1: 'Nadia' };
 const LABELS: Record<string, string> = { p4: 'Applicant #4', p10: 'Applicant #10', r1: 'Stripe alum' };
@@ -56,6 +77,8 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
   const bridge = useMemo(() => new ReferralBridge(sharedTrust), []);
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
+  const [howItWorks, setHowItWorks] = useState(false);
+  const [lenses, setLenses] = useState<Lens[]>([]);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
   const run = useRef(0);
@@ -65,8 +88,10 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
 
   const events = bridge.events();
   const caughtUp = cursor >= events.length;
+  const shown = events.slice(0, cursor);
   const state = stateAt(bridge.history(), cursor);
   const seeker = bridge.seeker;
+  const label = (id: string) => (id === 'broker' ? 'Broker' : (LABELS[id] ?? id));
 
   useEffect(() => {
     if (caughtUp) return;
@@ -80,6 +105,12 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
+  useEffect(() => {
+    if (!howItWorks) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setHowItWorks(false);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [howItWorks]);
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -100,6 +131,8 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     setPacket(new ApplicationPacket(SEEKER, REFERRER, () => unlocked.current));
     setCursor(0);
     setReplies({});
+    setHowItWorks(false);
+    setLenses([]);
   };
 
   function reset() {
@@ -202,6 +235,9 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
             </>
           )}
         </div>
+        <div className="hero-meta">
+          <button type="button" className="ghost small" onClick={() => setHowItWorks(true)}>How it works</button>
+        </div>
       </header>
 
       <main className="phones">
@@ -220,6 +256,68 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
 
       {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
 
+      <Drawer
+        open={howItWorks}
+        onClose={() => setHowItWorks(false)}
+        title="How it works"
+        subtitle="Fit check, staged disclosure, and the agent feed. Students never see this."
+        badge={<span className={`state-pill ref-${state}`}>{STATE_TEXT[state]}</span>}
+      >
+        <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
+        <div className="drawer-body">
+          <section className="card">
+            <h3>Fit check · Stripe alum's private view</h3>
+            <FitBoard events={shown} />
+            <h3>Staged disclosure</h3>
+            <Stages events={shown} />
+            <p className="board-note">
+              Referrals left this month: {left.left} of {left.limit} · Give-back credit: {left.credits}
+            </p>
+          </section>
+          <section className="card feed-card">
+            <h3>Agent conversation</h3>
+            <Inspector events={[...shown, ...(caughtUp ? packet.events() : [])]} label={label} lenses={lenses} describeEvent={(e, ctx) => describePacket(e) ?? describeReferral(e, ctx)} />
+          </section>
+        </div>
+      </Drawer>
     </div>
+  );
+}
+
+/** Pass/fail per private rule, from the referrer agent's own fit-check event. */
+function FitBoard({ events }: { events: AgentEvent[] }) {
+  const fit = events.find((e) => e.payload.kind === 'fit');
+  if (!fit) return <p className="board-note">{events.length ? 'Waiting for the anonymous stats…' : 'Waiting'}</p>;
+  return (
+    <ul className="board-list">
+      {(fit.payload.results as RuleResult[]).map((r) => (
+        <li key={r.id} className={`board-row tone-${r.pass ? 'good' : 'warn'}`}>
+          <b>{r.label}</b>
+          <span>{r.pass ? '✓' : '✗'} {r.observed}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Which stage of the seeker's evidence has left their agent so far. */
+function Stages({ events }: { events: AgentEvent[] }) {
+  const has = (pred: (e: AgentEvent) => boolean) => events.some(pred);
+  const failed = has((e) => e.type === 'DISSOLVED');
+  const stage1 = has((e) => e.type === 'DISCOVER' && e.payload.stage === 1);
+  const stage2 = has((e) => e.type === 'DISCOVER' && e.payload.stage === 2);
+  const stage3 = has((e) => e.type === 'REVEAL');
+  const row = (n: number, what: string, done: boolean, when: string) => (
+    <li key={n} className={`board-row tone-${done ? 'good' : failed ? 'muted' : 'idle'}`}>
+      <b>Stage {n} · {what}</b>
+      <span>{done ? 'Shared' : failed ? 'Never shared' : when}</span>
+    </li>
+  );
+  return (
+    <ul className="board-list">
+      {row(1, 'anonymous stats', stage1, 'After the student says yes')}
+      {row(2, 'project links + mock breakdown', stage2, 'Only if the fit check passes')}
+      {row(3, 'names and contact', stage3, 'Only after both say yes')}
+    </ul>
   );
 }
