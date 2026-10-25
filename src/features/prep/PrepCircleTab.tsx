@@ -196,10 +196,25 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     trustNet.hasSession(sessionId) && adityaOthers.length > 0 && !trustNet.hasRated(personOf(VIEWER), personOf(adityaOthers[0]), sessionId)
       ? { people: adityaOthers.map((x) => ({ id: x, name: (namesFor(VIEWER)[x] ?? 'Member').split(' ')[0] })) }
       : null;
+  // Proposal/counter need a reply; complete/reveal also go to Discord ("Everyone said yes" + calendar) with no buttons.
+  const livePending =
+    adityaLast && (adityaLast.actions.length || adityaLast.kind === 'complete' || adityaLast.kind === 'reveal')
+      ? {
+          ...adityaLast,
+          details: {
+            ...(adityaLast.details ?? {}),
+            company: PIPELINE.company,
+            role: PIPELINE.role,
+            // Calendar link uses today's date for "tonight" (the circle's slot), never the interview date.
+            date: today(),
+            window: adityaLast.details?.window ?? (engine.window ? windowText(engine.window) : ''),
+          },
+        }
+      : null;
   const live = useLiveDiscord({
     enabled: liveRequested,
     runKey: run.current,
-    pending: adityaLast?.actions.length ? adityaLast : null,
+    pending: livePending,
     onReply: (r, bubble) => reply(VIEWER, r, bubble),
     rating: adityaRates,
     onRated: (ratings) => rateCircle(VIEWER, ratings, 'discord'),

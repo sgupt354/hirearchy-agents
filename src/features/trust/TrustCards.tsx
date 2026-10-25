@@ -87,12 +87,26 @@ export function EvidenceCard({ file, badge }: { file: EvidenceFile; badge?: stri
             </dd>
           </div>
         )}
+        {file.thankYouNotes.length > 0 && (
+          <div>
+            <dt>Thank-you notes</dt>
+            <dd>
+              <ul className="ev-thanks">
+                {file.thankYouNotes.map((n, i) => (
+                  <li key={`${n.at}-${i}`}>
+                    <i>{n.fromLabel}</i>: {n.text}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
       </dl>
       <div className="ev-chips">
         {file.skillsTaught.map((s) => <span key={s} className="taught">Taught {s}</span>)}
         {file.targetRoles.map((r) => <span key={r}>{r}</span>)}
       </div>
-      <p className="score-foot">Private to you. Your agent shares it step by step, only with your OK.</p>
+      <p className="score-foot">Private to you. Your agent shares it step by step, only with your OK. Thank-you notes never leave this card.</p>
     </div>
   );
 }

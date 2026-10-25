@@ -168,6 +168,30 @@ export class PointsLedger {
     return { ...entry };
   }
 
+  /**
+   * Closing the loop: one-shot points for sharing an interview intel report. Same BASE_POINTS as a
+   * mentoring session, once per shareId; does not change completedSessions (that counts real sessions).
+   */
+  awardIntelShare(person: string, shareId: string, company: string): PointEntry | null {
+    if (this.#entries.some((e) => e.session === shareId)) return null;
+    const before = this.standing(person);
+    const points = BASE_POINTS;
+    const entry: PointEntry = {
+      session: shareId,
+      person,
+      points,
+      base: BASE_POINTS,
+      multiplier: 1,
+      reason: `shared ${company} interview intel`,
+      capped: false,
+      levelBefore: levelOf(before.points),
+      levelAfter: levelOf(before.points + points),
+    };
+    this.#entries.push(entry);
+    this.#standing.set(person, { points: before.points + points, completedSessions: before.completedSessions });
+    return { ...entry };
+  }
+
   #pairOf(sessionId: string) {
     const s = this.#sessions.get(sessionId)!;
     return [s.helper, s.helped].sort().join('|');

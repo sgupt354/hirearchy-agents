@@ -2,6 +2,13 @@ import type { Skill } from '../../engine/types';
 import { RUBRIC, type Rubric } from '../mock/scores';
 import { round1 } from './ledger';
 
+/** A private thank-you left on a mentor's proof of work. Never disclosed to referrers. */
+export interface ThankYouOnFile {
+  fromLabel: string;
+  text: string;
+  at: string;
+}
+
 /** A student's private proof of work, kept by their own agent. */
 export interface EvidenceFile {
   owner: string;
@@ -18,6 +25,11 @@ export interface EvidenceFile {
   projectLinks: string[];
   /** Pay it forward: who they've helped, never their points. Null if they haven't mentored. */
   mentoring: MentoringStats | null;
+  /**
+   * Private thank-you notes from people this student mentored. Owner-only: discloseEvidence never
+   * copies these, so a referrer never sees them.
+   */
+  thankYouNotes: ThankYouOnFile[];
 }
 
 export interface MentoringStats {

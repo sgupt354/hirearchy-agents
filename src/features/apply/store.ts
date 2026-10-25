@@ -4,6 +4,8 @@ import { DEMO_PROFILE, type Profile } from './resume/profile';
 import type { TrackerStatus } from './tracker/stages';
 import { addLink, applicationId, mergeApplication, newApplication, type Application, type JourneyLink, type Stage } from './applications';
 import type { Nudge, NudgeState } from '../journey/nudges';
+import { EMPTY_FOLLOWUPS, type FollowUp, type FollowUpState } from '../journey/closing';
+import { PointsLedger } from '../community/points';
 
 // Session-only state for the apply suite: tracked postings, the student's profile and the posting being applied to.
 // Nothing is persisted; global Reset clears it.
@@ -44,6 +46,10 @@ class ApplyStore {
   #now = DEMO_NOW;
   #nudges: NudgeState = { sent: [], muted: [], mutedAll: false };
   #answers: Record<string, 'yes' | 'no'> = {};
+  #followUps: FollowUpState = structuredClone(EMPTY_FOLLOWUPS);
+  /** Points for sharing post-interview intel (same ledger rules as Community). */
+  #intelPoints = new PointsLedger();
+  #intelPointEntries: ReturnType<PointsLedger['entries']> = [];
 
   tracked(): TrackedPosting[] {
     return [...this.#tracked];
@@ -142,6 +148,46 @@ class ApplyStore {
     return this.#answers[id] ?? null;
   }
 
+  // ---- closing the loop (post-interview follow-up + intel share points) -----------------------------
+
+  followUps(): FollowUpState {
+    return structuredClone(this.#followUps);
+  }
+
+  /** Record follow-up asks as sent. Idempotent per id. */
+  recordFollowUps(list: FollowUp[]): FollowUp[] {
+    const fresh = list.filter((f) => !this.#followUps.sent.some((s) => s.id === f.id) && !this.#followUps.done.includes(f.appId));
+    if (!fresh.length) return [];
+    this.#followUps = { ...this.#followUps, sent: [...this.#followUps.sent, ...structuredClone(fresh)] };
+    this.#emit();
+    return fresh;
+  }
+
+  /** Mark a follow-up answered so it won't be asked again. */
+  completeFollowUp(appId: string): void {
+    if (this.#followUps.done.includes(appId)) return;
+    this.#followUps = { ...this.#followUps, done: [...this.#followUps.done, appId] };
+    this.#emit();
+  }
+
+  /**
+   * After the student shares an intel report for a job: link it, award community points once, and
+   * mark the follow-up done. Returns the point entry when points were awarded.
+   */
+  shareIntel(key: ApplicationKey, summary: string): ReturnType<PointsLedger['awardIntelShare']> {
+    const id = this.#upsert(key);
+    this.#apps = this.#apps.map((a) => (a.id === id ? addLink(a, { kind: 'intel-shared', ref: `shared-${id}`, at: this.today(), summary }) : a));
+    this.completeFollowUp(id);
+    const entry = this.#intelPoints.awardIntelShare(key.owner, `intel-share:${id}`, key.company);
+    if (entry) this.#intelPointEntries = [...this.#intelPointEntries, entry];
+    this.#emit();
+    return entry;
+  }
+
+  intelPointEntries() {
+    return this.#intelPointEntries.map((e) => ({ ...e }));
+  }
+
   #upsert(key: ApplicationKey, postingId: string | null = null): string {
     const id = applicationId(key.owner, key.company, key.role);
     const existing = this.#apps.find((a) => a.id === id);
@@ -199,6 +245,9 @@ class ApplyStore {
     this.#now = DEMO_NOW;
     this.#nudges = { sent: [], muted: [], mutedAll: false };
     this.#answers = {};
+    this.#followUps = structuredClone(EMPTY_FOLLOWUPS);
+    this.#intelPoints = new PointsLedger();
+    this.#intelPointEntries = [];
     this.#emit();
   }
 

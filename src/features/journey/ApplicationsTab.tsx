@@ -5,10 +5,12 @@ import { STAGES, nextSteps, type Application, type JourneyLink } from '../apply/
 import { STUDENT, useApplyStore } from '../apply/store';
 import { readiness, type Readiness } from './readiness';
 import { planNudges, type Nudge } from './nudges';
+import { planFollowUps, type FollowUp } from './closing';
 import { CommunityPhone, type CommunityChatItem } from '../community/CommunityPhone';
 import { useLiveHelp } from '../community/useLiveHelp';
 import { isLiveRequested } from '../../live/client';
 import { SPEEDS, clock } from '../../ui/kit';
+import type { Stage } from '../apply/applications';
 
 /** Each student's own view of their own records, so their own name is fine here. */
 export const OWNER_NAMES: Record<string, string> = { p1: 'Aditya', p4: 'Jordan', p9: 'Priya', p10: 'Theo' };
@@ -58,10 +60,11 @@ export function ApplicationsTab({ speed, resetKey }: TabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  // The proactive agent: plan on every change (this tab is always mounted, so it runs whichever tab is open).
+  // The proactive agent + post-interview follow-ups: plan on every change (tab always mounted).
   const version = store.getVersion();
   useEffect(() => {
     store.recordNudges(planNudges(store.applications(), store.now(), store.nudges()));
+    store.recordFollowUps(planFollowUps(store.applications(), store.now(), store.followUps()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
@@ -75,6 +78,17 @@ export function ApplicationsTab({ speed, resetKey }: TabProps) {
     store.mute(n.appId);
     store.answerNudge(n.id, 'no');
     setSaid((s) => ({ ...s, [n.id]: { text: `Mute ${n.details.company} nudges`, time: clock() } }));
+  };
+  const answerFollowUp = (f: FollowUp, stage: Stage | 'share', bubble: string) => {
+    if (store.followUps().done.includes(f.appId)) return;
+    if (stage === 'share') {
+      setSaid((s) => ({ ...s, [f.id]: { text: bubble, time: clock() } }));
+      openTab('intel');
+      return;
+    }
+    store.setStage(f.appId, stage);
+    store.completeFollowUp(f.appId);
+    setSaid((s) => ({ ...s, [f.id]: { text: bubble, time: clock() } }));
   };
 
   // Live mode: Aditya's open nudge also goes to Discord (yes / not now, or typed).
@@ -97,7 +111,7 @@ export function ApplicationsTab({ speed, resetKey }: TabProps) {
 
   function agentChat(who: string): CommunityChatItem[] {
     const items: CommunityChatItem[] = [
-      { key: 'intro', from: 'agent', text: "I watch your applications and nudge you when something needs doing: at most 2 a day, and you can mute anytime." },
+      { key: 'intro', from: 'agent', text: "I watch your applications and nudge you when something needs doing: at most 2 a day, and you can mute anytime. After an interview I'll ask for a quick intel report." },
     ];
     for (const n of sent.filter((x) => x.owner === who)) {
       const answered = store.nudgeAnswer(n.id);
@@ -114,6 +128,21 @@ export function ApplicationsTab({ speed, resetKey }: TabProps) {
       });
       if (said[n.id]) items.push({ key: `${n.id}-me`, from: 'me', text: said[n.id].text, time: said[n.id].time });
     }
+    for (const f of store.followUps().sent.filter((x) => x.owner === who)) {
+      const done = store.followUps().done.includes(f.appId);
+      items.push({
+        key: f.id,
+        from: 'agent',
+        text: f.text,
+        needsHuman: !done && !said[f.id],
+        replies: done || said[f.id] ? undefined : [
+          { label: 'Share intel', tone: 'yes', onClick: () => answerFollowUp(f, 'share', 'Share intel') },
+          { label: 'Got an offer', onClick: () => answerFollowUp(f, 'Offer', 'Got an offer') },
+          { label: 'Rejected', tone: 'no', onClick: () => answerFollowUp(f, 'Rejected', 'Rejected') },
+        ],
+      });
+      if (said[f.id]) items.push({ key: `${f.id}-me`, from: 'me', text: said[f.id].text, time: said[f.id].time });
+    }
     return items;
   }
 
@@ -127,6 +156,11 @@ export function ApplicationsTab({ speed, resetKey }: TabProps) {
           {app?.interviewDate && store.now() < `${addDays(app.interviewDate, -2)}T19:00` && (
             <button type="button" className="ghost" onClick={() => store.setNow(`${addDays(app.interviewDate!, -2)}T19:00`)}>
               Skip to 2 days before the interview
+            </button>
+          )}
+          {app?.interviewDate && store.now() < `${app.interviewDate}T20:00` && (
+            <button type="button" className="ghost" onClick={() => store.setNow(`${app.interviewDate}T20:00`)}>
+              Skip to after the interview
             </button>
           )}
           <button type="button" className="ghost" aria-pressed={store.nudges().mutedAll} onClick={() => store.mute('all', !store.nudges().mutedAll)}>

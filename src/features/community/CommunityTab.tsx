@@ -19,6 +19,8 @@ import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createComm
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
 import { applyStore } from '../apply/store';
 import { applicationId } from '../apply/applications';
+import { makeThankYou } from '../journey/closing';
+import { trust as trustNetwork } from '../trust/network';
 
 const NAMES: Record<string, string> = { [NEWCOMER]: 'Priya', [MENTOR]: 'Aditya' };
 const LABELS: Record<string, string> = { a9: 'Newcomer #9', a1: 'Applicant #1', a6: 'Applicant #6', a7: 'Applicant #7' };
@@ -55,6 +57,8 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const [refusal, setRefusal] = useState('');
   const [needId, setNeedId] = useState<string | null>(null);
   const [view, setView] = useState<'help' | 'projects'>('help');
+  const [thankDraft, setThankDraft] = useState('');
+  const [thanked, setThanked] = useState(false);
   const run = useRef(0);
 
   const events = hub.events();
@@ -106,6 +110,8 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     setDrawer(false);
     setLenses([]);
     setView('help');
+    setThankDraft('');
+    setThanked(false);
     act(() => {});
   }
 
@@ -123,6 +129,8 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     hub.reset();
     setReplies({});
     setRefusal('');
+    setThankDraft('');
+    setThanked(false);
     setCursor(0);
     act(() => setNeedId(hub.postNeed(NEWCOMER, DEMO_NEED)));
   };
@@ -138,11 +146,53 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     onReply: (choice, bubble) => askNeed && answer(MENTOR, askNeed, choice, bubble),
   });
 
+  const sendThanks = () => {
+    if (!needId || thanked) return;
+    const note = makeThankYou(thankDraft, {
+      mentor: personOf(MENTOR),
+      sessionId: hub.sessionId(needId),
+      at: applyStore.today(),
+      fromLabel: 'a newcomer you helped',
+    });
+    if (!note) return;
+    trustNetwork.addThankYou(note);
+    setThanked(true);
+    say(NEWCOMER, 'Left a private thank-you');
+  };
+
   const chatFor = (id: string): CommunityChatItem[] => {
     const items: CommunityChatItem[] = [];
     for (const m of inbox(id)) {
       items.push(toItem(id, m));
       for (const [i, r] of (replies[id] ?? []).entries()) if (r.after === m.id) items.push({ key: `r${i}`, from: 'me', text: r.text, time: r.time });
+    }
+    // Closing the loop: after the newcomer rates, offer a private thank-you for the mentor's proof of work.
+    if (id === NEWCOMER && needId && hub.hasRated(needId, NEWCOMER) && !thanked) {
+      items.push({
+        key: 'thanks-ask',
+        from: 'agent',
+        text: 'Want to leave a private thank-you on their proof of work? Phones and @handles are scrubbed; referrers never see it.',
+        needsHuman: true,
+        custom: (
+          <form
+            className="thank-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              sendThanks();
+            }}
+          >
+            <textarea
+              value={thankDraft}
+              onChange={(e) => setThankDraft(e.target.value)}
+              rows={3}
+              maxLength={280}
+              placeholder="Thanks for the System Design walkthrough tonight"
+              aria-label="Private thank-you note"
+            />
+            <button type="submit" className="cal-add" disabled={!thankDraft.trim()}>Send privately</button>
+          </form>
+        ),
+      });
     }
     return items;
   };

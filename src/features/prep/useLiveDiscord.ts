@@ -61,25 +61,38 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
     };
   }, [enabled, runKey, api]);
 
-  // DM each new prompt once.
+  // DM each new prompt once. Reveal (everyone said yes + calendar) needs no reply; proposal/counter do.
   const promptId = pending?.id ?? null;
   useEffect(() => {
     if (status !== 'live' || !pending || !pending.kind || notified.current.has(pending.id)) return;
-    if (pending.kind !== 'proposal' && pending.kind !== 'counter') return;
+    if (pending.kind !== 'proposal' && pending.kind !== 'counter' && pending.kind !== 'complete' && pending.kind !== 'reveal') return;
     notified.current.add(pending.id);
+    const kind = pending.kind === 'complete' || pending.kind === 'reveal' ? 'reveal' : pending.kind;
+    // Reveal never carries member identities: only company/role/window/date for the calendar link.
+    const details =
+      kind === 'reveal'
+        ? {
+            company: pending.details?.company ?? '',
+            role: pending.details?.role ?? '',
+            window: pending.details?.window ?? '',
+            ...(pending.details?.date ? { date: pending.details.date } : {}),
+          }
+        : (pending.details ?? {});
     api
-      .notify({ session: session.current, prompt: pending.id, student: 'a1', kind: pending.kind, details: pending.details ?? {} })
+      .notify({ session: session.current, prompt: pending.id, student: 'a1', kind, details })
       .then((ok) => !ok && setStatus('unavailable'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, promptId, runKey]);
 
-  // Poll for their answer while the prompt is open.
+  // Poll for their answer while a proposal/counter is open (reveal/complete need no reply).
   useEffect(() => {
     if (status !== 'live' || promptId === null) return;
+    if (pending?.kind === 'reveal' || pending?.kind === 'complete') return;
     const id = promptId;
     const t = setInterval(() => void poller.current?.tick(session.current, id), LIVE_POLL_MS);
     return () => clearInterval(t);
-  }, [status, promptId, runKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, promptId, runKey, pending?.kind]);
 
   // After the session: DM the rating selects once, then poll until every member is rated.
   const ratingKey = rating ? rating.people.map((p) => p.id).join(',') : '';

@@ -159,7 +159,7 @@ tab-bar spacing so ten tabs fit at 1280px.
 | 1 | One application record per job + "Applications" tab | done |
 | 2 | Readiness score per interview | done |
 | 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | done |
-| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | next |
+| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | done |
 
 Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/features/journey/ApplicationsTab.tsx`):
 - **Record:** owner (trust person id), company, role, stage (the tracker's Saved / Applied / OA / Interview / Offer /
@@ -207,6 +207,19 @@ Phase 3, as built (`src/features/journey/nudges.ts`; phone + controls in the App
 - New sabotage: a nudge is sent for a muted job (caught). 596 tests, 17/17 sabotages. Browser: the skip produces
   exactly the mock nudge; "Set up the mock" opens Mock; mute stops further nudges; mocked live mode sends one
   `nudge` DM and a Discord yes lands as "Yes · via Discord".
+
+Phase 4, as built (`src/features/journey/closing.ts`, Applications / Intel / Community / Prep wiring, live `reveal`):
+- **After the interview:** `planFollowUps` asks once when the demo clock is on or past the invite's interview
+  date. The Applications phone offers Share intel (opens Intel), Got an offer, or Rejected (updates stage).
+  Submitting an Intel report calls `applyStore.shareIntel`: links `intel-shared`, awards `BASE_POINTS` once via
+  the Community `PointsLedger.awardIntelShare`, and marks the follow-up done. Hero: "Skip to after the interview".
+- **Everyone said yes:** when the prep circle hits `reveal`/`complete` in live mode, Discord gets a `reveal` DM
+  (no buttons) built server-side from company / role / window / date, with a Google Calendar link when the window
+  parses. Member identities never travel in the details.
+- **Thank your mentor:** after a Community help session the newcomer can leave a private note; `makeThankYou`
+  reuses Intel's scrubber (phones, @handles, emails, dates). The note lands on the mentor's proof-of-work card
+  (`EvidenceFile.thankYouNotes`) and `discloseEvidence` never copies it, so referrers never see it.
+- New sabotage: a thank-you note leaks into what referrers see (caught). 601 tests, 18/18 sabotages.
 
 ### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
 Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains

@@ -1,8 +1,9 @@
 import type { Skill } from '../../engine/types';
 import { RUBRIC, type Rubric } from '../mock/scores';
-import { discloseEvidence, type EvidenceFile, type EvidenceStage1, type EvidenceStage2 } from './evidence';
+import { discloseEvidence, type EvidenceFile, type EvidenceStage1, type EvidenceStage2, type ThankYouOnFile } from './evidence';
 import { TrustLedger, round1, type Rating, type TrustSummary } from './ledger';
 import { getIntelContributionCount } from '../intel/logic';
+import type { ThankYouNote } from '../journey/closing';
 import { PAST_SESSIONS, PEOPLE_SEED, type PersonSeed } from './seed';
 
 /** Intel reports contributed, from the Intel feature (keyed by prep agent id: person p4 ↔ a4). */
@@ -31,6 +32,10 @@ export class TrustNetwork {
   #noShows = new Set<string>();
   #people: Record<string, PersonSeed> = {};
   #intelCount: (person: string) => number = intelFromFeature;
+  /** Private thank-yous keyed by mentor person id. Never leave via disclose(). */
+  #thanks = new Map<string, ThankYouOnFile[]>();
+  /** "mentor|sessionId" so the same session can't leave two notes. */
+  #thankSessions = new Set<string>();
   #listeners = new Set<() => void>();
   #version = 0;
   #resetKey: number | null = null;
@@ -83,6 +88,18 @@ export class TrustNetwork {
   /** Override the intel source (tests); by default it's the Intel feature's getIntelContributionCount. */
   setIntelCounter(fn: (person: string) => number): void {
     this.#intelCount = fn;
+    this.#changed();
+  }
+
+  /**
+   * A private thank-you for a mentor's proof of work. Idempotent per session. The text must already be
+   * scrubbed (see makeThankYou); this store never rewrites it.
+   */
+  addThankYou(note: ThankYouNote): void {
+    const key = `${note.mentor}|${note.sessionId}`;
+    if (this.#thankSessions.has(key)) return;
+    this.#thankSessions.add(key);
+    this.#thanks.set(note.mentor, [...(this.#thanks.get(note.mentor) ?? []), { fromLabel: note.fromLabel, text: note.text, at: note.at }]);
     this.#changed();
   }
 
@@ -154,6 +171,7 @@ export class TrustNetwork {
       targetRoles: [...seed.targetRoles],
       projectLinks: [...seed.projectLinks],
       mentoring,
+      thankYouNotes: structuredClone(this.#thanks.get(person) ?? []),
     };
   }
 
@@ -166,6 +184,8 @@ export class TrustNetwork {
     this.#sessions = new Map();
     this.#mockScores = new Map();
     this.#noShows = new Set();
+    this.#thanks = new Map();
+    this.#thankSessions = new Set();
     this.#people = structuredClone(PEOPLE_SEED);
     this.#intelCount = intelFromFeature;
     for (const s of PAST_SESSIONS) {

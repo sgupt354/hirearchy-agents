@@ -123,6 +123,63 @@ export function nudgeCopy(d: Record<string, string>): string {
   return `${d.text} anonymous ${d.company} interview reports are waiting. Read them before your interview? Tap a button, or reply yes or no.`;
 }
 
+/** Discord / phone copy when everyone said yes. Built only from company, role, window (and optional calendar URL). */
+export function revealCopy(d: Record<string, string>): string {
+  const title = [d.company, d.role].filter(Boolean).join(' ') || 'prep';
+  const when = d.window ? ` for tonight ${d.window}` : '';
+  const base = `Everyone said yes — your ${title} prep circle is confirmed${when}.`;
+  return d.calendar ? `${base} Add to calendar: ${d.calendar}` : base;
+}
+
+/**
+ * Google Calendar template URL from structured fields only. Window like "7:30 PM-9:00 PM".
+ * Returns null if the window can't be parsed — never invents a time.
+ */
+export function calendarLink(input: { title: string; date: string; window: string }): string | null {
+  const range = parseWindow(input.window);
+  if (!range || !/^\d{4}-\d{2}-\d{2}$/.test(input.date)) return null;
+  const start = toCalStamp(input.date, range.start);
+  const end = toCalStamp(input.date, range.end);
+  if (!start || !end) return null;
+  const params = new URLSearchParams({ action: 'TEMPLATE', text: input.title, dates: `${start}/${end}` });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+/** Everyone said yes: confirmation + calendar link built server-side from date/window (never from free text). */
+export function revealDm(d: Record<string, string>): string {
+  const title = `${d.company}${d.role ? ` ${d.role}` : ''} prep circle`;
+  const calendar = d.date && d.window ? calendarLink({ title, date: d.date, window: d.window }) ?? undefined : undefined;
+  return revealCopy({ ...d, ...(calendar ? { calendar } : {}) });
+}
+
+/** "7:30 PM-9:00 PM" or "7:00–9:30 PM" → 24h start/end, or null. */
+function parseWindow(window: string): { start: string; end: string } | null {
+  const parts = window.split(/\s*[–-]\s*/);
+  if (parts.length !== 2) return null;
+  const start = to24h(parts[0]);
+  const end = to24h(parts[1]) ?? to24h(`${parts[1].trim()} ${parts[0].match(/[AP]M/i)?.[0] ?? ''}`.trim());
+  if (!start || !end) return null;
+  return { start, end };
+}
+
+function to24h(raw: string): string | null {
+  const m = raw.trim().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!m) return null;
+  let h = Number(m[1]);
+  const min = m[2] ?? '00';
+  const ap = m[3].toUpperCase();
+  if (h < 1 || h > 12) return null;
+  if (ap === 'AM') h = h === 12 ? 0 : h;
+  else h = h === 12 ? 12 : h + 12;
+  return `${String(h).padStart(2, '0')}:${min}`;
+}
+
+function toCalStamp(date: string, hm: string): string | null {
+  const [h, m] = hm.split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return `${date.replace(/-/g, '')}T${String(h).padStart(2, '0')}${String(m).padStart(2, '0')}00`;
+}
+
 /** The mentor's DM, built only from the anonymous listing (no name, deadline already abstracted). */
 export const helpCopy = (d: Record<string, string>) =>
   `A newcomer needs help with ${d.text} for a ${d.company}${d.role ? ` ${d.role.toLowerCase()}` : ''} round this week. It fits your rules: 45 minutes tonight, ${d.window}. Names unlock only if you both say yes. Help them? Tap a button, or reply yes or no.`;
@@ -165,7 +222,7 @@ export const timeModal = (session: string, prompt: number, student: LiveStudent 
 
 // ---- what the browser sends to /api/live-notify ---------------------------------------------------
 
-const DETAIL_KEYS = ['company', 'role', 'circleSize', 'gives', 'gets', 'window', 'updated', 'status', 'reason', 'text'];
+const DETAIL_KEYS = ['company', 'role', 'circleSize', 'gives', 'gets', 'window', 'updated', 'status', 'reason', 'text', 'date'];
 const SAFE = /^[A-Za-z0-9 :,–\-+&'.?!()/_]*$/;
 
 /** Keep only known, short, plain-text detail fields, so the DM can't carry arbitrary content. */
@@ -179,7 +236,7 @@ export function sanitizeDetails(details: unknown): Record<string, string> {
   return out;
 }
 
-export type NotifyKind = 'proposal' | 'counter' | 'help' | 'nudge';
+export type NotifyKind = 'proposal' | 'counter' | 'help' | 'nudge' | 'reveal';
 
 export interface NotifyBody {
   session: string;
@@ -194,13 +251,15 @@ export function parseNotifyBody(body: unknown): NotifyBody | null {
   const b = body as Record<string, unknown>;
   const student = b.student === undefined ? 'a1' : b.student;
   if (!isSessionId(b.session) || !isPromptId(b.prompt) || !isLiveStudent(student)) return null;
-  if (b.kind !== 'proposal' && b.kind !== 'counter' && b.kind !== 'help' && b.kind !== 'nudge') return null;
+  if (b.kind !== 'proposal' && b.kind !== 'counter' && b.kind !== 'help' && b.kind !== 'nudge' && b.kind !== 'reveal') return null;
   const details = sanitizeDetails(b.details);
   // Each kind needs its fields to build a sensible message.
   if (b.kind === 'proposal' && !(details.window && details.gives && details.gets)) return null;
   if (b.kind === 'counter' && !['proposing', 'rejected', 'own_conflict', 'unreadable'].includes(details.status)) return null;
   if (b.kind === 'help' && !(details.company && details.text && details.window)) return null;
   if (b.kind === 'nudge' && !(details.company && details.text && ['mock', 'circle', 'intel'].includes(details.status) && (details.status !== 'mock' || details.window))) return null;
+  // Everyone said yes: company + window required; date optional (calendar link only when present).
+  if (b.kind === 'reveal' && !(details.company && details.window)) return null;
   return { session: b.session, prompt: b.prompt, student, kind: b.kind, details };
 }
 

@@ -126,6 +126,8 @@ export function IntelTab({ speed, resetKey }: TabProps) {
     setShared(anonymizeReport(raw));
     setEvents(describeAnonymization(raw));
     setCredits((c) => recordContribution(c, raw));
+    // Closing the loop: link the share on the application, award community points once.
+    applyStore.shareIntel({ owner: STUDENT, company: COMPANY, role: ROLE }, `Shared an anonymous ${COMPANY} interview report`);
     answer('tip', finalTip, 'done');
   };
 

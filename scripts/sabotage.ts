@@ -115,6 +115,12 @@ const SABOTAGES: Sabotage[] = [
     find: '    if (state.mutedAll || state.muted.includes(app.id)) continue;',
     replace: '    if (false) continue;',
   },
+  {
+    name: 'A thank-you note leaks into what referrers see',
+    file: 'src/features/trust/evidence.ts',
+    find: '  if (stage === 1) return { stage: 1, ...base };',
+    replace: '  if (stage === 1) return { stage: 1, ...base, thankYouNotes: file.thankYouNotes } as EvidenceStage1;',
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';
