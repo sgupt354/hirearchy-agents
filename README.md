@@ -1,41 +1,92 @@
-# Hirearchy Agents
+# Hirearchy: your agent for the whole job hunt
 
-**The moment a student lands an interview, their personal AI agent finds other students in the same hiring
-pipeline who can cover their weak spots (while they cover others'), negotiates a time with those students'
-agents, and shares names only once everyone says yes.**
+**Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide.**
 
-> Track 1 built the applicant network. Track 2 makes the network work for you.
+> **Your prep circle becomes your proof of work.**
+
+Every student has a personal AI agent that lives in their messages. It finds jobs, finds other students in the same
+hiring pipeline to prep and mock-interview with, trades interview intel anonymously, and turns all of that into a
+private record that can earn a referral. Agents talk to each other through structured events and negotiate on
+their own; **deterministic code decides everything** (matching, fit, limits, consent), the LLM only words messages,
+and a human is asked before anything that matters: joining, sharing more, revealing a name, referring.
 
 ![Three students' phones in iMessage, each with the prep-circle calendar invite after everyone said yes](docs/screenshot.png)
 
-Students never see a graph. Their agent lives in their messages (iMessage via Cubbie, or Discord): it texts them
-when it found a circle, they tap **✅ I'm in**, **🕗 Suggest a time** or **Not this time**, and they get a calendar
-invite once everyone says yes. The graph and the agents' conversation sit behind **🔍 See what the agents are doing**,
-for judges.
+Students never see a graph. They see texts from their agent and tap **✅ I'm in**, **🕗 Suggest a time** or
+**Not this time**. The agents' side sits behind **🔍 See what the agents are doing** on every tab, for judges.
 
-## How it maps to the judging criteria
+## The journey
 
-Open **🔍 See what the agents are doing**. The drawer has one judging-lens chip per criterion; clicking one
-highlights those events in the live agent conversation.
+| Tab | What the agent does | Owner |
+|---|---|---|
+| 🔎 **Find** | Surfaces matching postings (Job Sniper, Track 1); "Track it" puts you in that company's pipeline | Aditya |
+| 📊 **Pipeline** | Anonymous stats for your pipeline, each published only once enough reports back it | Aditya |
+| 👥 **Prep circle** | You landed an interview: finds 2–3 students whose skills cover your weak spots, negotiates a time, names after everyone says yes | Sumedha |
+| 🎤 **Mock interview** | Swaps mock interviews with someone in the same company and round; scores go only to the person scored | Sumedha |
+| 💡 **Intel** | Give-to-get interview reports, scrubbed of anything identifying | Aditya |
+| 🤝 **Referral** | Your prep record, shared step by step, earns a coffee chat with an alum, who decides on the referral | Sumedha |
+
+Prep circles and mocks feed a shared **trust network**: after each session members rate each other privately, and
+each student gets a private **🏅 proof of work** (sessions, average rating, mock scores, skills taught, intel
+reports). The Referral tab reads that record, so what you do in the other tabs really changes your referral.
+
+## How each feature maps to the judging criteria
+
+The Prep circle, Mock interview and Referral drawers have the same three judging-lens chips; clicking one
+highlights those events in the agent conversation: **⚠ Conflicting constraints** (CONFLICT / COUNTER / REJECT), **↗ What's shared** (every event lists
+what was shared, abstracted and withheld) and **⏸️ When humans are asked** (ESCALATE / CONSENT). Find, Pipeline and Intel explain themselves in their own drawers
+(**See why these matched**, **See what was shared and hidden**).
 
 ![Under the hood: the network from Aditya's view and the agent conversation, with "Conflicting constraints" on](docs/judge-legend.png)
 
-| Criterion | Chip | What you see in the golden path |
-|---|---|---|
-| **Conflicting constraints** | ⚠ Conflicting constraints (CONFLICT / COUNTER / REJECT) | Three students with different evening windows (18:00-21:30, 19:00-21:00, 19:30-22:00). The broker flags the conflict and the agents negotiate the 19:30-21:00 overlap. Applicant #6 rejects the evening window on its own. Maya counters "8pm?", and every other agent checks 20:00-21:00 against its own private hours before it's sent back to the humans. A counter that doesn't fit someone is rejected, and the old time stands. |
-| **What's shared** | ↗ What's shared (any disclosure) | Every event lists what was **↗ shared**, **≈ abstracted** and **🔒 withheld**. Maya's interview date becomes "time-sensitive prep need", Aditya's exact stage is withheld, Applicant #7 (`share_skills=false`) never publishes a listing, and names / emails / Discord ids stay withheld until the end. |
-| **When humans are asked** | ⏸️ When humans are asked (ESCALATE / CONSENT) | Agents settle the schedule on their own (`negotiate_schedule = true`). Joining a circle and revealing your identity always escalate to the human, who gets a notification and answers in the chat: ✅ I'm in / 🕗 Suggest a time / Not this time. Names are revealed only after **all** members accept. If one declines, the circle dissolves without naming who left, and the agent finds the backup (Jordan). |
+### 👥 Prep circle
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | Three students with different evening windows (6:00–9:30, 7:00–9:00, 7:30–10:00 PM). The broker flags the conflict and the agents negotiate the 7:30–9:00 PM overlap. Applicant #6 rejects the evening on its own. Maya counters "8pm?", and every other agent checks 8:00–9:00 PM against its own private hours before it goes back to the humans; a counter that doesn't fit someone is rejected and the old time stands. |
+| **What's shared** | Anonymized listings only. Maya's interview date becomes "time-sensitive prep need", Aditya's exact stage is withheld, Applicant #7 (`share_skills=false`) never publishes a listing, and names / emails / Discord ids stay withheld until everyone accepts. |
+| **When humans are asked** | Agents settle the schedule themselves (`negotiate_schedule = true`). Joining and revealing identity always escalate. Names are revealed only after **all** members accept; if one declines, the circle dissolves without naming who left and the backup (Jordan) is invited. |
+
+### 🎤 Mock interview
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | Same company and round, at least 60 minutes free together, same difficulty, complementary weak spots first, then the more reliable partner. One agent skips a candidate on a private rule (never a third mock with the same person) without saying why. No one free in your round → practice with your own agent instead. |
+| **What's shared** | Anonymous mock listings (round, strengths, weak spots, difficulty). A question pack from anonymized reports. Rubric scores go **only to the person scored** (`ScoreVault` throws for anyone else). |
+| **When humans are asked** | Both say "I'm in" before anything is booked; names unlock after both say yes; each human ends their round and scores the other privately; then rates the session. |
+
+### 🤝 Referral Bridge
+![The referrer's phone: anonymous stats, the private fit check, then project links and the coffee-chat invite](docs/referral.png)
+
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | The alum's agent holds **private rules**: SWE / backend roles only, ≥ 2 sessions, rating ≥ 4.5, mock average ≥ 4.0, must meet first, max 2 referrals a month (1 left). A deterministic fit check shows ✓/✗ per rule. Theo (★ 4.3) fails the rating rule; after Jordan is referred, the monthly limit fails too. The 15-minute chat is negotiated by the engine scheduler (7:00–7:15 PM). |
+| **What's shared** | Staged: **stage 1** anonymous stats → **stage 2** project links + mock rubric breakdown, only if the fit passes → **stage 3** names, only after both say yes to the chat. A declined seeker hears only "not right now": no rule, threshold or referrer name, and the referrer never learns theirs. |
+| **When humans are asked** | The seeker OKs sharing at all; both OK the chat; after the chat **only the referrer's human** can choose 🤝 Refer / 🕗 Not yet (with a coaching note, e.g. "Do one more system design mock first.") / No. Agents never refer on their own (`decide()` is the only path and throws for anyone else). Referrers earn give-back credit. |
+
+### 🏅 Trust and proof of work (Prep circle + Mock interview)
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | Reliability breaks ties in mock matching; a no-show counts against it. |
+| **What's shared** | No individual rating is ever returned, not even to the person rated: only a count, and a reliability score once there are ≥ 2 ratings. The evidence file is readable only by its owner and leaves their agent only through staged disclosure. |
+| **When humans are asked** | Each member rates the others privately after the session (showed up? helpful 1–5?). |
+
+### 🔎 Find · 📊 Pipeline · 💡 Intel (Aditya)
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | Find: postings against your role and level filters. Pipeline: you want numbers, but each stat stays hidden until it has ≥ 3 reports. Intel: give-to-get access versus a 48-hour grace period. |
+| **What's shared** | Find: match reasons built from the posting, never your data. Pipeline: aggregate counts only; a hidden stat has no number at all. Intel: emails, phone numbers, @handles and exact dates are scrubbed; dates become "this week". |
+| **When humans are asked** | Find: nothing is tracked until you tap "Track it". Intel: you choose to write a report and what goes in it. |
 
 ## Privacy proof
 
-Privacy is enforced in the engine's data layer, not just hidden in the UI. Names, emails and Discord ids live in
-an `IdentityVault`, and the only way to read them is `getIdentity()`, which throws until every member of the
-circle has consented.
+Privacy is enforced in the data layer, not just hidden in the UI. Names, emails and Discord ids live in an
+`IdentityVault`, and the only way to read them is `getIdentity()`, which throws until every member has consented.
+Ratings live in a ledger with no method that returns one. Mock scores live in a vault only the person scored can
+read. The referrer's fit check is addressed to the referrer's agent only.
 
 The badge in the app ("🔒 Privacy proof · … · N/N tests passing") comes from a real test run.
 
-**Sabotage tests:** `npm run test:sabotage` plants a privacy bug in the engine, runs the suite, and requires the
-tests to catch it. It does this for six bugs, one at a time, and restores the original code after each one:
+**Sabotage tests:** `npm run test:sabotage` plants a privacy bug, runs the whole suite, and requires the tests to
+catch it, for ten bugs, one at a time, restoring the code after each:
 
 ```
 ✓ caught   Broker names the decliner when dissolving
@@ -44,31 +95,31 @@ tests to catch it. It does this for six bugs, one at a time, and restores the or
 ✓ caught   Listing carries the private name
 ✓ caught   Interview date shared raw instead of abstracted
 ✓ caught   share_skills=false agent still publishes a listing
+✓ caught   Rating leak: trust summary carries the individual ratings
+✓ caught   Referral auto-approved by the agent after the chat
+✓ caught   Evidence file (links + rubric) sent at stage 1, before the fit check
+✓ caught   Mock scores readable by anyone, without the subject's grant
 
-All 6 privacy sabotages were caught.
+All 10 privacy sabotages were caught.
 ```
-
-The leak-scan test serializes the entire event log before the reveal and checks that no name, email or Discord id
-appears anywhere in it.
 
 ## How to run
 
 ```bash
 npm install
 npm run dev            # the app, at http://localhost:5173 (runs the tests first to refresh the badge)
-npm test               # all unit tests (engine, UI view model, integrations and api/ handlers)
-npm run demo:run       # prints the golden path and the backup branch as event lines, no browser needed
+npm test               # all unit tests
+npm run demo:run       # prints the prep-circle golden path and the backup branch, no browser needed
 npm run test:sabotage  # the privacy sabotage tests
 ```
 
-Requires Node 20.19+ (or 22.12+). The engine runs fully in memory. No keys are needed locally: `npm run dev`
-doesn't serve the `api/` functions, so notifications and Claude wording quietly fall back and the demo works
-end to end.
+Requires Node 20.19+ (or 22.12+). Everything runs in memory. No keys are needed locally: `npm run dev` doesn't
+serve the `api/` functions, so notifications and Claude wording quietly fall back and the demo works end to end.
 
 ## Deployment (Vercel)
 
 Import the repo into Vercel. The defaults work as they are: framework **Vite**, build command `npm run build`,
-output `dist`. The two serverless functions in `api/` are picked up automatically; there is no `vercel.json`.
+output `dist`. The serverless functions in `api/` are picked up automatically; there is no `vercel.json`.
 
 | Function | Does | Needs | Without it |
 |---|---|---|---|
@@ -83,12 +134,33 @@ output `dist`. The two serverless functions in `api/` are picked up automaticall
 | `DISCORD_WEBHOOK_URL` | Server (Vercel env) | Optional | Discord notification for Aditya's "needs you" messages via `/api/notify` |
 | `VITE_USE_LLM_COPY` | Build time | Optional, default off | `true` = phone messages worded by Claude; off = the built-in student copy. Only turn on with `ANTHROPIC_API_KEY` set. Redeploy after changing it (it's baked into the build). |
 
+### Live Discord mode (optional)
+
+Open the site with `?live=1` and Aditya's agent really DMs them in Discord with **✅ I'm in · 🕗 Suggest a time ·
+Not this time** buttons; their answer drives the demo exactly like a tap on their simulated phone. Without `?live=1`, or
+if anything fails, the page says "Live mode unavailable, using simulated phone" and carries on. Full setup:
+**[LIVE_DISCORD.md](LIVE_DISCORD.md)**. It adds three functions (`api/live-notify.ts`, `api/live-state.ts`,
+`api/discord-interactions.ts`), one Supabase migration (`supabase/live.sql`) and these server-only variables:
+
+| Variable | Secret? | Purpose |
+|---|---|---|
+| `DISCORD_APP_ID` | no | The Discord application |
+| `DISCORD_PUBLIC_KEY` | no | Verifies Discord's signature on every interaction |
+| `DISCORD_BOT_TOKEN` | **yes** | Sends the DM |
+| `DISCORD_ADITYA_USER_ID` | no | The only person the bot DMs and accepts clicks from |
+| `SUPABASE_URL` | no | Where replies wait for the page (`VITE_SUPABASE_URL` also works) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **yes** | Server-side access to the `t2_live_*` functions |
+
 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are listed in `.env.example` but not used yet:
 `supabase/track2.sql` is written and not connected. Never commit real values; `.env*` files are git-ignored
 except `.env.example`.
 
 ## Demo steps
 
+The top bar has the speed control (**Slow** for a live presentation, **Fast** for a run-through) and **↺**, which
+resets every tab at once. Tabs keep their state while you switch between them.
+
+### 👥 Prep circle (default tab)
 1. Pick **Slow** (top right) for a live presentation, or **Fast** for a quick run-through.
 2. Click **📩 Aditya just got a Microsoft interview invite →**. Or click **Paste a real invite**, paste e.g.
    *"We would like to invite you to interview for the Software Engineer Intern role at Microsoft."* and press
@@ -108,46 +180,74 @@ except `.env.example`.
    backup branch: the circle dissolves, nothing is revealed, nobody is told who left, and Jordan's phone appears
    with a new circle at 7:00–9:00 PM.
 
+### 🎤 Mock interview
+Click **🎤 Aditya's Microsoft technical round is Thursday →**. Tap **✅ I'm in** on both phones; each gets a question
+pack, the rounds run on a timer (**End round**), each scores the other privately, then rates the session and sees
+their proof of work. **No one in your round?** shows the practice-with-your-agent fallback.
+
+### 🤝 Referral
+1. Click **🤝 Jordan applied to Stripe SWE Intern →**. On Jordan's phone tap **✅ Share my stats**.
+2. Nadia's phone shows the anonymous stats, then the private fit check (✓ on every rule), then the project links and
+   rubric. Both tap **✅ I'm in** for the 15-minute coffee chat; names unlock.
+3. Nadia taps **☕ We had the chat**, then decides. **🕗 Not yet** opens a coaching note; **🤝 Refer** sends the
+   referral, uses the last referral this month and earns +1 give-back credit.
+4. **Next applicant: Theo →** keeps Nadia's month: Theo fails the rating rule (and the limit). Theo's phone only
+   says "not right now". From the start screen, **Not a fit? See Theo's application** shows the rating failure alone.
+5. **🔍 See what the agents are doing** shows the fit check per rule, which stage has been shared, and referrals left.
+
 ## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph Students
-    A1["Agent: Aditya<br/>private profile · policy · inbox"]
-    A2["Agent: Sumit"]
-    A3["Agent: Maya"]
-    A8["… 8 agents"]
+  subgraph Phones["Students' phones (iMessage / Discord)"]
+    H["Humans tap: I'm in · Suggest a time · Share · Refer"]
   end
-  B["Broker<br/>anonymized listings only"]
-  E["Deterministic engine<br/>discovery · cycles · scheduler<br/>negotiation · consent · state machine"]
-  V["IdentityVault<br/>getIdentity() — all consents or nothing"]
-  L["LLM (integrations)<br/>wording only"]
-  A1 & A2 & A3 & A8 <-->|structured events| B
+  subgraph Agents["One agent per student"]
+    A["private profile · policy · inbox<br/>decides ACCEPT / REJECT / ESCALATE itself"]
+  end
+  B["Broker<br/>anonymized listings, relays events"]
+  subgraph Engine["Deterministic engine (src/engine)"]
+    E["discovery · cycles · scheduler · negotiation<br/>consent · state machine · event log"]
+    V["IdentityVault<br/>names only after all consents"]
+  end
+  subgraph Features["Journey features (src/features)"]
+    F1["find · pipeline · intel"]
+    F2["prep · mock (ScoreVault)"]
+    T["trust network<br/>ratings ledger · evidence file<br/>staged disclosure"]
+    R["referral bridge<br/>private fit check · human decides"]
+  end
+  L["LLM (api/voice)<br/>wording only, template fallback"]
+  H <--> A
+  A <-->|structured events| B
   B --- E
   E --> V
-  A1 -.->|phone text| L
+  F2 --> T --> R
+  F1 -.->|intel count| T
+  Features --- E
+  A -.->|phone text| L
 ```
 
-- **Agents:** one `Agent` instance per student. Each holds its own private profile, policy and inbox, and decides
-  ACCEPT / REJECT / ESCALATE itself against its private data. Agents talk only through structured events.
-- **Broker:** neutral. It receives anonymized listings built from each agent's policy, finds 2- and 3-person
-  cycles, and relays events. It never reads a private profile and never decides for anyone.
-- **Deterministic engine:** matching, scheduling, permissions, consent and every state transition are plain,
-  tested TypeScript in `src/engine/`. An explicit state machine rejects invalid transitions, and runs are
-  byte-identical (`resetDemo()` reproduces a run exactly).
+- **Agents and broker:** each student's agent holds its own private data and decides against it; the broker only
+  sees anonymized listings and relays events. Nobody's agent reads another's private data.
+- **Deterministic engine, reused by every feature:** matching, scheduling, negotiation, consent, identity and the
+  state machines are plain, tested TypeScript. Each feature (mock, referral) has its own state machine on the same
+  transition rules, and runs are reproducible (↺ restores every tab exactly).
+- **Trust network:** one per journey, keyed by person, fed by prep circles and mocks, read by the referral bridge.
+  It never returns an individual rating.
 - **LLM only for language:** Claude (`api/voice.ts`, opt-in via `VITE_USE_LLM_COPY`) only words messages to
-  humans. It never decides a match, a time, a permission or a consent, and identity fields are stripped from
-  what it sees until the reveal. Invite parsing is deterministic pattern matching. Every message has a template
-  fallback, so the demo works offline.
+  humans. It never decides a match, a time, a fit, a limit or a consent. Templates by default; the demo works
+  offline.
 
-Code map: `src/engine/` (seed, agents, broker, pure modules), `src/ui/` (iMessage phones, under-the-hood drawer
-with graph and agent feed, student copy, `integrations.ts` adapter with `integrationsStub.ts` as fallback),
-`src/integrations/` (invite parsing, .ics, message generation and notifications), `api/` (Vercel functions for
-Claude and Discord), `scripts/` (`demo:run`, test badge, sabotage tests), `tests/`, `supabase/track2.sql` (additive
-`t2_` schema with RLS on and access through functions only; written, not yet connected).
+Code map: `src/engine/` (agents, broker, pure modules), `src/features/` (`prep`, `mock`, `trust`, `referral`;
+Aditya's `find`, `pipeline`, `intel`), `src/ui/` (shared kit: iMessage phones, drawer, judge lenses, agent feed,
+student copy), `src/live/` + `api/live-*` + `api/discord-interactions.ts` (live Discord mode),
+`src/integrations/` + `api/voice.ts` + `api/notify.ts` (invite parsing, .ics, wording, notifications), `scripts/`
+(`demo:run`, test badge, sabotage tests), `tests/`, `supabase/` (`track2.sql` written but not connected;
+`live.sql` for live mode).
 
 ## Team
 
-- **Sumedha:** coordination engine, privacy model and tests, UI (`src/engine/`, `src/ui/`, `scripts/`)
-- **Aditya:** integrations and deployment: invite parsing, .ics calendar files, Claude message wording and
-  Discord notifications (`src/integrations/`, `api/`, `tests/integrations/`)
+- **Sumedha:** coordination engine, journey shell, mock interviews, trust and proof of work, Referral Bridge
+  (`src/engine/`, `src/app/`, `src/ui/`, `src/features/{prep,mock,trust,referral}/`, live Discord mode, `scripts/`)
+- **Aditya:** integrations and deployment support, Find, Pipeline stats, Intel exchange
+  (`src/integrations/`, `api/voice.ts`, `api/notify.ts`, `src/features/{find,pipeline,intel}/`)

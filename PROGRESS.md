@@ -1,6 +1,265 @@
 # Progress — Track 2 (hirearchy-agents)
 
-Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
+Full spec: [SPEC.md](SPEC.md). `main` = the shipped prep-circle demo. Active branch: **`feature/full-journey`**
+(branched from `main` at `a3ce531`; not merged to `main` until reviewed).
+
+## Full journey ("Hirearchy: your agent for the whole job hunt")
+Hero line: "Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide."
+Key idea: "Your prep circle becomes your proof of work."
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Journey shell, tab registry, `TabProps`, UI kit, global speed + Reset | ✅ done |
+| B | Mock interview swap (`src/features/mock/`) | ✅ done |
+| Live | Live Discord mode for Aditya (`?live=1`), before D/E per the organizers | ✅ done (needs setup, see LIVE_DISCORD.md) |
+| D | Trust ratings + evidence file (`src/features/trust/`) | ✅ done |
+| E | Referral Bridge (`src/features/referral/`) | ✅ done |
+| F | Polish, sabotage additions, browser checks, README | ✅ done |
+| G | Merge `aditya/journey` (done early, at `da49902`) | ✅ done |
+
+### Contract for Aditya (branch `aditya/journey`: Find, Pipeline, Intel)
+- Each tab is a React component taking `TabProps` from `src/features/types.ts`:
+  `export type TabProps = { speed: "slow" | "normal" | "fast"; resetKey: number };`
+  Reset your tab's state whenever `resetKey` changes; read pacing from `SPEEDS[speed]` (`src/app/speed.ts`).
+- Suggested exports: `FindTab` from `src/features/find/index.tsx`, `PipelineTab` from `src/features/pipeline/`,
+  `IntelTab` from `src/features/intel/`. At merge they fill the `Component: null` entries in `src/app/tabs.tsx`,
+  and each tab appears in the nav automatically.
+- Reusable UI: import from `src/ui/kit.ts` (PhoneFrame, IPhone, ChatBubble, TypingIndicator, QuickReplies,
+  NotificationBanner, CalendarCard, useChatReveal, Drawer, UnderTheHood, Inspector, JudgeLegend, Graph, lenses,
+  12-hour time helpers, SPEEDS). Styles are global in `src/ui/styles.css`.
+- For the evidence file: please export a function or count for "intel reports contributed" per student;
+  it gets wired in at merge (Phase G).
+- Off-limits for Sumedha's side: `src/features/{find,pipeline,intel}/`, `tests/features/{find,pipeline,intel}/`.
+
+### Deploy prep: placeholder tabs hidden
+- The nav shows only tabs with a real component (`VISIBLE_TABS` in `src/app/tabs.tsx`): currently **Prep circle** and
+  **Mock interview**; default stays Prep circle. Find, Pipeline, Intel and Referral have `Component: null` and appear
+  automatically once a component is registered. The "Coming soon" card was removed.
+- To be deployed from `feature/full-journey` (see LIVE_DISCORD.md for the order).
+
+### Phase 0 — done
+- `src/app/Shell.tsx`: top nav tabs in order Find · Pipeline · Prep circle · Mock interview · Intel · Referral; opens
+  on Prep circle. Global speed control and global Reset (bumps `resetKey` for every tab). Tab panels stay mounted
+  and are only hidden, so switching tabs never interrupts a run.
+- `src/app/tabs.tsx`: the registry. Find, Pipeline, Intel (Aditya) and Mock interview, Referral (later phases)
+  show a "Coming soon" card.
+- Prep circle moved into `src/features/prep/PrepCircleTab.tsx`, behavior unchanged; its "See what the agents are
+  doing" button moved from the top bar into the tab's hero.
+- `src/ui/chat.tsx` splits the phone into reusable pieces (same markup and classes); `src/ui/Drawer.tsx` is a
+  generic drawer; `src/ui/kit.ts` re-exports the kit.
+- Verified: 133 tests (131 + 2 registry tests), test:sabotage 6/6, typecheck, build, demo:run. Browser at
+  1440×900 and 1280×800: prep golden path and decline branch inside the tab (no page scroll), tab switch mid-run
+  keeps the run going, every placeholder renders, global Reset from another tab gives a page identical to a fresh
+  load, no console errors.
+
+### Phase B — Mock interview swap: done (`src/features/mock/`, `tests/features/mock/`)
+- **Match rules (deterministic):** same pipeline AND round, at least 60 minutes free together, compatible difficulty
+  preference, never a 3rd mock with the same person, complementary weak areas ranked first (then reliability, a
+  hook Phase D fills in, then listing order). Pipeline, round, difficulty and time are filtered by the broker from
+  anonymized listings. The repeat limit is checked by the seeker's own agent against its private practice
+  history; the broker only sees "skip".
+- **Engine reuse:** listings via `buildListing` (strong areas = `offers`, weak = `needs`), time via the scheduler
+  (`schedule`), each agent decides with `evaluateSchedule` / `evaluateJoin`, consent via the consent functions,
+  names via `IdentityVault`, feed via `EventLog`, and a feature state machine (`src/features/shared/machine.ts`)
+  that throws the engine's `InvalidTransitionError`.
+- **Golden path:** Aditya (Microsoft technical) → #2 other round, #6 only 30 min together, #7 wants hard, #8 Google
+  are filtered; #3 Maya is skipped on Aditya's private repeat limit (practiced twice); Jordan is picked over Priya
+  (covers DSA + System Design both ways). 7:00–8:00 PM, both agents accept, both humans say yes, names unlock.
+  Round 1: Aditya interviews Jordan with DSA questions; round 2: Jordan interviews Aditya with System Design
+  questions. Each side scores the other (4-part rubric, 1–5) plus one note.
+- **Question packs** come from seeded anonymized reports (`questions.ts`, no author fields) for that company and
+  round: the interviewee's weak areas first, then their difficulty. Interviewees never see their own questions.
+- **Scores** live only in `ScoreVault`: readable by the person scored, or by someone they grant. Never in events
+  or on the other person's phone. Practice self-scores are kept but excluded from peer averages.
+- **Fallback:** "Practice with your agent" is offered only in `NO_PEER` (no one fits, or every peer declined):
+  a scripted mock from the question pack, then a private self-assessment. Demo: "See Riya's Google round".
+- **Decline:** goes to the next ranked peer (Priya) without naming who left.
+- **UI:** Mock interview tab in the same iMessage style: question-pack card, round card with a built-in timer
+  (30 min per round, sped up by the demo speed: ×10 slow, ×30 normal, ×120 fast) and End round, rubric form,
+  private scores card. Under the hood: match board (every candidate and why), the five rules, the agent feed
+  with judging lenses.
+- **Verified:** 153 tests (20 new mock tests), test:sabotage 6/6, typecheck, build, demo:run. Browser at 1440×900
+  and 1280×800: full swap, decline → backup, solo fallback, drawer with lens; each phone shows only its owner's
+  scores; no "->", 24-hour times, raw ids or scores in the feed; no page scroll; global Reset restores both the
+  prep and mock tabs exactly (pressed from a third tab, both mid-run); no console errors. Prep circle unchanged.
+
+### Phase G (early) — merged `aditya/journey` at `da49902`: done
+- **Review:** 6 commits by Aditya (one is a sync merge of our Phase 0). Net change: 16 new files, all inside
+  `src/features/{find,pipeline,intel}/` and `tests/features/{find,pipeline,intel}/`; nothing outside, no shared file
+  touched. Secret scan over every commit's patch: none (no keys, tokens, webhooks, env or network use; the `SECRETS`
+  in `tests/features/intel/sabotage.test.ts` are fake PII like `maya@example.com` / 555 numbers for the anonymizer).
+- **Registered** `FindTab`, `PipelineTab`, `IntelTab` in `src/app/tabs.tsx`. Visible tabs: Find · Pipeline · Prep
+  circle · Mock interview · Intel; Referral stays hidden until Phase E. Default tab: Prep circle.
+- **Intel → evidence file:** `getIntelContributionCount` (in `src/features/intel/logic.ts`, keyed by prep agent id
+  `a1…a8`) is now the evidence file's source for "intel reports shared" (person `p4` ↔ `a4`). The old seeded stub
+  counts were removed from `trust/seed.ts`; a new test checks every student's evidence count equals Aditya's function.
+- **Two of Aditya's contract tests updated (with your OK):** `tests/features/{find,pipeline}/contract.test.ts` asserted Aditya's
+  tabs were *not* registered and still used the old `soon(` placeholder. They now assert the registry imports and
+  registers them, and Find's still checks that the Find tab never imports `app/tabs`. Nothing else in Aditya's folders changed.
+- **CSS fix (ours):** Aditya's side panels use `.sub` and `.tag`, which our stylesheet styled globally for the hero subline
+  (collapsed once a demo starts) and the feed's type tag. That hid the report tips and overlapped labels. Scoped those
+  rules to `.hero .sub` and `.row-head .tag`, and added plain `.card .sub` / `.card .tag` styles.
+- **Verified:** typecheck, 386/386 tests (Aditya's 205 + ours), test:sabotage 6/6, build, demo:run. Browser at 1440×900
+  and 1280×800: every visible tab opened and driven through its first action, no page scroll, no "->" or 24-hour
+  times, no console errors; global Reset from the last tab gives a page identical to a fresh load across all five
+  tabs (clock times masked).
+
+For Aditya (not changed; Aditya's files):
+- **Jordan's intel count:** Aditya's `CONTRIBUTION_COUNTS` gives `a4: 0`, but the Phase E referral story has Jordan with
+  1 intel report. With that data as the source, Jordan's evidence now shows 0. If the story should hold, set `a4: 1`.
+- **Pipeline headline numbers** ("23", "6") sit in an `h3`, which our cards style as small labels, so they render
+  small. A dedicated class for the big number would fix it.
+
+### Phase D — Trust ratings + evidence file: done (`src/features/trust/`, `tests/features/trust/`)
+- **Ratings:** after a prep circle or a peer mock, each member privately rates the others: showed up (yes/no) and
+  helpful (1–5). Only session members can rate each other, once per session. `TrustLedger` never returns a single
+  rating (not even to the person rated): only the count, and a reliability score once there are ≥ 2 ratings
+  (average of helpful; a no-show counts as 1). Show-up rate likewise only from 2 ratings.
+- **Matching:** the mock tab ranks by complementary skills, then reliability (more reliable first; someone without a
+  score ranks after someone with one). The Under the hood match board shows each candidate's aggregate (★ 4.8 · 5
+  ratings, or "New").
+- **Evidence file ("Your proof of work")**, private to its owner (`EvidenceLockedError` for anyone else): sessions
+  attended (a no-show doesn't count), average rating, peer mock rubric averages (practice self-scores excluded),
+  intel reports (seeded stub count; `setIntelCounter()` is the hook for Aditya's Intel feature), skills taught,
+  target roles, and project links (stage 2 only).
+- **Staged disclosure** (for Phase E): stage 1 = stats only; stage 2 adds the rubric breakdown and project links;
+  identity is never in the evidence file (stage 3 comes from the consent-gated identity vault).
+- **One trust network for the whole journey** (`trust` in `network.ts`), keyed by person (Applicant #n = `pn`), so a
+  prep circle and a mock both build the same record. Global Reset restores the seeded history.
+- **Seeded history** (raw sessions and ratings, nothing pre-aggregated): Jordan 3 sessions, 5 ratings → 4.8, one mock
+  4.25, taught DSA + System Design, 1 intel report, targeting Stripe SWE Intern; Aditya 4.5; Maya 4.7; Priya 2.0 (one
+  no-show); Sumit 1 rating (hidden until a second).
+- **UI:** after the circle meets (or the mock is scored), each phone gets "Tonight's session is done 🎉", a private
+  rating card, then "🔒 Rated privately" and the 🏅 Your proof of work card, which updates live as others rate.
+- **Verified:** 179 tests (13 new trust tests: no individual rating exposed, the 2-rating threshold, reliability
+  changing the match order, owner-only evidence, staged disclosure), test:sabotage 6/6, typecheck, build. Browser at
+  1440×900 and 1280×800: ratings in both tabs, Sumit crossing the threshold, evidence carrying over from prep to mock,
+  board stars, no page scroll, global Reset restores both tabs and the trust network exactly. Only console error is the
+  expected local 404 for `/api/notify`.
+
+Phase D decisions:
+- **Jordan's mock average is 4.25 (shown 4.3), not 4.2:** rubric scores are whole numbers, so one mock can only
+  average x.0/x.25/x.5/x.75. The referrer's rule (≥ 4.0) is unaffected. Rating 4.8 is exact (5, 5, 5, 5, 4).
+- **Reliability uses one decimal.** Known limit: with only one new rating at a time, someone could compare their score
+  before and after to infer that one rating. The 2-rating threshold (as specified) is enforced; coarser rounding or
+  batching would be the next step if that matters.
+- **Rating happens right after the session in the demo** ("Tonight's session is done 🎉"); in real use the agent would
+  ask after the scheduled time.
+- **Prep-circle matching order is unchanged** (it's engine code); reliability affects mock matching (and the referral
+  fit check in Phase E).
+- **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
+
+### Phase F — Polish, safety, README: done
+- **Sabotage (`npm run test:sabotage`): 10/10 caught.** Four new planted bugs for the new features:
+  rating leak (trust summary carries individual ratings) → 3 tests; referral auto-approved by the agent after the
+  chat → 7 tests; evidence file (links + rubric) sent at stage 1, before the fit check → 2 tests; mock scores
+  readable without the subject's grant → 3 tests. Every planted file is restored after each run.
+- **Hero line** ("Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide.")
+  is a slim line under the tab bar on every tab, and the page title / meta description.
+- **Same look everywhere:** all six tabs use the iMessage phones, the drawer, 12-hour times and plain English
+  (checked: no "->", no 24-hour times in any tab's text). Every tab resets on `resetKey`; global ↺ restores all six
+  tabs and the trust network exactly.
+- **Real browser** (Chromium, 1440×900 and 1280×800): every tab opened and exercised (main action + first quick
+  reply), full Referral flow (refer, not-yet form, decoy, drawer), ratings → evidence across Prep and Mock; no page
+  scroll on any tab at either size; no console errors except the expected local `/api/notify` 404 (Vite dev doesn't
+  serve `api/`). New screenshot `docs/referral.png`.
+- **README rewritten:** the journey, one section per feature mapped to the three criteria (conflicting constraints /
+  what's shared / when humans are asked), the 10 sabotages, Referral demo steps, updated architecture diagram, "Your
+  prep circle becomes your proof of work.", and the Team section.
+- **Verified:** typecheck, 409 tests, test:sabotage 10/10, build, demo:run.
+
+Phase F notes:
+- **Find, Pipeline and Intel don't use the shared judge-lens chips** (their drawers explain matches and redactions
+  their own way). They're Aditya's files, so left as is; the README says which drawers have the chips. See "For
+  Aditya" below.
+
+### Phase E — Referral Bridge: done (`src/features/referral/`, `tests/features/referral/`)
+Connection first, proof of work, the human decides. New tab **🤝 Referral** (6 tabs now visible).
+- **Cast:** Jordan (Applicant #4) applied to Stripe SWE Intern; Nadia ("Stripe alum", `r1`) interned at Stripe and
+  refers from the network; Theo (Applicant #10) is the decoy. Jordan's and Theo's records come from the shared trust
+  network, so prep circles and mocks in the other tabs really change their referral outcome.
+- **Nadia's PRIVATE rules** (`REFERRER_RULES`, only inside their agent): SWE / Software Engineer / Backend roles;
+  ≥ 2 sessions; peer rating ≥ 4.5; mock average ≥ 4.0; must meet first; max 2 referrals/month (1 left).
+- **Flow** (`ReferralBridge`, own state machine on the shared `machine()` helper; engine scheduler, negotiation,
+  consent and identity vault reused unchanged):
+  1. Jordan's agent asks Jordan first ("✅ Share my stats / Not now"). "Not now" shares nothing.
+  2. Stage 1 (stats only) goes to the referrer's agent, which runs `fitCheck()`: deterministic, one pass/fail per
+     rule. The result event is addressed to the referrer's agent only; their phone shows ✓/✗ per rule.
+  3. Fit → stage 2 (project links + rubric breakdown, still anonymous) → a 15-minute coffee chat negotiated with the
+     engine scheduler (7:00–7:15 PM) → both humans "✅ I'm in" → names unlock (stage 3, from the identity vault).
+  4. Nadia taps "☕ We had the chat", then decides: **🤝 Refer / 🕗 Not yet (+ coaching note, default "Do one more
+     system design mock first.") / No**. `decide()` is the only path to REFERRED and throws
+     `HumanDecisionRequiredError` unless it's the referrer, after the chat. Refer uses one of the month's referrals
+     and earns +1 give-back credit; Not yet and No use none.
+- **Decoy:** Theo (2 sessions, ★ 4.3) fails the rating rule only. Theo hears just "This referrer isn't taking you on
+  right now"; no rule, threshold, referrer name or stage 2 ever reaches Theo, and Nadia never learns Theo's name.
+- **Limit in the demo:** after Jordan is referred, "Next applicant: Theo →" keeps Nadia's month (0 of 2 left), so the
+  fit card shows ✗ rating and ✗ limit. Starting Theo from the idle screen shows the rating failure alone.
+- **Under the hood:** fit check per rule (referrer's private view), staged disclosure (stage 1/2/3: shared / never
+  shared / waiting), referrals left + credit, and the plain-English feed with judge lenses.
+- **Verified:** 409 tests (23 new referral tests: each rule pass/fail, the monthly limit, no identity before consent,
+  stage order, no referral without the referrer's human, decide() as the only path to REFERRED, give-back credit, the
+  decoy learning nothing), test:sabotage 6/6, typecheck, build. Browser at 1440×900 and 1280×800: full Jordan flow to
+  Refer, the Not yet note form, the drawer, the Theo follow-up, no page scroll, no console errors; global Reset
+  restores all six tabs exactly.
+
+Phase E decisions:
+- **Found by the new tests: project links named the student.** The seeded links were `github.example/jellis/…`,
+  which gives away Jordan's handle at stage 2 (before consent). Links are now anonymized project pages
+  (`projects.example/j8f4/sharded-kv`); stage 2 must stay nameless.
+- **Jordan's numbers:** mock average 4.3 (4.25, see Phase D), intel reports 0 (Aditya's `getIntelContributionCount`
+  has a4 = 0; the spec said 1). Neither changes the fit.
+- **"Must meet first" is enforced by the flow, not as a stat:** it always shows ✓ "chat will be scheduled", and no
+  decision is possible before the chat.
+- **The seeker doesn't learn why.** "Not a fit right now" is the only reason sent, so failing rules can't be probed
+  one at a time.
+- **Nadia's name** is shown on their own phone and, after consent, to Jordan. Before consent Jordan sees only "a
+  student who interned at Stripe".
+
+### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
+- `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
+  each prompt that needs them (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time
+  button turns into a 7:30 / 8:00 / 8:30 PM picker), polls `/api/live-state` every 1.5 s and applies their answer once,
+  through the same `reply()` as a tap on their simulated phone (bubble tagged "· via Discord").
+- `api/discord-interactions.ts` verifies Discord's Ed25519 signature with `node:crypto` (no new package), answers
+  PING, accepts only `DISCORD_ADITYA_USER_ID`, stores the answer first-wins per (session, prompt).
+- Storage: Supabase `t2_live_replies` (`supabase/live.sql`, RLS on, functions granted to `service_role` only),
+  called server-side with `SUPABASE_SERVICE_ROLE_KEY`. Checked on PGlite: first answer wins, bad input rejected,
+  anon can neither read nor write.
+- Fallbacks: no `?live=1` → nothing changes (no live calls at all). Health fails, the DM fails, or 3 polls in a row
+  fail → "Live mode unavailable, using simulated phone"; the simulated phone keeps working throughout.
+- Tests (`tests/live/`, 12): signature valid/invalid, PING, interaction → reply mapping (buttons, picker,
+  first-wins, other users, expired picks), the poller applies a reply exactly once, a signed click reaching the
+  engine end to end, offline fallback (client + unconfigured server + failing Discord), DM text built only from
+  validated fields.
+- Browser (1440×900): without `?live=1` zero live calls; `?live=1` locally (no API) shows the unavailable badge and
+  completes; with the live functions mocked, Aditya's counter (8:00 PM) and "I'm in" arrive from "Discord", the
+  updated time is DM'd again, and the circle completes at 8:00–9:00 PM. No console errors.
+
+Live-mode decisions:
+- **Supabase over Vercel KV:** the project already exists, needs no new vendor or package, and the table follows the
+  t2_ pattern. One SQL file to run.
+- **Picker, not a modal:** "Suggest a time" swaps the buttons for a select menu (7:30 / 8:00 / 8:30 PM). Discord
+  modals only take text inputs reliably, and free text would need parsing on the server.
+- **Server builds the DM text** with the same `studentCopy` as the simulated phone, from whitelisted short fields.
+- **Each prompt has its own id** (the phone message id), so a late tap on an old DM can never answer a newer prompt.
+- **`/api/live-notify` is unauthenticated** (public demo): it can only DM Aditya, and only template text.
+- **Not exercised against real Discord/Supabase here** (no credentials in this environment); verified with signed
+  requests, PGlite, and mocked endpoints in the browser.
+
+Phase B decisions:
+- **Session = 60 minutes** (30 each way); the "≥ 60 min" rule means a full hour together. The agents propose the
+  earliest such hour.
+- **Difficulty is compatible** when equal or either side says "any".
+- **"Complementary preferred", not required:** Priya (no overlap in weak spots) is a valid backup.
+- **Timer is a UI aid.** Rounds end when a person taps End round (the timer shows "Time's up" at 0, it doesn't
+  force the end).
+- **Mock copy is templates** (no LLM call yet): `generateMessage` only knows the prep kinds. Can be routed
+  through it later behind `VITE_USE_LLM_COPY`.
+- **If the seeker declines**, the search ends (no agent-practice offer), since they said no to mocking now.
+- **Solo self-scores don't count as evidence** (only peer scores feed the Phase D evidence file).
+- `Inspector` gained an optional `describeEvent` prop so each feature words its own feed; the default is unchanged.
+
 
 ## Done
 - **Phase 1 — seed + engine + tests + demo:run.** `src/engine/`: seed, policy, discovery, cycles,
@@ -56,13 +315,18 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
   `src/ui/integrations.ts`.
 - `supabase/track2.sql` stays as written and is **not wired**.
 
-## For Aditya (found while reviewing the merge; not changed, since these are his files)
+## For Aditya (found while reviewing the merge; not changed, since these are Aditya's files)
 - `api/voice.ts` hardcodes `MODEL = 'claude-sonnet-4-5'`. The current Sonnet is `claude-sonnet-5-5`; if the old
   id is retired, every call errors and silently falls back to templates. Suggest updating it.
-- His tests live in `tests/integrations/`, outside the agreed `api/` + `src/integrations/` paths. Kept: they're
-  new files that only test his module.
-- His `generateMessage` fallback reads `details.start` / `details.end`; the engine sends `details.window`. The
+- Aditya's tests live in `tests/integrations/`, outside the agreed `api/` + `src/integrations/` paths. Kept: they're
+  new files that only test that module.
+- Aditya's `generateMessage` fallback reads `details.start` / `details.end`; the engine sends `details.window`. The
   UI adapter now adds `start` / `end`, so the fallback text includes the time.
+- Find, Pipeline and Intel could adopt the shared `JudgeLegend` (from `src/ui/kit.ts`) so every drawer has the
+  same three judging-lens chips.
+- Intel copy uses an em dash ("…in your pipeline — and unlocks theirs."); the rest of the app avoids them.
+- `getIntelContributionCount` has a4 = 0, so Jordan's proof of work shows 0 intel reports (the referral spec
+  imagined 1). Doesn't change the fit.
 
 ## Open issue: requester id in track2.sql (must fix before wiring Supabase)
 `t2_get_identity`, `t2_record_consent`, `t2_get_events` and `t2_append_event` take the requester / agent id as a
@@ -73,12 +337,13 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- Nothing. Waiting for the next task.
+- `feature/full-journey`: all phases (0, B, Live, D, E, F, G) done. Not merged to main; waiting for Sumedha's review.
 
 ## Exact next step
-Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
-`VITE_USE_LLM_COPY=true`. Then run the README demo steps on the deployed URL to confirm `/api/voice` and
-`/api/notify` work with real keys.
+1. Sumedha reviews `feature/full-journey` (nothing is merged to main).
+2. Deploy from `feature/full-journey` on the laptop: `git checkout feature/full-journey && git pull && npx vercel --prod`
+   (env vars as in README → Deployment; live Discord setup in LIVE_DISCORD.md).
+3. Walk the README demo steps on the deployed URL, all six tabs.
 
 ## How to run
 ```
@@ -205,15 +470,15 @@ Merge decisions:
   only if a call throws. Aditya's functions already never throw (they return their own fallbacks), so the stub is a
   second safety net. `integrationsStub.ts` and its tests stay.
 - **Default phone copy is `copy.ts`.** `generateMessage` is not called at all unless `VITE_USE_LLM_COPY=true`. In LLM
-  mode a structured message is held until its wording arrives (at most ~3 s, his timeout) so bubbles never flicker
+  mode a structured message is held until its wording arrives (at most ~3 s, Aditya's timeout) so bubbles never flicker
   between two wordings. Plain status lines (welcome, "You're in", dissolved) always use `copy.ts`.
 - **`notifyPhone` sends the text the student actually sees** (the student copy, or Claude's wording in LLM mode).
-- **In LLM mode the reveal message includes names and contacts** (it's past consent, and his server passes reveal
+- **In LLM mode the reveal message includes names and contacts** (it's past consent, and Aditya's server passes reveal
   details through by design). Default mode shows "Names are unlocked" plus the calendar card instead.
-- **Invite outcomes now use his parser.** It's stricter than the stub (it needs an invite phrase, a known company and a
+- **Invite outcomes now use Aditya's parser.** It's stricter than the stub (it needs an invite phrase, a known company and a
   known role) and returns "Software Engineer" rather than "SWE" for non-intern roles. Our three outcome messages
   are unchanged.
-- **`prettify` also normalises "7:30 PM–9:00 PM"** (en dash), which his fallback produces.
+- **`prettify` also normalises "7:30 PM–9:00 PM"** (en dash), which Aditya's fallback produces.
 - **`.gitignore` now ignores every `.env*` file except `.env.example`**, plus `.vercel/`.
 - **Verified locally**, where `/api/*` returns 404: default mode (golden path, decline branch, three invite outcomes,
   reset) and LLM mode with the API down, mocked-working and hanging past the 3-second timeout. All complete with

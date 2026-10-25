@@ -1,5 +1,6 @@
 import type { AgentEvent, CoordinationState } from '../engine/types';
 import { STATE_TEXT } from './copy';
+import { Drawer } from './Drawer';
 import { Graph } from './Graph';
 import { Inspector } from './Inspector';
 import { JudgeLegend } from './JudgeLegend';
@@ -20,29 +21,24 @@ export function UnderTheHood({ open, onClose, state, events, ids, labels, label,
   onToggleLens: (lens: Lens) => void;
 }) {
   return (
-    <>
-      <div className={`scrim ${open ? 'show' : ''}`} onClick={onClose} aria-hidden />
-      <aside className={`drawer ${open ? 'open' : ''}`} aria-label="Under the hood" aria-hidden={!open}>
-        <header className="drawer-head">
-          <div>
-            <h2>Under the hood</h2>
-            <p>What the agents are doing, live. Students never see this.</p>
-          </div>
-          <span className={`state-pill state-${state}`}>{STATE_TEXT[state]}</span>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
-        </header>
-        <JudgeLegend active={lenses} onToggle={onToggleLens} />
-        <div className="drawer-body">
-          <section className="card graph-card">
-            <h3>Network · Aditya's view</h3>
-            <Graph ids={ids} labels={labels} view={view} names={names} />
-          </section>
-          <section className="card feed-card">
-            <h3>Agent conversation</h3>
-            <Inspector events={events} label={label} lenses={lenses} />
-          </section>
-        </div>
-      </aside>
-    </>
+    <Drawer
+      open={open}
+      onClose={onClose}
+      title="Under the hood"
+      subtitle="What the agents are doing, live. Students never see this."
+      badge={<span className={`state-pill state-${state}`}>{STATE_TEXT[state]}</span>}
+    >
+      <JudgeLegend active={lenses} onToggle={onToggleLens} />
+      <div className="drawer-body">
+        <section className="card graph-card">
+          <h3>Network · Aditya's view</h3>
+          <Graph ids={ids} labels={labels} view={view} names={names} />
+        </section>
+        <section className="card feed-card">
+          <h3>Agent conversation</h3>
+          <Inspector events={events} label={label} lenses={lenses} />
+        </section>
+      </div>
+    </Drawer>
   );
 }
