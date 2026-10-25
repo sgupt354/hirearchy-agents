@@ -159,7 +159,7 @@ Phase D decisions:
 | 4 | Apollo contact lookup (official API, demo data without key) | done |
 | 5 | Huntr: honest export (no public API for students) | done |
 | 6 | Agent tie-in + 2 new sabotages | done |
-| 7 | Alignment doc, README, full checks | next |
+| 7 | Alignment doc, README, full checks | done |
 
 **Phase 1 (Job Sniper live):** `src/features/apply/jobs/` is the TypeScript port of hiring-pulse `jobs_core.py`
 (parsers for the four public board shapes, role / level / US / visa-risk filters, resume-overlap score, dedupe) plus
@@ -215,6 +215,15 @@ say plainly that Huntr has no public integration for students. 4 new tests.
   `api/outreach-draft.ts`, caught by 3 tests) and "Resume export adds skills the student never listed" (planted in
   `tailor()`, caught by 3 tests). 6 new tests (packet gates, private by default, subset of the profile, outreach's only
   outbound call is the optional Claude rewording).
+
+**Phase 7 (checks + docs):** README: new tab, an "Apply suite: what's live and what's demo" table, the new functions
+and env vars, 12 sabotages, demo steps (prep circle stays the hero). `.env.example` lists `APOLLO_API_KEY`,
+`OUTREACH_MODEL`, `JOBS_SEARCH` (server-side). Emoji now stripped at display in every phone card (Mock and Referral
+cards rendered some copy raw). Landing terminal shows 12 sabotages / 482 tests. The eligibility mapping was delivered
+separately, not committed (no event mentions in the public repo). Verified with zero keys (every fallback): typecheck,
+482 tests, test:sabotage 12/12, build, demo:run; Chromium at 1440×900 and 1280×800: all 7 tabs fit, no emoji, no
+"->", no 24-hour times, global Reset restores every tab; live search, Apply exports, outreach, contacts, tracker,
+referral packet and landing interactions all run with no console errors (only the sandbox's blocked Google Fonts).
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:
@@ -432,7 +441,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: all phases (0, B, Live, D, E, F, G) done. Not merged to main; waiting for Sumedha's review.
+- `feature/apply-suite`: phases 0-7 done. Not merged to main; waiting for Sumedha's review.
 
 ## Exact next step
 1. Sumedha reviews `feature/full-journey` (nothing is merged to main).

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChatBubble, Icon, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
+import { clean } from '../../ui/text';
 import { RUBRIC } from '../mock/scores';
 import type { EvidenceStage1, EvidenceStage2 } from '../trust/evidence';
 import type { ReferralMsgKind } from './referralBridge';
@@ -50,7 +51,7 @@ export function ReferralPhone({ owner, caption, items, interactive, pace, onActi
     if (!card) return <ChatBubble key={item.key} from={item.from} text={item.text} time={time} />;
     return (
       <div key={item.key} className="msg agent">
-        <p className="bubble">{item.text}</p>
+        <p className="bubble">{clean(item.text)}</p>
         {card}
         <time>{time}</time>
       </div>

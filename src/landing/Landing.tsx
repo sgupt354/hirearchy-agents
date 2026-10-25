@@ -516,7 +516,7 @@ function ProofOfWork() {
   );
 }
 
-const TERMINAL = ['$ npm run test:sabotage', 'Planting 10 privacy bugs...', '10 of 10 caught', '414 tests passing'];
+const TERMINAL = ['$ npm run test:sabotage', 'Planting 12 privacy bugs...', '12 of 12 caught', '482 tests passing'];
 
 function SabotageTerminal() {
   const ref = useRef<HTMLDivElement>(null);

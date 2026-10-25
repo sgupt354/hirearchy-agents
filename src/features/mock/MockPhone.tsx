@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChatBubble, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
+import { clean } from '../../ui/text';
 import type { MockMsgKind } from './mockSwap';
 import type { PackQuestion } from './questions';
 import { RUBRIC, type Rubric, type ScoreEntry } from './scores';
@@ -52,7 +53,7 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
       case 'pack':
         return (
           <div key={item.key} className="msg agent">
-            <p className="bubble">{item.text}</p>
+            <p className="bubble">{clean(item.text)}</p>
             <PackCard questions={item.data!.questions as PackQuestion[]} />
             <time>{time}</time>
           </div>
@@ -76,7 +77,7 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
       case 'scores':
         return (
           <div key={item.key} className="msg agent">
-            <p className="bubble">{item.text}</p>
+            <p className="bubble">{clean(item.text)}</p>
             <ScoresCard scores={scores} />
             <time>{time}</time>
           </div>
@@ -164,7 +165,7 @@ function RoundCard({ n, text, role, live, canEnd, rate, onEnd }: {
         <span className="round-badge">{role === 'interviewer' ? 'You ask' : 'You answer'}</span>
         <span className={`timer ${left === 0 ? 'up' : ''}`}>{live ? (left === 0 ? "Time's up" : mmss(left)) : '✓ Done'}</span>
       </div>
-      <p>{text}</p>
+      <p>{clean(text)}</p>
       {live && (
         <button className="round-end" onClick={onEnd} disabled={!canEnd}>
           End round {n}

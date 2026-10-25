@@ -26,7 +26,8 @@ Students never see a graph. They see texts from their agent and tap **✅ I'm in
 
 | Tab | What the agent does | Owner |
 |---|---|---|
-| 🔎 **Find** | Surfaces matching postings (Job Sniper); "Track it" puts you in that company's pipeline | Aditya |
+| 🔎 **Find** | Surfaces matching postings (Job Sniper); "Track it" puts you in that company's pipeline. **Live search** switch: real postings from 443 public company job boards | Aditya (seeded), Sumedha (live) |
+| 📄 **Apply** | A resume tailored to one posting from your own bullets (LaTeX, Overleaf, PDF), intro email drafts you send yourself, contacts, tracker export | Sumedha |
 | 📊 **Pipeline** | Anonymous stats for your pipeline, each published only once enough reports back it | Aditya |
 | 👥 **Prep circle** | You landed an interview: finds 2–3 students whose skills cover your weak spots, negotiates a time, names after everyone says yes | Sumedha |
 | 🎤 **Mock interview** | Swaps mock interviews with someone in the same company and round; scores go only to the person scored | Sumedha |
@@ -36,6 +37,20 @@ Students never see a graph. They see texts from their agent and tap **✅ I'm in
 Prep circles and mocks feed a shared **trust network**: after each session members rate each other privately, and
 each student gets a private **🏅 proof of work** (sessions, average rating, mock scores, skills taught, intel
 reports). The Referral tab reads that record, so what you do in the other tabs really changes your referral.
+
+## Apply suite: what's live and what's demo
+
+| Feature | Live when | Otherwise | Notes |
+|---|---|---|---|
+| Live job search (Find → Live search) | Always on Vercel (public job-board APIs need no key) | Seeded postings, labelled "Demo data" | Official Greenhouse, Lever, Ashby and SmartRecruiters JSON endpoints only; 443 boards from Job Sniper, up to 60 per search |
+| Tailored resume (Apply) | Always (runs in the browser) | n/a | Uses only the student's own bullets and skills; lists requirements they don't meet. Starts on a labelled demo profile; paste or type your own |
+| LaTeX / Overleaf / PDF | Always | n/a | `.tex` download, Overleaf's documented "open in Overleaf" form, print to PDF; file name "Resume - <Company> - <Role>" |
+| Intro email drafts | Always (template) | n/a | `ANTHROPIC_API_KEY` adds Claude rewording that may not add facts. Copy / Gmail / email app only: **we never send email** |
+| Contacts | `APOLLO_API_KEY` set | Three contacts labelled "Demo data" | Name, title, company, LinkedIn. No emails from search |
+| Huntr | n/a | n/a | **Huntr has no public integration for individual students** (its API is for career centres). Apply → Tracker exports CSV / JSON and links to Huntr |
+| Referral packet | Always (demo network) | n/a | After the coffee chat is booked, the referrer can request Jordan's tailored resume + intro; shared only on Jordan's yes |
+
+Research and sources for every integration: [AUDIT.md](AUDIT.md).
 
 ## How each feature maps to the judging criteria
 
@@ -93,7 +108,7 @@ read. The referrer's fit check is addressed to the referrer's agent only.
 The badge in the app ("🔒 Privacy proof · … · N/N tests passing") comes from a real test run.
 
 **Sabotage tests:** `npm run test:sabotage` plants a privacy bug, runs the whole suite, and requires the tests to
-catch it, for ten bugs, one at a time, restoring the code after each:
+catch it, for twelve bugs, one at a time, restoring the code after each:
 
 ```
 ✓ caught   Broker names the decliner when dissolving
@@ -106,8 +121,10 @@ catch it, for ten bugs, one at a time, restoring the code after each:
 ✓ caught   Referral auto-approved by the agent after the chat
 ✓ caught   Evidence file (links + rubric) sent at stage 1, before the fit check
 ✓ caught   Mock scores readable by anyone, without the subject's grant
+✓ caught   Outreach draft auto-sent without the student
+✓ caught   Resume export adds skills the student never listed
 
-All 10 privacy sabotages were caught.
+All 12 privacy sabotages were caught.
 ```
 
 ## How to run
@@ -132,6 +149,9 @@ output `dist`. The serverless functions in `api/` are picked up automatically; t
 |---|---|---|---|
 | `api/voice.ts` | Words a phone message with Claude (only when `VITE_USE_LLM_COPY=true`) | `ANTHROPIC_API_KEY` | Responds 503; the browser uses a template within 3 s |
 | `api/notify.ts` | Posts Aditya's "needs you" messages to Discord | `DISCORD_WEBHOOK_URL` | Responds 503; skipped silently |
+| `api/jobs-search.ts` | Live search: reads up to 60 public job boards (7 s budget, 10 min cache) | nothing (set `JOBS_SEARCH=off` to disable) | The Find tab shows the seeded postings, labelled "Demo data" |
+| `api/outreach-draft.ts` | Intro email draft; Claude rewording only if it adds no facts | `ANTHROPIC_API_KEY` (optional) | Template draft (always under 120 words) |
+| `api/apollo-search.ts` | Recruiters and people in the target role at a company (Apollo People API Search) | `APOLLO_API_KEY` | Three contacts labelled "Demo data" |
 
 ### Environment variables
 
@@ -139,6 +159,9 @@ output `dist`. The serverless functions in `api/` are picked up automatically; t
 |---|---|---|---|
 | `ANTHROPIC_API_KEY` | Server (Vercel env) | Optional | Claude wording for phone messages via `/api/voice` |
 | `DISCORD_WEBHOOK_URL` | Server (Vercel env) | Optional | Discord notification for Aditya's "needs you" messages via `/api/notify` |
+| `APOLLO_API_KEY` | Server (Vercel env) | Optional | Real contacts in Apply → Outreach (Apollo's People API Search: 0 credits, no emails) |
+| `OUTREACH_MODEL` | Server (Vercel env) | Optional | Claude model for outreach rewording (default `claude-sonnet-5-5`) |
+| `JOBS_SEARCH` | Server (Vercel env) | Optional | `off` disables live job search |
 | `VITE_USE_LLM_COPY` | Build time | Optional, default off | `true` = phone messages worded by Claude; off = the built-in student copy. Only turn on with `ANTHROPIC_API_KEY` set. Redeploy after changing it (it's baked into the build). |
 
 ### Live Discord mode (optional)
@@ -201,6 +224,15 @@ their proof of work. **No one in your round?** shows the practice-with-your-agen
 4. **Next applicant: Theo →** keeps Nadia's month: Theo fails the rating rule (and the limit). Theo's phone only
    says "not right now". From the start screen, **Not a fit? See Theo's application** shows the rating failure alone.
 5. **🔍 See what the agents are doing** shows the fit check per rule, which stage has been shared, and referrals left.
+
+### 📄 Apply and live search
+1. Find → turn on **Live search** (top right), pick a level, **Search live boards**, then **Track** a posting. The agent
+   offers the prep circle, a mock swap, a referral, or a tailored resume.
+2. Apply → the tracked posting is selected: the phone says how many of your bullets it used and which requirements you
+   don't show yet. **Download LaTeX**, **Open in Overleaf** or **Save as PDF**.
+3. **Outreach** → **Find contacts**, pick one, **Write draft**, then Copy / Open in Gmail / Email app. **Tracker** →
+   export CSV or JSON. **See what the agent is doing** lists every step with what was shared, summarized and hidden.
+4. In Referral, after both say yes to the chat, Nadia can **Request resume and intro**; Jordan decides whether to share.
 
 ## Architecture
 
