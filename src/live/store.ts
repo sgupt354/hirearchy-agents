@@ -1,4 +1,4 @@
-import type { LiveReply } from './protocol';
+import type { LiveReply } from './protocol.js';
 
 /** Where Discord replies wait for the browser to pick them up. First reply per (session, prompt) wins. */
 export interface ReplyStore {

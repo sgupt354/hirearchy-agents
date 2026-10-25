@@ -149,6 +149,17 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Deploy fix: api functions crashed on Vercel (FUNCTION_INVOCATION_FAILED)
+- **Cause:** `"type": "module"` means Vercel runs each compiled `api/` file as native ES modules, and Node needs
+  explicit file paths. `api/live-*.ts` and `api/discord-interactions.ts` imported `../src/live/http` (no extension),
+  and `api/voice.ts` imported the `../src/integrations` directory, so all four crashed on load. Vite, Vitest and tsc
+  resolve those paths, which is why nothing caught it locally. `api/notify.ts` has no local imports and was fine.
+- **Fix:** explicit `.js` paths on the relative imports along those functions' runtime import chains (11 lines in
+  9 files; `api/voice.ts` is Aditya's, one line). Reproduced by compiling every file the way Vercel does and
+  importing each function: all five now load and respond (503 without env vars, as designed).
+- **Guard:** `tests/api/esm-imports.test.ts` walks each function's runtime imports and fails on any path without
+  `.js` (fails on the old code for 4 of 5 functions).
+
 ### Phase F — Polish, safety, README: done
 - **Sabotage (`npm run test:sabotage`): 10/10 caught.** Four new planted bugs for the new features:
   rating leak (trust summary carries individual ratings) → 3 tests; referral auto-approved by the agent after the

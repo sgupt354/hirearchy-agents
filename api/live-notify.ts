@@ -1,8 +1,8 @@
-import { PIPELINE } from '../src/engine/seed';
-import { sendDm } from '../src/live/discord';
-import type { LiveRequest, LiveResponse } from '../src/live/http';
-import { asPhoneMessage, parseNotifyBody, promptButtons } from '../src/live/protocol';
-import { studentCopy } from '../src/ui/copy';
+import { PIPELINE } from '../src/engine/seed.js';
+import { sendDm } from '../src/live/discord.js';
+import type { LiveRequest, LiveResponse } from '../src/live/http.js';
+import { asPhoneMessage, parseNotifyBody, promptButtons } from '../src/live/protocol.js';
+import { studentCopy } from '../src/ui/copy.js';
 
 /**
  * The web app calls this when the prep-circle run needs Aditya. The DM text is built here from validated
