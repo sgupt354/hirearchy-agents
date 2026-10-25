@@ -99,3 +99,28 @@ export function inviteOutcome(
       `the demo network is ${network.company} ${network.role}.`,
   };
 }
+
+/**
+ * Which event caused each phone message, so phones can replay in step with the feed.
+ * Mirrors where agents write to their human's phone: the invite, join requests, a rejected
+ * counter, dissolve / reveal / complete notices, and acknowledgements of the human's own replies.
+ */
+function producesMessage(e: AgentEvent, id: string): boolean {
+  if (e.from === id) return e.type === 'TRIGGER' || e.type === 'CONSENT' || e.type === 'DECLINE' || e.type === 'COUNTER';
+  if (!e.to.includes(id)) return false;
+  return (
+    e.type === 'DISSOLVED' ||
+    e.type === 'REVEAL' ||
+    e.type === 'COMPLETE' ||
+    (e.type === 'CONFLICT' && Boolean(e.payload.counter_rejected)) ||
+    (e.type === 'PROPOSE' && e.payload.kind === 'join')
+  );
+}
+
+/** How many of a phone's messages exist as of the first `cursor` events. */
+export function messagesAvailable(events: AgentEvent[], cursor: number, id: string, total: number): number {
+  const count = (list: AgentEvent[]) => list.filter((e) => producesMessage(e, id)).length;
+  // Messages with no event (e.g. "I didn't catch a time") always come before the current replay.
+  const eventless = Math.max(0, total - count(events));
+  return Math.min(total, eventless + count(events.slice(0, cursor)));
+}

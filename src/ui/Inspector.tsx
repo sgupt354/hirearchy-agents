@@ -1,57 +1,72 @@
-import { useEffect, useRef } from 'react';
-import type { AgentEvent, CoordinationState } from '../engine/types';
-import { iconFor, relabel } from './format';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { AgentEvent } from '../engine/types';
+import { describe, prettify } from './copy';
 import { matchesLens, type Lens } from './view';
 
-export function Inspector({ events, state, labels, viewer, lenses }: {
+/** Live agent feed for judges: human titles, raw type as a tag, compact disclosure that expands. */
+export function Inspector({ events, label, lenses }: {
   events: AgentEvent[];
-  state: CoordinationState;
-  labels: Record<string, string>;
-  viewer: string;
+  label: (id: string) => string;
   lenses: Lens[];
 }) {
   const list = useRef<HTMLOListElement>(null);
+  const [open, setOpen] = useState<string | null>(null);
+  const byId = useMemo(() => new Map(events.map((e) => [e.id, e])), [events]);
+
   useEffect(() => {
-    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+    list.current?.scrollTo({ top: list.current.scrollHeight, behavior: 'smooth' });
   }, [events.length]);
   // Turning a lens on jumps to its first matching event.
   useEffect(() => {
     const hit = list.current?.querySelector<HTMLElement>('.lens-hit');
-    if (list.current && hit) list.current.scrollTop = hit.offsetTop - 8;
+    if (list.current && hit) list.current.scrollTo({ top: hit.offsetTop - 8, behavior: 'smooth' });
   }, [lenses.join()]);
-  // With a lens on, matching events are outlined in that lens's colour and the rest fade back.
-  const highlight = (e: AgentEvent) => {
+
+  const lensClass = (e: AgentEvent) => {
     if (!lenses.length) return '';
     const hit = lenses.find((l) => matchesLens(e, l));
     return hit ? `lens-hit lens-${hit}` : 'lens-dim';
   };
-  const name = (id: string) => (id === viewer ? 'You' : (labels[id] ?? id));
 
   return (
-    <section className="panel inspector">
-      <header>
-        <h2>Agent Inspector</h2>
-        <span className={`state state-${state}`}>{state.replaceAll('_', ' ')}</span>
-      </header>
-      {events.length === 0 && <p className="empty">Waiting for an interview invite…</p>}
-      <ol ref={list}>
-        {events.map((e) => (
-          <li key={e.id} className={`ev ev-${e.type} ${highlight(e)}`}>
-            <span className="ev-icon">{iconFor(e)}</span>
-            <div>
-              <div className="ev-meta">
-                <b>{e.type}</b> {name(e.from)} → {e.to.map(name).join(', ')}
+    <ol className="feed" ref={list}>
+      {events.length === 0 && <li className="feed-empty">Nothing yet. Start the demo and the agents' conversation shows up here.</li>}
+      {events.map((e) => {
+        const v = describe(e, { label, byId });
+        const d = e.disclosure;
+        const total = d.shared.length + d.abstracted.length + d.withheld.length;
+        const expanded = open === e.id;
+        return (
+          <li key={e.id} className={`row tone-${v.tone} ${lensClass(e)}`}>
+            <span className="row-icon">{v.icon}</span>
+            <div className="row-main">
+              <div className="row-head">
+                <b>{v.title}</b>
+                <span className="tag">{e.type}</span>
+                <span className="route">{label(e.from)} → {e.to.length > 3 ? `${e.to.length} agents` : e.to.map(label).join(', ')}</span>
               </div>
-              <div>{relabel(e.human_readable, labels[viewer])}</div>
-              <div className="chips">
-                {e.disclosure.shared.map((s) => <span key={`s${s}`} className="chip shared">↗ {s}</span>)}
-                {e.disclosure.abstracted.map((s) => <span key={`a${s}`} className="chip abstracted">≈ {s}</span>)}
-                {e.disclosure.withheld.map((s) => <span key={`w${s}`} className="chip withheld">🔒 {s}</span>)}
-              </div>
+              <p>{v.body}</p>
+              {total > 0 && (
+                <button className={`disclosure ${expanded ? 'open' : ''}`} onClick={() => setOpen(expanded ? null : e.id)} aria-expanded={expanded}>
+                  {[
+                    d.shared.length && `Shared ${d.shared.length}`,
+                    d.abstracted.length && `Summarized ${d.abstracted.length}`,
+                    d.withheld.length && `Hidden ${d.withheld.length}`,
+                  ].filter(Boolean).join(' · ')}
+                  <span className="chev">›</span>
+                </button>
+              )}
+              {expanded && (
+                <div className="chips">
+                  {d.shared.map((s) => <span key={`s${s}`} className="chip shared">↗ {prettify(s)}</span>)}
+                  {d.abstracted.map((s) => <span key={`a${s}`} className="chip abstracted">≈ {prettify(s)}</span>)}
+                  {d.withheld.map((s) => <span key={`w${s}`} className="chip withheld">🔒 {prettify(s)}</span>)}
+                </div>
+              )}
             </div>
           </li>
-        ))}
-      </ol>
-    </section>
+        );
+      })}
+    </ol>
   );
 }

@@ -26,11 +26,21 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
 - **Paste-invite fix.** `parseInvite` returning null -> "Not an interview invite". A real invite for another
   pipeline -> "Interview invite detected: <Company> / <Role>. No agents in this pipeline yet; the demo network is
   Microsoft SWE Intern." (no run started). Microsoft / SWE Intern starts the run.
-- **Judge legend** above the Inspector: three toggle chips (⚠ Conflicting constraints, ↗ What's shared,
+- **Judge legend** (now at the top of the Under the hood drawer): three toggle chips (⚠ Conflicting constraints, ↗ What's shared,
   ⏸️ When humans are asked) that outline the matching events and fade the rest. Pure UI.
 - **Phase 6 — README**: one-liner, tagline, screenshots, judging-criteria mapping, privacy proof, how to run,
   demo steps, architecture diagram, team.
 - **`npm run test:sabotage`**: plants 6 privacy bugs one at a time and checks the suite catches each (all 6 caught).
+- **Consumer redesign (UI only; `src/engine`, `tests/` and `scripts/` untouched, 36/36 tests still pass).**
+  Landing hero ("Hirearchy"), three iMessage-style iPhones as the default student view (typing dots, iOS
+  notification banner before anything that needs the human, quick-reply chips ✅ I'm in / 🕗 Suggest a time / Not
+  this time with an inline time picker, blue reply bubbles, a calendar-invite card with a 🔓 unlock of avatars and
+  names plus Add to calendar). Graph + agent feed moved into an "Under the hood" drawer with plain-English event
+  titles, a raw-type tag, a compact "Shared · Summarized · Hidden" line that expands, a green "Window agreed",
+  filter reasons next to the greyed nodes, and the judging-lens chips on top. "Paste a real invite" opens a modal
+  ("Check invite"). Verified in Chromium at 1440×900 and 1280×800: no page scroll in the student view (four phones
+  fit in the decline branch too), no "->", no 24-hour times and no raw ids in any visible text, no console errors,
+  and Reset (mid-run, drawer open, lens on) gives a page identical to a fresh load.
 - 36 Vitest tests, all passing.
 
 ## Team / ownership
@@ -38,7 +48,7 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
   invite parsing, server-side.** Phase 4 voice and phase 5 .ics are skipped here.
 - **Do not create or edit anything in `api/` or `src/integrations/`** on this branch.
 - After merge: replace the import in `src/App.tsx`
-  (`from './ui/integrationsStub'` -> his module) and delete the stub. Signatures are identical.
+  (`from './ui/integrationsStub'` -> Aditya's module) and delete the stub. Signatures are identical.
 - `supabase/track2.sql` stays as written and is **not wired**.
 
 ## Open issue: requester id in track2.sql (must fix before wiring Supabase)
@@ -100,7 +110,7 @@ Phase 3 decisions:
   (NEGOTIATING -> AWAITING_HUMANS, tested).
 - **"Resolved" is a CONFLICT event with `payload.resolved = true`**, so the event types stay exactly the
   14 in the spec. The feed and demo:run show it with ✓.
-- **#6's rejection now also emits a FILTERED event to Aditya**, so his graph can grey #6 out with a reason
+- **#6's rejection now also emits a FILTERED event to Aditya**, so Aditya's graph can grey #6 out with a reason
   (the REJECT itself only goes to the broker).
 - **Graph uses only events visible to Aditya; the Inspector shows the full audit log** (with routing on
   every line so judges can see who received what). After a decline, the graph never marks who left.
@@ -126,7 +136,7 @@ Integration-stub decisions:
   hours, and unreadable reply.
 - **Not routed through `generateMessage`:** plain status lines that don't fit the four kinds (welcome on invite,
   "You accepted", "You declined", "One member couldn't join"). They show the engine text directly.
-- **`notifyPhone` is called for every Aditya message that needs his action** (the proposal, the updated time,
+- **`notifyPhone` is called for every Aditya message that needs Aditya's action** (the proposal, the updated time,
   and a rejected counter), once per message, with the generated text.
 - **Reveal details include names/emails/Discord** (only after full consent). When `generateMessage` becomes a
   server call, those identities leave the browser; that's fine post-consent but worth knowing.
@@ -153,3 +163,24 @@ Final-polish decisions:
   always restore them (also on Ctrl-C). If the engine code changes, a sabotage that no longer applies fails loudly.
 - **README screenshots** (`docs/`) were taken from the real app with Playwright; the Mermaid diagram was checked to
   render.
+
+Consumer-redesign decisions:
+- **Student copy lives in the UI** (`src/ui/copy.ts`). The stub's `generateMessage` must keep returning the engine
+  template (a test checks they match), so the phones show the UI's short student copy whenever `generateMessage`
+  returns exactly the template. Once Aditya's real `generateMessage` returns its own wording, that wording is shown
+  instead (with times and arrows normalised).
+- **The under-the-hood feed is rebuilt from structured payloads**, not the engine's `human_readable` strings, so it can
+  use 12-hour times, → arrows and labels. The engine strings are unchanged (demo:run and the event log still use them).
+- **Phones replay in step with the feed.** `messagesAvailable()` (added to `src/ui/view.ts`; existing functions
+  unchanged) ties each phone message to the event that produced it, so Aditya's congrats appears at the start and
+  each request arrives when its event does.
+- **"Decline as Maya" button removed**: tapping **Not this time** on Maya's phone is the same action, in the product's
+  own UI. Jordan's phone appears only once Jordan's agent sends a message.
+- **Calendar card uses `getIdentity(owner, member)`** for every avatar and name, so names still come only through the
+  consent gate. The owner's own avatar shows their initials, labelled "You".
+- **Time picker chips** are fixed at 7:30, 8:00 and 8:30 PM, as specified. 7:30 PM equals the current start, so it
+  re-confirms the same window, which is harmless. Free text goes through the engine's own counter parser.
+- **Status-bar clock and message timestamps use the real local time**; the .ics date is still today.
+- **Escape closes the drawer and the modal.** The drawer covers the corner controls, so close it before Reset.
+- **No new tests**, per instruction. The redesign was verified with scripted Playwright runs instead.
+- **README** demo steps and screenshots were updated to the new UI.

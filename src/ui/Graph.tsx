@@ -1,3 +1,4 @@
+import { longReason, shortReason } from './copy';
 import type { GraphView } from './view';
 
 const W = 520;
@@ -16,7 +17,7 @@ function positions(ids: string[]) {
   );
 }
 
-const STATUS_TEXT = { you: 'you', member: 'in circle', backup: 'backup', filtered: 'filtered', idle: '' };
+const STATUS_TEXT = { you: '', member: 'In circle', backup: 'Backup', filtered: '', idle: '' };
 
 export function Graph({ ids, labels, view, names }: {
   ids: string[];
@@ -58,25 +59,20 @@ export function Graph({ ids, labels, view, names }: {
           const cy = y < H / 2 ? y - R - 10 : y + R + 18;
           return (
             <g key={id} className={`node node-${status}`}>
-              <title>{view.reasons[id] ? `${labels[id]}: ${view.reasons[id]}` : label}</title>
+              <title>{view.reasons[id] ? `${labels[id]}: ${longReason(view.reasons[id])}` : label}</title>
               <circle cx={x} cy={y} r={R} />
               <text x={x} y={y + 5} className="node-label">{label.replace('Applicant ', '')}</text>
               {name ? (
                 <text key={name} x={x} y={cy} className="node-name">{name}</text>
               ) : (
-                <text x={x} y={cy} className="node-sub">{status === 'you' ? '' : STATUS_TEXT[status]}</text>
+                <text x={x} y={cy} className={`node-sub ${status === 'filtered' ? 'reason' : ''}`}>
+                  {status === 'filtered' ? shortReason(view.reasons[id]) : STATUS_TEXT[status]}
+                </text>
               )}
             </g>
           );
         })}
       </svg>
-      {Object.keys(view.reasons).length > 0 && (
-        <ul className="reasons">
-          {Object.entries(view.reasons).map(([id, reason]) => (
-            <li key={id}><span>{labels[id]}</span> {reason}</li>
-          ))}
-        </ul>
-      )}
     </div>
   );
 }

@@ -1,27 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Engine, PIPELINE, TRIGGER_AGENT_ID, type HumanReply, type PhoneMessage, type Skill, type TimeWindow } from './engine';
-import { shortWindow } from './ui/format';
-import { Graph } from './ui/Graph';
-import { Inspector } from './ui/Inspector';
-import { JudgeLegend } from './ui/JudgeLegend';
+import { Engine, PIPELINE, TRIGGER_AGENT_ID, type CoordinationState, type HumanReply, type PhoneMessage } from './engine';
+import { prettify, studentCopy, windowText } from './ui/copy';
 import { downloadIcs, generateMessage, notifyPhone, parseInvite } from './ui/integrationsStub';
-import { Phone } from './ui/Phone';
-import { deriveGraph, inviteOutcome, stateAt, type Lens } from './ui/view';
+import { InviteModal } from './ui/InviteModal';
+import { IPhone, type ChatItem } from './ui/IPhone';
+import { UnderTheHood } from './ui/UnderTheHood';
+import { deriveGraph, inviteOutcome, messagesAvailable, stateAt, type InviteOutcome, type Lens } from './ui/view';
 import summary from './ui/test-summary.json';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
-const SPEEDS = { slow: 700, normal: 260, fast: 80 } as const;
+// Event replay step (ms) and chat pacing per presentation speed.
+const SPEEDS = { slow: { step: 700, pace: 1.6 }, normal: { step: 260, pace: 1 }, fast: { step: 80, pace: 0.4 } } as const;
 type Speed = keyof typeof SPEEDS;
-// Demo personas for each student's own phone. Names on the graph come only from getIdentity().
-const PHONES = [
-  { id: 'a1', owner: "Aditya's phone" },
-  { id: 'a2', owner: "Sumit's phone" },
-  { id: 'a3', owner: "Maya's phone" },
-  { id: 'a4', owner: "Jordan's phone" },
+// Each student's own phone. Jordan's only appears once Jordan's agent sends a message (backup branch).
+const PEOPLE = [
+  { id: 'a1', name: 'Aditya' },
+  { id: 'a2', name: 'Sumit' },
+  { id: 'a3', name: 'Maya' },
+  { id: 'a4', name: 'Jordan' },
 ];
 
-const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+interface Reply {
+  after: number; // id of the agent message it answers
+  text: string;
+  time: string;
+}
+
+const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local
+const clock = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+
+function heroStatus(state: CoordinationState, window: string): { text: string; tone: string } {
+  if (['CONSENT_COMPLETE', 'IDENTITIES_REVEALED', 'COMPLETED'].includes(state)) return { text: `✓ Prep circle created · Tonight ${window}`, tone: 'good' };
+  if (['AWAITING_HUMANS', 'AWAITING_CONSENT', 'COUNTERED'].includes(state)) return { text: 'Over to the students. Check their phones 👇', tone: 'human' };
+  if (['DECLINED', 'DISSOLVED', 'REDISCOVERING'].includes(state)) return { text: "Someone couldn't make it. Finding a new match…", tone: 'warn' };
+  return { text: "Aditya's agent is finding a prep circle…", tone: 'busy' };
+}
 
 export default function App() {
   const engine = useMemo(() => new Engine(), []);
@@ -29,15 +43,15 @@ export default function App() {
   const [speed, setSpeed] = useState<Speed>('normal');
   const [cursor, setCursor] = useState(0);
   const [error, setError] = useState('');
-  const [invite, setInvite] = useState('');
-  const [inviteStatus, setInviteStatus] = useState('');
-  const [inviteTone, setInviteTone] = useState<'ok' | 'info' | 'bad'>('ok');
+  const [drawer, setDrawer] = useState(false);
   const [lenses, setLenses] = useState<Lens[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePending, setInvitePending] = useState(false);
+  const [inviteStatus, setInviteStatus] = useState<InviteOutcome | null>(null);
   const [generated, setGenerated] = useState<Record<string, string>>({});
-  const phones = useRef<Record<string, PhoneMessage[]>>({});
+  const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const requested = useRef(new Set<string>());
-  // Bumped on reset so async results from a previous run are dropped.
+  // Bumped on reset so async results and phone state from a previous run are dropped.
   const run = useRef(0);
 
   const events = engine.events();
@@ -45,23 +59,34 @@ export default function App() {
   const shown = events.slice(0, cursor);
   const state = stateAt(engine.history(), cursor);
   const labels = engine.labels();
+  const label = (id: string) => (id === VIEWER ? 'You' : id === 'broker' ? 'Broker' : (labels[id] ?? id));
 
-  // Replay new events one by one so the feed and graph read as a live conversation.
+  // Replay new events one by one so the agents' conversation unfolds live.
   useEffect(() => {
     if (caughtUp) return;
-    const t = setTimeout(() => setCursor((c) => c + 1), SPEEDS[speed]);
+    const t = setTimeout(() => setCursor((c) => c + 1), SPEEDS[speed].step);
     return () => clearTimeout(t);
   }, [cursor, caughtUp, speed]);
 
-  if (caughtUp) phones.current = Object.fromEntries(PHONES.map((p) => [p.id, engine.phone(p.id)]));
-
-  // Every structured phone message goes through generateMessage(); the template text is the fallback.
-  // Aditya's "human required" messages are also pushed with notifyPhone().
   useEffect(() => {
-    if (!caughtUp) return;
+    if (!drawer) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [drawer]);
+
+  // Each phone only shows messages whose causing event has been replayed.
+  const inbox: Record<string, PhoneMessage[]> = {};
+  for (const p of PEOPLE) {
+    const all = engine.phone(p.id);
+    inbox[p.id] = all.slice(0, messagesAvailable(events, cursor, p.id, all.length));
+  }
+
+  // Structured messages go through generateMessage(); Aditya's "needs you" messages also notifyPhone().
+  useEffect(() => {
     const thisRun = run.current;
-    for (const p of PHONES) {
-      for (const m of phones.current[p.id] ?? []) {
+    for (const p of PEOPLE) {
+      for (const m of inbox[p.id]) {
         const key = `${thisRun}:${p.id}:${m.id}`;
         if (requested.current.has(key)) continue;
         requested.current.add(key);
@@ -77,167 +102,192 @@ export default function App() {
     }
   });
 
+  // An integration that rewrites a message wins; with the stub (template text) the UI's student copy is used.
+  const display = (id: string, m: PhoneMessage) => {
+    const g = generated[`${run.current}:${id}:${m.id}`];
+    return g && g !== m.text ? prettify(g) : studentCopy(m, PIPELINE.company);
+  };
+
   const view = deriveGraph(shown, IDS, VIEWER);
-  const names: Record<string, string> = {};
-  if (view.revealed) {
+  const namesFor = (owner: string) => {
+    const names: Record<string, string> = {};
     for (const id of IDS) {
       try {
-        names[id] = engine.getIdentity(VIEWER, id).name;
+        names[id] = engine.getIdentity(owner, id).name;
       } catch {
         // locked: not in the circle or consent incomplete
       }
     }
-  }
+    return names;
+  };
+  const graphNames = view.revealed ? namesFor(VIEWER) : {};
 
-  const act = (fn: () => void) => {
+  const act = (fn: () => void): boolean => {
     setError('');
+    let ok = true;
     try {
       fn();
     } catch (e) {
+      ok = false;
       setError((e as Error).message);
     }
     setVersion((v) => v + 1);
+    return ok;
   };
-  const reply = (id: string, r: HumanReply) => act(() => engine.reply(id, r));
+
+  const start = () => act(() => engine.simulateInterviewInvite());
+
+  const reply = (id: string, r: HumanReply, bubble: string) => {
+    const after = inbox[id].at(-1)?.id ?? 0;
+    if (act(() => engine.reply(id, r))) {
+      setReplies((all) => ({ ...all, [id]: [...(all[id] ?? []), { after, text: bubble, time: clock() }] }));
+    }
+  };
 
   /** Back to the exact start state. Only the presenter's speed setting is kept. */
   const reset = () => {
     run.current += 1;
     engine.resetDemo();
-    phones.current = {};
     requested.current.clear();
     setGenerated({});
+    setReplies({});
     setCursor(0);
-    setInvite('');
-    setInviteStatus('');
-    setInviteTone('ok');
-    setInvitePending(false);
+    setDrawer(false);
     setLenses([]);
+    setInviteOpen(false);
+    setInvitePending(false);
+    setInviteStatus(null);
     act(() => {});
   };
 
-  const readInvite = async () => {
+  const checkInvite = async (text: string) => {
     const thisRun = run.current;
     setInvitePending(true);
-    setInviteStatus('');
-    const parsed = await parseInvite(invite).catch(() => null);
+    setInviteStatus(null);
+    const parsed = await parseInvite(text).catch(() => null);
     if (run.current !== thisRun) return;
     setInvitePending(false);
     const outcome = inviteOutcome(parsed, PIPELINE);
-    setInviteStatus(outcome.message);
-    setInviteTone(outcome.tone);
-    if (outcome.start) act(() => engine.simulateInterviewInvite());
+    setInviteStatus(outcome);
+    if (outcome.start) {
+      setInviteOpen(false);
+      start();
+    }
   };
 
-  const complete = caughtUp ? events.find((e) => e.type === 'COMPLETE') : undefined;
-  const pipeline = complete?.payload.pipeline as { company: string; role: string } | undefined;
-  const slot = complete?.payload.window as TimeWindow | undefined;
-  const skills = complete?.payload.skills as Skill[] | undefined;
-  const saveIcs = () => {
-    const members = (complete!.payload.members as string[]).map((id) => engine.getIdentity(VIEWER, id).name);
-    downloadIcs({
-      title: `Prep Circle · ${pipeline!.company} ${pipeline!.role}`,
-      start: slot!.start,
-      end: slot!.end,
-      date: today(),
-      description: `Skills: ${skills!.join(', ')}\nMembers: ${members.join(', ')}`,
-    });
+  const chatFor = (id: string): ChatItem[] => {
+    const items: ChatItem[] = [];
+    for (const m of inbox[id]) {
+      const item: ChatItem = { key: `m${m.id}`, from: 'agent', text: display(id, m), needsHuman: m.actions.length > 0 };
+      if (m.kind === 'complete' && engine.window) {
+        const slot = engine.window;
+        const members = engine.circle?.members ?? [];
+        const names = namesFor(id);
+        item.card = {
+          title: `${PIPELINE.company} ${PIPELINE.role} prep circle`,
+          when: `Tonight · ${windowText(slot)}`,
+          skills: (m.details?.skills ?? '').split(', '),
+          people: [id, ...members.filter((x) => x !== id)].map((x) => ({ name: names[x] ?? 'Hidden', you: x === id })),
+          onAdd: () =>
+            downloadIcs({
+              title: `${PIPELINE.company} ${PIPELINE.role} prep circle`,
+              start: slot.start,
+              end: slot.end,
+              date: today(),
+              description: `Skills: ${m.details?.skills}\nWith: ${members.filter((x) => x !== id).map((x) => names[x]).join(', ')}`,
+            }),
+        };
+      }
+      items.push(item);
+      for (const [i, r] of (replies[id] ?? []).entries()) {
+        if (r.after === m.id) items.push({ key: `r${i}`, from: 'me', text: r.text, time: r.time });
+      }
+    }
+    return items;
   };
 
   const idle = engine.state === 'IDLE';
-  const mayaCanDecline = caughtUp && Boolean(phones.current.a3?.at(-1)?.actions.length);
-  const visiblePhones = PHONES.filter((p) => p.id !== 'a4' || (phones.current.a4?.length ?? 0) > 0);
+  const status = heroStatus(state, engine.window ? windowText(engine.window) : '');
+  const phones = PEOPLE.filter((p) => p.id !== 'a4' || inbox.a4.length > 0);
+  const pace = SPEEDS[speed].pace;
 
   return (
-    <div className="app">
-      <header className="top">
-        <div>
-          <h1>Hirearchy Agents</h1>
-          <p className="tagline">
-            Land an interview, and your agent finds students in the same pipeline to prep with. Names are shared only once everyone says yes.
-          </p>
-        </div>
-        <div className="controls">
-          <button className="primary" disabled={!idle} onClick={() => act(() => engine.simulateInterviewInvite())}>
-            📩 Simulate interview invite
-          </button>
-          <form
-            className="invite"
-            onSubmit={(e) => {
-              e.preventDefault();
-              readInvite();
-            }}
-          >
-            <input
-              value={invite}
-              onChange={(e) => setInvite(e.target.value)}
-              placeholder="📩 Paste an interview invite"
-              aria-label="Paste an interview invite"
-              disabled={!idle || invitePending}
-            />
-            <button type="submit" disabled={!idle || invitePending || !invite.trim()}>
-              {invitePending ? 'Reading…' : 'Read'}
-            </button>
-          </form>
-          <button disabled={!mayaCanDecline} onClick={() => reply('a3', { kind: 'decline' })}>Decline as Maya</button>
-          <div className="speed" role="group" aria-label="Playback speed">
+    <div className={`app ${idle ? '' : 'started'}`}>
+      <nav className="topbar">
+        <span className="brand"><span className="logo">◆</span>Hirearchy</span>
+        <div className="corner">
+          <button className="hood-btn" onClick={() => setDrawer(true)}>🔍 See what the agents are doing</button>
+          <div className="segmented" role="group" aria-label="Playback speed">
             {(Object.keys(SPEEDS) as Speed[]).map((s) => (
-              <button key={s} className={s === speed ? 'on' : ''} aria-pressed={s === speed} onClick={() => setSpeed(s)}>
-                {s}
-              </button>
+              <button key={s} className={s === speed ? 'on' : ''} aria-pressed={s === speed} onClick={() => setSpeed(s)}>{s}</button>
             ))}
           </div>
+          <button className="icon-btn reset" onClick={reset} title="Reset demo" aria-label="Reset demo">↺</button>
         </div>
-      </header>
-      <div className="status-row">
-        <span className="proof" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
+      </nav>
+
+      <header className="hero">
+        <h1>Land the interview. <span className="accent">Your agent finds your prep circle.</span></h1>
+        <p className="sub">Agents negotiate. You only decide what matters. Names stay hidden until everyone says yes.</p>
+        <div className="cta-row">
+          {idle ? (
+            <>
+              <button className="cta" onClick={start}>📩 Aditya just got a Microsoft interview invite →</button>
+              <button className="ghost" onClick={() => setInviteOpen(true)}>Paste a real invite</button>
+            </>
+          ) : (
+            <span key={status.text} className={`live-status ${status.tone}`}>
+              {status.tone === 'busy' && <span className="spinner" />}
+              {status.text}
+            </span>
+          )}
+        </div>
+        <span className="proof-pill" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
           {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
         </span>
-        {inviteStatus && <span className={`invite-${inviteTone}`}>{inviteStatus}</span>}
-        {error && <span className="error" role="alert">{error}</span>}
-      </div>
+      </header>
 
-      {complete && (
-        <section className="final">
-          <span>
-            Prep Circle Created ✓ · {pipeline!.company} {pipeline!.role} · {shortWindow(slot!)} · {skills!.join(', ')}
-          </span>
-          <button onClick={saveIcs}>📅 Download .ics</button>
-        </section>
-      )}
-
-      <main className="grid">
-        <section className="panel">
-          <header>
-            <h2>Network · your view</h2>
-          </header>
-          <Graph ids={IDS} labels={labels} view={view} names={names} />
-        </section>
-        <div className="right">
-          <JudgeLegend
-            active={lenses}
-            onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
-          />
-          <Inspector events={shown} state={state} labels={labels} viewer={VIEWER} lenses={lenses} />
-        </div>
-      </main>
-
-      <section className="phones">
-        {visiblePhones.map((p) => (
-          <Phone
+      <main className="phones">
+        {phones.map((p) => (
+          <IPhone
             key={`${run.current}:${p.id}`}
-            owner={p.owner}
-            subtitle={`Others see: ${labels[p.id]}`}
-            messages={(phones.current[p.id] ?? []).map((m) => ({ ...m, text: generated[`${run.current}:${p.id}:${m.id}`] ?? m.text }))}
-            busy={!caughtUp}
-            onReply={(r) => reply(p.id, r)}
+            owner={p.name}
+            caption={`others see “${labels[p.id]}”`}
+            items={chatFor(p.id)}
+            interactive={caughtUp}
+            pace={pace}
+            onReply={(r, bubble) => reply(p.id, r, bubble)}
           />
         ))}
-      </section>
+      </main>
 
-      <footer>
-        <button className="reset" onClick={reset} title="Reset demo" aria-label="Reset demo">↺</button>
-      </footer>
+      {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
+
+      <InviteModal
+        key={run.current}
+        open={inviteOpen}
+        pending={invitePending}
+        status={inviteStatus}
+        onCheck={checkInvite}
+        onClose={() => {
+          setInviteOpen(false);
+          setInviteStatus(null);
+        }}
+      />
+
+      <UnderTheHood
+        open={drawer}
+        onClose={() => setDrawer(false)}
+        state={state}
+        events={shown}
+        ids={IDS}
+        labels={labels}
+        label={label}
+        view={view}
+        names={graphNames}
+        lenses={lenses}
+        onToggleLens={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
+      />
     </div>
   );
 }

@@ -6,20 +6,25 @@ agents, and shares names only once everyone says yes.**
 
 > Track 1 built the applicant network. Track 2 makes the network work for you.
 
-![Prep circle created: the network graph, the Agent Inspector feed and three students' phones](docs/screenshot.png)
+![Three students' phones in iMessage, each with the prep-circle calendar invite after everyone said yes](docs/screenshot.png)
+
+Students never see a graph. Their agent lives in their messages (iMessage via Cubbie, or Discord): it texts them
+when it found a circle, they tap **✅ I'm in**, **🕗 Suggest a time** or **Not this time**, and they get a calendar
+invite once everyone says yes. The graph and the agents' conversation sit behind **🔍 See what the agents are doing**,
+for judges.
 
 ## How it maps to the judging criteria
 
-The **Judge legend** above the Agent Inspector has one toggle chip per criterion. Clicking one highlights those
-events in the live feed.
+Open **🔍 See what the agents are doing**. The drawer has one judging-lens chip per criterion; clicking one
+highlights those events in the live agent conversation.
 
-![Judge legend with "Conflicting constraints" switched on](docs/judge-legend.png)
+![Under the hood: the network from Aditya's view and the agent conversation, with "Conflicting constraints" on](docs/judge-legend.png)
 
 | Criterion | Chip | What you see in the golden path |
 |---|---|---|
 | **Conflicting constraints** | ⚠ Conflicting constraints (CONFLICT / COUNTER / REJECT) | Three students with different evening windows (18:00-21:30, 19:00-21:00, 19:30-22:00). The broker flags the conflict and the agents negotiate the 19:30-21:00 overlap. Applicant #6 rejects the evening window on its own. Maya counters "8pm?", and every other agent checks 20:00-21:00 against its own private hours before it's sent back to the humans. A counter that doesn't fit someone is rejected, and the old time stands. |
 | **What's shared** | ↗ What's shared (any disclosure) | Every event lists what was **↗ shared**, **≈ abstracted** and **🔒 withheld**. Maya's interview date becomes "time-sensitive prep need", Aditya's exact stage is withheld, Applicant #7 (`share_skills=false`) never publishes a listing, and names / emails / Discord ids stay withheld until the end. |
-| **When humans are asked** | ⏸️ When humans are asked (ESCALATE / CONSENT) | Agents settle the schedule on their own (`negotiate_schedule = true`). Joining a circle and revealing your identity always escalate to the human, who answers on their phone with Accept / Counter / Decline. Names are revealed only after **all** members accept. If one declines, the circle dissolves without naming who left, and the agent finds the backup (Jordan). |
+| **When humans are asked** | ⏸️ When humans are asked (ESCALATE / CONSENT) | Agents settle the schedule on their own (`negotiate_schedule = true`). Joining a circle and revealing your identity always escalate to the human, who gets a notification and answers in the chat: ✅ I'm in / 🕗 Suggest a time / Not this time. Names are revealed only after **all** members accept. If one declines, the circle dissolves without naming who left, and the agent finds the backup (Jordan). |
 
 ## Privacy proof
 
@@ -60,23 +65,24 @@ Requires Node 20.19+ (or 22.12+). Everything runs in memory; no keys or network 
 
 ## Demo steps
 
-1. Pick **Slow** for a live presentation (or **Fast** for a quick run-through).
-2. Click **📩 Simulate interview invite**, or paste an invite into **📩 Paste an interview invite**, e.g.
-   *"We would like to invite you to interview for the Software Engineer Intern role at Microsoft."*
-   (An invite for another company is recognised but doesn't start a run, since only the Microsoft SWE Intern
-   network is seeded.)
-3. Watch discovery: 8 agents found → #8 filtered (different pipeline) → #7 invisible (privacy) → #5 filtered (no
-   complementary skills) → #6 rejects the evening window on its own → cycle **You → #3 (DSA) → #2 (System Design)
-   → You (Behavioral)**, with #4 held as backup.
-4. Watch the conflict get resolved: ⚠ schedules conflict → ↔ agents negotiate the overlap → ✓ 19:30-21:00.
-5. Each phone gets an Accept / Counter / Decline request. On **Maya's phone**, type `8pm?` and press **Counter**.
-   The other agents check 20:00-21:00 against their private hours and re-ask the humans.
-6. Press **Accept** on all three phones. The names fade into the graph, the **Prep Circle Created ✓** card appears,
-   and **📅 Download .ics** saves the session to your calendar.
-7. Toggle the **Judge legend** chips to walk through each criterion in the feed.
-8. Press the faint **↺** at the bottom right to reset, start again, and click **Decline as Maya** for the backup
-   branch: the circle dissolves, nothing is revealed, nobody is told who left, and the agent finds Jordan at
-   19:00-21:00. Jordan's phone appears so the backup circle can finish.
+1. Pick **Slow** (top right) for a live presentation, or **Fast** for a quick run-through.
+2. Click **📩 Aditya just got a Microsoft interview invite →**. Or click **Paste a real invite**, paste e.g.
+   *"We would like to invite you to interview for the Software Engineer Intern role at Microsoft."* and press
+   **Check invite**. (An invite for another company is recognised but doesn't start a run, since only the
+   Microsoft SWE Intern network is seeded.)
+3. Aditya's phone says congrats while the agent works. Open **🔍 See what the agents are doing** to watch it live:
+   8 agents found → #8 filtered (other pipeline) → #7 invisible (private profile) → #5 filtered (same skill only)
+   → #6 rejects the evening on its own → circle **You → #3 (DSA) → #2 (System Design) → You (Behavioral)**, #4
+   held as backup → ⚠ schedules conflict → agents negotiate → ✓ window agreed, 7:30–9:00 PM. Close the drawer.
+4. A notification slides down on all three phones. On **Maya's phone**, tap **🕗 Suggest a time → 8:00 PM**. The
+   other agents check 8:00–9:00 PM against their private hours, and everyone gets the new time.
+5. Tap **✅ I'm in** on all three phones. Names unlock 🔓, each phone gets a calendar invite with the circle, and
+   **Add to calendar** downloads the .ics.
+6. In the drawer, toggle the judging-lens chips to walk through each criterion. Click a "Shared · Summarized ·
+   Hidden" line to see exactly what an agent disclosed.
+7. Press the faint **↺** (top right) to reset, start again, and tap **Not this time** on Maya's phone for the
+   backup branch: the circle dissolves, nothing is revealed, nobody is told who left, and Jordan's phone appears
+   with a new circle at 7:00–9:00 PM.
 
 ## Architecture
 
@@ -108,8 +114,8 @@ flowchart LR
 - **LLM only for language:** the model only words messages to humans and reads invites. It never decides a
   match, a time, a permission or a consent. Every message has a template fallback, so the demo works offline.
 
-Code map: `src/engine/` (seed, agents, broker, pure modules), `src/ui/` (graph, inspector, phones, judge legend,
-integration stub), `scripts/` (`demo:run`, test badge, sabotage tests), `tests/`, `supabase/track2.sql` (additive
+Code map: `src/engine/` (seed, agents, broker, pure modules), `src/ui/` (iMessage phones, under-the-hood drawer
+with graph and agent feed, student copy, integration stub), `scripts/` (`demo:run`, test badge, sabotage tests), `tests/`, `supabase/track2.sql` (additive
 `t2_` schema with RLS on and access through functions only; written, not yet connected).
 
 ## Team
