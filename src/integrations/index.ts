@@ -248,3 +248,31 @@ export async function generateMessage(input: MessageInput): Promise<string> {
     clearTimeout(timer);
   }
 }
+
+const NOTIFY_ENDPOINT = '/api/notify';
+const NOTIFY_TIMEOUT_MS = 3000;
+
+/**
+ * Best-effort phone notification via /api/notify. Every failure path resolves silently so an
+ * optional notification can never break the UI.
+ */
+export async function notifyPhone(text: string): Promise<void> {
+  const content = typeof text === 'string' ? text.trim() : '';
+  if (!content) return;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), NOTIFY_TIMEOUT_MS);
+
+  try {
+    await fetch(NOTIFY_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: content }),
+      signal: controller.signal,
+    });
+  } catch {
+    // Intentionally ignored: notifications are optional telemetry.
+  } finally {
+    clearTimeout(timer);
+  }
+}
