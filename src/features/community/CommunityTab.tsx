@@ -11,6 +11,7 @@ import { useTrust } from '../trust/useTrust';
 import { CommunityHub, PointsCannotBuyReferralError, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
 import { describeCommunity } from './copy';
+import { PACKS, unlockedPacks } from './packs';
 import { levelOf, nextLevel, perksFor, type PointEntry } from './points';
 import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createCommunitySeed, MENTOR_RULES } from './seed';
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
@@ -184,6 +185,9 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
       case 'points':
         item.custom = <PointsCard entry={m.data!.entry as PointEntry} />;
         break;
+      case 'packs':
+        item.custom = <PacksCard ids={m.data!.packs as string[]} />;
+        break;
       case 'evidence': {
         const person = personOf(id);
         item.custom = <EvidenceCard file={trustNet.evidence(person, person)} badge={perksFor(hub.points.levelOf(id)).badge} />;
@@ -206,6 +210,8 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const entries = shown.filter((e) => e.payload.kind === 'points').map((e) => e.payload.entry as PointEntry);
   const mentorPoints = STANDING_SEED[MENTOR].points + entries.filter((e) => e.person === MENTOR).reduce((a, e) => a + e.points, 0);
   const mentorOnline = hub.online().includes(MENTOR);
+  const mentorPacks = unlockedPacks(levelOf(mentorPoints)).map((p) => p.id);
+  const starterShown = inbox(NEWCOMER).some((m) => m.kind === 'packs');
   const idle = !needId;
   const status = heroStatus(state, entries.at(-1) ?? null);
 
@@ -279,6 +285,22 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
               );
             })}
           </ul>
+          <h3>Question packs</h3>
+          <ul className="board-list">
+            {PACKS.map((p) => {
+              const who = [
+                starterShown && hub.starterOf(NEWCOMER) === p.id ? 'Priya (starter)' : '',
+                mentorPacks.includes(p.id) ? 'Aditya' : '',
+              ].filter(Boolean);
+              return (
+                <li key={p.id} className={`board-row tone-${who.length ? 'info' : 'muted'}`}>
+                  <b>{p.title} · {p.items.length}</b>
+                  <span>{who.length ? who.join(', ') : 'Locked'}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="board-note">Newcomers get one pack free, Contributors 3, Mentors all. Built only from anonymized interview reports and shared intel, each item labelled with its source.</p>
           <h3>House rules</h3>
           <ul className="cm-rules">
             <li>Base 10 points. Helping a newcomer 3x, someone a level below 2x, a peer 1x.</li>
@@ -389,6 +411,27 @@ function PointsCard({ entry }: { entry: PointEntry }) {
       <LevelProgress name="You" points={STANDING_SEED[MENTOR].points + entry.points} />
       {entry.levelAfter !== entry.levelBefore && <small>New level: {entry.levelAfter}. You get matching priority, a badge and more question packs. Never a referral.</small>}
     </div>
+  );
+}
+
+/** Unlocked question packs: a few items each, every one labelled with where it came from. */
+function PacksCard({ ids }: { ids: string[] }) {
+  const packs = ids.map((id) => PACKS.find((p) => p.id === id)!).filter(Boolean);
+  return (
+    <ol className="pack-card">
+      {packs.map((p) => (
+        <li key={p.id}>
+          <span className="q-area">{p.title} · {p.items.length} items</span>
+          {p.items.slice(0, packs.length === 1 ? 3 : 1).map((q) => (
+            <span key={q.sourceId} className="pack-q">
+              <b>{q.text}</b>
+              <small>{q.kind === 'tip' ? 'Tip · ' : ''}{q.source}</small>
+            </span>
+          ))}
+        </li>
+      ))}
+      <li className="pack-foot">Only from anonymized reports and shared intel. Nothing invented, no names.</li>
+    </ol>
   );
 }
 

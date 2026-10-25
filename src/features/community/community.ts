@@ -9,6 +9,7 @@ import { machine } from '../shared/machine';
 import type { Rating } from '../trust/ledger';
 import { trust as sharedTrust, type TrustNetwork } from '../trust/network';
 import { personOf } from '../trust/people';
+import { starterPackFor, unlockedPacks, type QuestionPack } from './packs';
 import { PointsLedger, levelOf, perksFor, type PointEntry, type Standing } from './points';
 import { DEMO_WEEK, MENTOR_RULES, SESSION_MINUTES, STANDING_SEED, TODAY, createCommunitySeed, type MentorRules, type NeedInput } from './seed';
 
@@ -54,7 +55,7 @@ export interface RuleCheck {
   observed: string;
 }
 
-export type CommunityMsgKind = 'text' | 'ask-help' | 'ask-match' | 'booked' | 'ask-confirm' | 'rate' | 'points' | 'evidence' | 'capacity';
+export type CommunityMsgKind = 'text' | 'ask-help' | 'ask-match' | 'booked' | 'ask-confirm' | 'rate' | 'points' | 'evidence' | 'capacity' | 'packs';
 
 export interface CommunityMessage {
   id: number;
@@ -105,6 +106,8 @@ export class CommunityHub {
   #listings = new Map<string, Listing>();
   #ledger!: PointsLedger;
   #today = TODAY;
+  /** Each newcomer's one free starter pack. */
+  #starters = new Map<string, string>();
 
   constructor(
     private readonly trust: TrustNetwork = sharedTrust,
@@ -130,6 +133,16 @@ export class CommunityHub {
     this.#listings = new Map();
     this.#online = [...this.startOnline];
     this.#today = TODAY;
+    this.#starters = new Map();
+  }
+
+  /** Question packs this person has unlocked: by level, with a newcomer's free starter first. */
+  packsFor(person: string): QuestionPack[] {
+    return unlockedPacks(this.#ledger.levelOf(person), this.#starters.get(person));
+  }
+
+  starterOf(person: string): string | null {
+    return this.#starters.get(person) ?? null;
   }
 
   // ---- read access ---------------------------------------------------------------------------------
@@ -238,6 +251,11 @@ export class CommunityHub {
       'text',
       `A prep circle needs something to trade, and you're just starting, so I posted a help request instead: ${input.topic} for your ${input.company} ${input.round.toLowerCase()} round, ${when}. It's anonymous, and it stays open until your deadline.`,
     );
+    if (this.#ledger.isNewcomer(owner) && !this.#starters.has(owner)) {
+      const starter = starterPackFor({ company: input.company, topic: input.topic });
+      this.#starters.set(owner, starter);
+      this.#notify(owner, 'packs', 'While you wait: every newcomer gets one question pack free. Here is yours, matched to your round.', false, { packs: [starter], starter: true });
+    }
     this.#rematch();
     if (this.need(id)!.state === 'OPEN') {
       this.#notify(owner, 'text', "No mentor has room right now. I'll keep it open and check again whenever one comes online. You can cancel anytime.");
@@ -345,6 +363,10 @@ export class CommunityHub {
     }
     this.#change(need, 'DONE');
     this.#notify(mentor, 'points', entry.capped ? 'Session counted. No points this time: you two already earned points twice this week.' : `You both confirmed. +${entry.points} points.`, false, { entry });
+    if (entry.levelAfter !== entry.levelBefore) {
+      const packs = unlockedPacks(entry.levelAfter, this.#starters.get(mentor));
+      this.#notify(mentor, 'packs', `${entry.levelAfter} unlocks ${packs.length} question packs, built from anonymized interview reports.`, false, { packs: packs.map((p) => p.id) });
+    }
     for (const id of [need.owner, mentor]) {
       this.#notify(id, 'rate', 'How did it go? Rate them privately. Nobody ever sees a single rating.', true, { need: needId, other: id === mentor ? need.owner : mentor });
     }

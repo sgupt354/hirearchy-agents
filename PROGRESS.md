@@ -156,8 +156,8 @@ Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deploy
 | Phase | Scope | Status |
 |---|---|---|
 | A | Help requests, points ledger, levels, Community tab, live Discord ask, drawer, tests, 3 sabotages | done |
-| B | Question packs unlocked by level | next |
-| C | Project collaboration board (stretch) | only if A and B are done by 11:45 AM |
+| B | Question packs unlocked by level | done |
+| C | Project collaboration board (stretch) | next (A and B were done by 10:00 AM) |
 
 Phase A, as built (`src/features/community/`, `tests/features/community/`, `tests/live/help.test.ts`):
 - **Points are deterministic** (`points.ts`): base 10 x multiplier (helped a newcomer 3x, a level below 2x, a peer 1x),
@@ -183,6 +183,17 @@ Phase A, as built (`src/features/community/`, `tests/features/community/`, `test
 - **One existing test changed:** `tests/app/tabs.test.ts` pins the tab list, which now includes Community.
 - Checks at the end of Phase A: 527 tests, typecheck, build, 15/15 sabotages; real-browser run of the golden path
   offline and in mocked live mode (no console errors).
+
+Phase B, as built (`src/features/community/packs.ts`, `tests/features/community/packs.test.ts`):
+- **Four packs, all from existing data:** Microsoft technical DSA (4 interview questions + 2 intel tips), Microsoft
+  system design (3), Microsoft behavioral and final round (2 + 2 tips), Google technical (4). Items are copied word
+  for word from `REPORTS` (mock) and `MICROSOFT_SEED_INTEL` (intel) and keep their source id and label. There is no
+  Amazon pack because there is no Amazon data; nothing is invented.
+- **Unlocks by level, never by spending:** a newcomer's free starter is the pack closest to their need (Priya:
+  Microsoft technical DSA, sent to her phone while she waits). Contributor unlocks 3 (starter first, then catalog
+  order), Mentor and Senior mentor all 4. Aditya's level-up card on his phone lists his 3.
+- Tests: verbatim sourcing, unlock rules, no identity (no author fields; no name, email or handle from any seed),
+  and the hub wiring. 531 tests, 15/15 sabotages.
 
 ### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
 | Phase | Scope | Status |

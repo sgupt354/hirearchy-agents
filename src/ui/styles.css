@@ -612,3 +612,4 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .state-pill.cm-OPEN, .state-pill.cm-MATCHED { color: var(--human); background: var(--human-bg); border-color: rgba(139, 92, 246, 0.3); }
 .state-pill.cm-BOOKED, .state-pill.cm-DONE { color: var(--good); background: var(--good-bg); border-color: rgba(16, 185, 129, 0.3); }
 .state-pill.cm-EXPIRED, .state-pill.cm-CANCELLED { color: var(--muted); background: var(--surface-3); border-color: var(--border); }
+.pack-q { display: flex; flex-direction: column; gap: 0.6cqw; }
