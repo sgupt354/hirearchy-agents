@@ -79,9 +79,9 @@ describe('live Discord: signature verification', () => {
 
 describe('live Discord: interaction → reply mapping', () => {
   it('maps each button and time pick to the same reply as the simulated phone', () => {
-    expect(interactionToReply(encodeId(SESSION, 2, 'in'))).toEqual({ kind: 'reply', session: SESSION, prompt: 2, action: 'accept' });
+    expect(interactionToReply(encodeId(SESSION, 2, 'in'))).toMatchObject({ kind: 'reply', session: SESSION, prompt: 2, action: 'accept', student: 'a1' });
     expect(interactionToReply(encodeId(SESSION, 2, 'not'))).toMatchObject({ action: 'decline' });
-    expect(interactionToReply(encodeId(SESSION, 2, 'time'))).toEqual({ kind: 'pick-time', session: SESSION, prompt: 2 });
+    expect(interactionToReply(encodeId(SESSION, 2, 'time'))).toMatchObject({ kind: 'pick-time', session: SESSION, prompt: 2, student: 'a1' });
     expect(interactionToReply(encodeId(SESSION, 2, 'pick'), ['8:00 PM'])).toMatchObject({ action: 'counter', text: '8:00 PM' });
     expect(interactionToReply(encodeId(SESSION, 2, 'pick'), ['3:00 AM'])).toBeNull();
     expect(interactionToReply('hl|not-a-session|2|in')).toBeNull();
@@ -103,7 +103,7 @@ describe('live Discord: interaction → reply mapping', () => {
     const { store, press } = interactions();
     const opened = (await press('time')).body as { type: number; data: { components: { components: { options: { value: string }[] }[] }[] } };
     expect(opened.type).toBe(7);
-    expect(opened.data.components[0].components[0].options.map((o) => o.value)).toEqual(['7:30 PM', '8:00 PM', '8:30 PM']);
+    expect(opened.data.components[0].components[0].options.map((o) => o.value)).toEqual(['7:30 PM', '8:00 PM', '8:30 PM', 'Other']);
     expect(await store.get(SESSION, 2)).toBeNull();
     await press('pick', { values: ['8:00 PM'] });
     expect(await store.get(SESSION, 2)).toMatchObject({ action: 'counter', text: '8:00 PM' });

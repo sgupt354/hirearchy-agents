@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   ChatBubble,
-  Drawer,
   PhoneFrame,
   QuickReplies,
   SPEEDS,
@@ -15,7 +14,6 @@ import {
   MICROSOFT_SEED_INTEL,
   anonymizeReport,
   checkIntelAccess,
-  describeAccess,
   describeAnonymization,
   recordContribution,
   selectRelevantIntel,
@@ -24,8 +22,10 @@ import {
   type RawInterviewReport,
   type SharedInterviewReport,
 } from './logic';
+import { STUDENT, applyStore } from '../apply/store';
 
 const COMPANY = 'Microsoft';
+const ROLE = 'SWE Intern';
 const ROUNDS = ['Technical screen', 'Technical round 2', 'Behavioral', 'Final round'];
 const TOPICS = ['arrays', 'hash maps', 'graphs', 'BFS', 'system design', 'behavioral', 'STAR', 'debugging'];
 const DIFFICULTIES = [1, 2, 3, 4, 5];
@@ -39,12 +39,6 @@ interface Said {
   time: string;
 }
 
-const EVENT_LABEL: Record<PrivacyEvent['kind'], string> = {
-  shared: 'SHARED',
-  summarized: 'SUMMARIZED',
-  hidden: 'HIDDEN',
-  gate: 'GATE',
-};
 
 const PROMPT: Record<Step, string> = {
   intro: `How did your ${COMPANY} interview go? A quick anonymous report helps everyone else in your pipeline — and unlocks theirs.`,
@@ -65,9 +59,8 @@ export function IntelTab({ speed, resetKey }: TabProps) {
   const [said, setSaid] = useState<Said[]>([]);
   const [credits, setCredits] = useState<CreditState>(EMPTY_CREDITS);
   const [shared, setShared] = useState<SharedInterviewReport | null>(null);
-  const [events, setEvents] = useState<PrivacyEvent[]>([]);
+  const [, setEvents] = useState<PrivacyEvent[]>([]);
   const [typing, setTyping] = useState(false);
-  const [drawer, setDrawer] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
 
   const pace = SPEEDS[speed].pace;
@@ -84,7 +77,6 @@ export function IntelTab({ speed, resetKey }: TabProps) {
     setShared(null);
     setEvents([]);
     setTyping(false);
-    setDrawer(false);
   };
 
   const firstReset = useRef(resetKey);
@@ -124,6 +116,8 @@ export function IntelTab({ speed, resetKey }: TabProps) {
     setShared(anonymizeReport(raw));
     setEvents(describeAnonymization(raw));
     setCredits((c) => recordContribution(c, raw));
+    // Closing the loop: link the share on the application, award community points once.
+    applyStore.shareIntel({ owner: STUDENT, company: COMPANY, role: ROLE }, `Shared an anonymous ${COMPANY} interview report`);
     answer('tip', finalTip, 'done');
   };
 
@@ -136,9 +130,21 @@ export function IntelTab({ speed, resetKey }: TabProps) {
     gracePeriodStart: now,
     now,
   });
-  const gateEvent = describeAccess(gate);
   const intel = gate.allowed ? selectRelevantIntel(MICROSOFT_SEED_INTEL, COMPANY) : [];
-  const allEvents = [...events, gateEvent];
+
+  // The application timeline counts these reports as read only once they've actually been on screen.
+  const firstReport = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = firstReport.current;
+    if (!el || !intel.length || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((seen) => {
+      if (!seen.some((e) => e.isIntersecting)) return;
+      applyStore.linkApplication({ owner: STUDENT, company: COMPANY, role: ROLE }, { kind: 'intel', ref: `intel-${COMPANY}`, summary: `Read ${intel.length} anonymous intel reports`, count: intel.length });
+      io.disconnect();
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [intel.length, resetKey]);
 
   const bubbles: Array<{ key: string; node: React.ReactNode }> = [];
   const order: Step[] = ['intro', 'round', 'topics', 'difficulty', 'tip', 'done'];
@@ -160,12 +166,6 @@ export function IntelTab({ speed, resetKey }: TabProps) {
           Give to get: share one anonymous report and you unlock what everyone else in your {COMPANY} pipeline
           learned. New students get a {GRACE_PERIOD_HOURS}-hour grace period first.
         </p>
-        <div className="hero-meta">
-          <span className="proof-pill">No names, emails, phone numbers or handles ever leave your report</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>
-            See what was shared and hidden
-          </button>
-        </div>
       </header>
 
       <main className="phones">
@@ -276,7 +276,7 @@ export function IntelTab({ speed, resetKey }: TabProps) {
           )}
 
           {intel.map((report, i) => (
-            <article key={`${report.round}-${i}`} className="card">
+            <article key={`${report.round}-${i}`} className="card" ref={i === 0 ? firstReport : undefined}>
               <h3>
                 {report.round} · {'★'.repeat(report.difficulty)}
               </h3>
@@ -296,27 +296,6 @@ export function IntelTab({ speed, resetKey }: TabProps) {
         </section>
       </main>
 
-      <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle="What your report shared, summarized and hid. Students never see this."
-        badge={<span className={`state-pill ${gate.allowed ? 'tone-good' : 'tone-warn'}`}>{gateEvent.detail}</span>}
-      >
-        <div className="drawer-body">
-          <section className="card feed-card">
-            <h3>Privacy events</h3>
-            <div className="feed">
-              {allEvents.map((e, i) => (
-                <p key={`${e.kind}-${i}`} className="msg">
-                  <b>{EVENT_LABEL[e.kind]}</b> · {e.detail}
-                </p>
-              ))}
-              {events.length === 0 && <p className="feed-empty">Submit your report to see the privacy rules fire.</p>}
-            </div>
-          </section>
-        </div>
-      </Drawer>
     </div>
   );
 }

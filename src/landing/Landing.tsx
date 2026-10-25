@@ -7,11 +7,14 @@ import {
 import { Presence, Reveal, cn, useInView, useReducedMotion } from './motion';
 
 // The marketing site (originally built in Lovable), ported section by section with its exact classes, copy and
-// timings. Styles come from the site's own compiled stylesheet (site.css); "Try the live demo" opens the app.
+// timings. Styles come from the site's own compiled stylesheet (site.css); "Open Hirearchy" opens the app.
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
-export const DEMO = '/app/';
+/** Every "try the demo" link opens live mode, so the prep circle DMs Aditya on Discord (same as /live). */
+export const DEMO = '/app/?live=1';
+/** The embedded preview stays on the simulated phones, so clicking around in it never sends a DM. */
+const PREVIEW = '/app/';
 const GITHUB = 'https://github.com/sgupt354/hirearchy-agents';
 
 function Container({ children, className }: { children: ReactNode; className?: string }) {
@@ -70,7 +73,7 @@ const NAV: [string, string][] = [
   ['Product', '#product'],
   ['How it works', '#how'],
   ['Privacy', '#privacy'],
-  ['Demo', '#demo'],
+  ['Product', '#demo'],
 ];
 
 function Header() {
@@ -94,7 +97,7 @@ function Header() {
         <div className="hidden items-center gap-6 md:flex">
           <a href={GITHUB} target="_blank" rel="noreferrer" className="text-sm font-medium text-foreground/80 hover:text-foreground">GitHub</a>
           <CtaLink href={DEMO} small>
-            Try the live demo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            Open Hirearchy <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </CtaLink>
         </div>
         <button className="md:hidden" aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} onClick={() => setOpen(!open)}>
@@ -108,7 +111,7 @@ function Header() {
               <a key={href} href={href} {...external(href)} onClick={() => setOpen(false)} className="py-3 text-base font-medium text-foreground">{label}</a>
             ))}
             <CtaLink href={DEMO} className="mt-2 justify-center">
-              Try the live demo <ArrowRight className="h-4 w-4" />
+              Open Hirearchy <ArrowRight className="h-4 w-4" />
             </CtaLink>
           </Container>
         </nav>
@@ -140,10 +143,10 @@ function Hero() {
           </p>
           <div className="mt-10 flex flex-wrap gap-3">
             <CtaLink href={DEMO}>
-              Try the live demo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+              Open Hirearchy <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
             </CtaLink>
             <a href="#demo" className="inline-flex h-11 items-center gap-2 rounded-full border bg-background/70 px-5 text-sm font-semibold text-foreground backdrop-blur transition hover:bg-background">
-              <CirclePlay className="h-4 w-4 text-primary" /> Watch the demo
+              <CirclePlay className="h-4 w-4 text-primary" /> See how it works
             </a>
           </div>
         </div>
@@ -516,7 +519,39 @@ function ProofOfWork() {
   );
 }
 
-const TERMINAL = ['$ npm run test:sabotage', 'Planting 12 privacy bugs...', '12 of 12 caught', '482 tests passing'];
+/** Pay it forward: newcomers ask, mentors' agents decide from private rules, confirmed help earns points. */
+function PayItForward() {
+  const stats: [string, string, string][] = [
+    ['3x', 'points for helping a newcomer', 'Only after both sides confirm the session happened'],
+    ['2', 'times a week one pair can earn points', "So two friends can't farm each other"],
+    ['0', 'referrals points can buy', 'Referrers see who you helped, never your points'],
+  ];
+  return (
+    <section id="pay-it-forward" className="scroll-mt-16 bg-muted py-20 md:py-[120px]">
+      <Container>
+        <SectionHeader
+          eyebrow="Pay it forward"
+          title="Nothing to trade yet? Ask anyway."
+          body="A freshman can't join a prep circle without something to offer, so their agent posts an anonymous request and keeps it open. A mentor's agent says yes only if it fits their private rules. Helping earns points, levels and question packs."
+        />
+        <div className="mt-14 grid gap-10 md:grid-cols-3">
+          {stats.map(([n, label, source], i) => (
+            <Reveal key={label} delay={i * 0.08} className="border-t pt-6">
+              <p className="font-display text-6xl font-bold tracking-tight text-foreground md:text-7xl">{n}</p>
+              <p className="mt-3 text-lg text-foreground">{label}</p>
+              <p className="mt-2 text-xs">{source}</p>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal>
+          <p className="mt-14 max-w-2xl text-lg leading-relaxed">Seniors post projects too: juniors apply anonymously, hours are capped, and anyone can leave without losing a point.</p>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+const TERMINAL = ['$ npm run test:sabotage', 'Planting 15 privacy bugs...', '15 of 15 caught', '537 tests passing'];
 
 function SabotageTerminal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -586,19 +621,19 @@ function Demo() {
   return (
     <section id="demo" className="scroll-mt-16 bg-muted py-20 md:py-[120px]">
       <Container>
-        <SectionHeader center eyebrow="Demo" title="See it in action." />
+        <SectionHeader center eyebrow="Product" title="See it in action." />
         <Reveal className="mx-auto mt-14 max-w-4xl">
           <div className="relative grid aspect-video place-items-center overflow-hidden rounded-2xl border bg-ink shadow-lift">
             <div aria-hidden className="mesh absolute inset-0 opacity-30" />
             <div className="relative flex flex-col items-center gap-4">
               <span className="grid h-16 w-16 place-items-center rounded-full bg-primary-foreground text-primary shadow-lift"><CirclePlay className="h-8 w-8" /></span>
-              <span className="text-sm font-semibold text-primary-foreground">Demo video coming soon</span>
+              <span className="text-sm font-semibold text-primary-foreground">Walkthrough coming soon</span>
             </div>
           </div>
         </Reveal>
         <Reveal className="mx-auto mt-16 max-w-5xl">
           <div className="rounded-t-2xl border-[10px] border-b-0 border-ink bg-ink">
-            <iframe src={DEMO} title="Hirearchy live app" loading="lazy" className="aspect-[16/10] w-full rounded-t-md bg-background" />
+            <iframe src={PREVIEW} title="Hirearchy live app" loading="lazy" className="aspect-[16/10] w-full rounded-t-md bg-background" />
           </div>
           <div className="mx-auto h-4 w-[106%] -translate-x-[3%] rounded-b-xl bg-ink-soft" />
           <div className="mt-6 text-center">
@@ -714,7 +749,7 @@ function FinalCta() {
           <Award aria-hidden className="mx-auto h-8 w-8 text-primary" />
           <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">Stop prepping alone. Your agent already found your circle.</h2>
           <CtaLink href={DEMO} className="mt-10">
-            Try the live demo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
+            Open Hirearchy <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </CtaLink>
         </Reveal>
       </Container>
@@ -724,8 +759,8 @@ function FinalCta() {
 
 function Footer() {
   const cols: [string, [string, string][]][] = [
-    ['Product', [['Live demo', DEMO], ['How it works', '#how'], ['Privacy', '#privacy']]],
-    ['Resources', [['GitHub', GITHUB], ['Demo video', '#demo']]],
+    ['Product', [['Open app', DEMO], ['How it works', '#how'], ['Privacy', '#privacy']]],
+    ['Resources', [['GitHub', GITHUB], ['Walkthrough', '#demo']]],
   ];
   return (
     <footer className="border-t py-16">
@@ -765,6 +800,7 @@ export function Landing() {
         <HowItWorks />
         <Product />
         <ProofOfWork />
+        <PayItForward />
         <Privacy />
         <Demo />
         <ArchitectureAndTeam />

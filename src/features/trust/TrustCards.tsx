@@ -51,13 +51,15 @@ export function RatingCard({ people, onSubmit }: { people: { id: string; name: s
 }
 
 /** "Your proof of work": the student's private evidence file, on their own phone. */
-export function EvidenceCard({ file }: { file: EvidenceFile }) {
+export function EvidenceCard({ file, badge }: { file: EvidenceFile; badge?: string | null }) {
   const overall = mockOverall(file.mockAverages);
+  const m = file.mentoring;
   return (
     <div className="evidence-card">
       <div className="ev-title">
         <Icon name="award" />
         <b>Your proof of work</b>
+        {badge && <span className="ev-badge">{badge}</span>}
       </div>
       <dl>
         <div><dt>Sessions attended</dt><dd>{file.sessionsAttended}</dd></div>
@@ -77,12 +79,34 @@ export function EvidenceCard({ file }: { file: EvidenceFile }) {
           </div>
         )}
         <div><dt>Intel reports shared</dt><dd>{file.intelReports}</dd></div>
+        {m && (
+          <div>
+            <dt>Mentoring</dt>
+            <dd>
+              Helped {m.newcomersHelped} {m.newcomersHelped === 1 ? 'newcomer' : 'newcomers'} · {m.averageRating !== null ? `★ ${m.averageRating.toFixed(1)}` : `rating after ${MIN_RATINGS} (${m.ratingCount} so far)`}
+            </dd>
+          </div>
+        )}
+        {file.thankYouNotes.length > 0 && (
+          <div>
+            <dt>Thank-you notes</dt>
+            <dd>
+              <ul className="ev-thanks">
+                {file.thankYouNotes.map((n, i) => (
+                  <li key={`${n.at}-${i}`}>
+                    <i>{n.fromLabel}</i>: {n.text}
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
       </dl>
       <div className="ev-chips">
         {file.skillsTaught.map((s) => <span key={s} className="taught">Taught {s}</span>)}
         {file.targetRoles.map((r) => <span key={r}>{r}</span>)}
       </div>
-      <p className="score-foot">Private to you. Your agent shares it step by step, only with your OK.</p>
+      <p className="score-foot">Private to you. Your agent shares it step by step, only with your OK. Thank-you notes never leave this card.</p>
     </div>
   );
 }

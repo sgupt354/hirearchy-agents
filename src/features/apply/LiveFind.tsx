@@ -63,7 +63,7 @@ export function LiveFind({ resetKey }: TabProps) {
     setBusy(false);
     setOutcome(out);
     if (out.source === 'demo') {
-      say('agent', "The job boards aren't reachable right now, so these are demo postings. Try again in a minute.");
+      say('agent', "The job boards aren't reachable right now. Showing sample postings — try again in a minute.");
       return;
     }
     const top = out.results[0];
@@ -118,11 +118,6 @@ export function LiveFind({ resetKey }: TabProps) {
             <Icon name="search" /> {busy ? 'Searching' : 'Search live boards'}
           </button>
         </form>
-        <div className="hero-meta">
-          <span className="proof-pill">
-            {outcome?.source === 'demo' ? 'Demo data · live boards unreachable' : 'Public Greenhouse, Lever, Ashby and SmartRecruiters job boards · cached 10 min'}
-          </span>
-        </div>
       </header>
 
       <main className="phones">
@@ -134,9 +129,9 @@ export function LiveFind({ resetKey }: TabProps) {
           {offer && !busy && (
             <QuickReplies
               options={[
-                { label: 'Find a prep circle', tone: 'yes', onClick: () => go('prep', 'Find a prep circle', `Opening the prep circle. It runs in the Microsoft demo network today; ${offer.company} students join the same way.`) },
-                { label: 'Swap mock interviews', onClick: () => go('mock', 'Swap mock interviews', 'Opening the mock swap (Microsoft demo network).') },
-                { label: 'Ask for a referral', onClick: () => go('referral', 'Ask for a referral', `Opening the Referral Bridge. The demo alum interned at Stripe; for ${offer.company} it works the same way.`) },
+                { label: 'Find a prep circle', tone: 'yes', onClick: () => go('prep', 'Find a prep circle', `Opening the prep circle for students in the same pipeline as ${offer.company}.`) },
+                { label: 'Swap mock interviews', onClick: () => go('mock', 'Swap mock interviews', 'Opening the mock interview swap.') },
+                { label: 'Ask for a referral', onClick: () => go('referral', 'Ask for a referral', `Opening the Referral Bridge for ${offer.company}.`) },
                 { label: 'Tailor my resume', onClick: () => go('apply', 'Tailor my resume', `Opening Apply with ${offer.company} selected.`) },
               ]}
             />
@@ -144,7 +139,7 @@ export function LiveFind({ resetKey }: TabProps) {
         </PhoneFrame>
 
         <section className="card job-list" aria-label="Postings">
-          <h3>{outcome ? (outcome.source === 'live' ? 'Live postings' : 'Demo postings') : 'Postings'}</h3>
+          <h3>{outcome ? (outcome.source === 'live' ? 'Live postings' : 'Sample postings') : 'Postings'}</h3>
           {!outcome && !busy && <p className="feed-empty">Search to see real postings with apply links.</p>}
           {busy && <p className="feed-empty">Checking company boards…</p>}
           {outcome && outcome.results.length === 0 && <p className="feed-empty">No matches. Try a broader role or level.</p>}
@@ -161,7 +156,7 @@ export function LiveFind({ resetKey }: TabProps) {
                 </div>
                 <div className="job-chips">
                   {p.reasons.slice(0, 3).map((r) => <span key={r} className="chip">{r}</span>)}
-                  {outcome.source === 'demo' && <span className="chip withheld">Demo data</span>}
+                  
                 </div>
                 <div className="job-chips">
                   <span className={`chip ${f1.status === 'compatible' ? 'good' : f1.status === 'incompatible' ? 'bad' : 'withheld'}`}>{F1_LABEL[f1.status]}</span>

@@ -1,7 +1,19 @@
 # Progress — Track 2 (hirearchy-agents)
 
-Full spec: [SPEC.md](SPEC.md). `main` = the shipped prep-circle demo. Active branch: **`feature/full-journey`**
-(branched from `main` at `a3ce531`; not merged to `main` until reviewed).
+Full spec: [SPEC.md](SPEC.md). Live: [hirearchy-agents.vercel.app](https://hirearchy-agents.vercel.app).
+
+**Active branch: `feature/connected-journey`** (not merged to `main` until reviewed).  
+`main` still has the earlier prep-circle / journey baseline.
+
+### Connected journey — shipped on this branch
+| Area | Status |
+|---|---|
+| Applications hub (one record per job, readiness, nudges, closing) | ✅ |
+| Product UI polish (no hackathon / Job Sniper / trade-for-referral framing) | ✅ |
+| Community points = reach / levels / mentor trust (not a referral shop) | ✅ |
+| Discord: calendar invite before rating survey | ✅ |
+| How it works inspector on Prep + Referral only | ✅ |
+| Referral demo quota starts at **2 of 2** left | ✅ |
 
 ## Full journey ("Hirearchy: your agent for the whole job hunt")
 Hero line: "Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide."
@@ -148,6 +160,151 @@ Phase D decisions:
 - **Prep-circle matching order is unchanged** (it's engine code); reliability affects mock matching (and the referral
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
+
+### Connected journey (`feature/connected-journey`, not merged)
+Branched from `feature/pay-it-forward`. Also carries the merge of `origin/aditya/ask-network` (Ask tab, registered after
+Find with the `message` icon), live-mode demo links (landing CTAs open `/app/?live=1`; `/live` redirects there), and
+tab-bar spacing so ten tabs fit at 1280px.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | One application record per job + "Applications" tab | done |
+| 2 | Readiness score per interview | done |
+| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | done |
+| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | done |
+
+Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/features/journey/ApplicationsTab.tsx`):
+- **Record:** owner (trust person id), company, role, stage (the tracker's Saved / Applied / OA / Interview / Offer /
+  Rejected), the date each stage was reached, an interview date only from a real source (the prep invite), linked
+  steps (prep, mock, intel, referral, community; each with its source id, date, summary and topics), posting id.
+  One record per student per job (company + role, case and spacing ignored).
+- **Who links what:** Find "Track it" and live Track create it (Applied / Saved); the prep invite moves it to
+  Interview with `TRIGGER_INVITE.interview_date`; a completed circle links its topics; a finished peer mock links the
+  topics both practiced; Intel links "read" only once the reports are on screen (IntersectionObserver); Referral
+  links the outcome to the seeker's own record; Community links the help to the newcomer's record and, if they
+  already have one for that job, the mentoring to the mentor's. Agent moves only go forward; the student can set any
+  stage by hand, and the Apply tracker follows (both directions).
+- **Demo clock** (`applyStore.now()`, starts Sun Oct 25 6:00 PM) dates everything; Reset restores it.
+- The "Applications" tab shows each student's own records (Aditya by default; Jordan / Priya appear when they have
+  one), the stage steps with dates, the journey, and next steps that open the right tab.
+- The other tabs only gained one-line hooks; their logic is unchanged. `tests/app/tabs.test.ts` lists the new tabs.
+- Checks: 584 tests, 15/15 sabotages, typecheck, build; browser: Find track + full prep circle gives one Microsoft
+  record (Applied Oct 25 → Interview Oct 25, interview Nov 4, circle linked), no console errors, tabs fit at 1280.
+
+Phase 2, as built (`src/features/journey/readiness.ts`, shown in the Applications journey card):
+- **Score = points earned / points available x 100**, from: mocks linked (2 = full, 25 pts), topics covered vs the
+  company's question-pack topics (35; topics come from linked circles, mocks and community help), intel reports read
+  vs those that exist (15), a prep circle linked (25). Days left come from the invite's interview date.
+- **Never invented:** a part with no data behind it is left out (Stripe has no pack and no intel, so only mocks and
+  circle count); no score without a real interview date or after it; reads are capped at what exists.
+- Shows "Ready: 48%. Next: one System Design mock", each part with its detail and points, days left, and a button to
+  the tab that does the next step ("tonight" when 2 days or fewer are left).
+- New sabotage: readiness counts a mock that never happened (caught by 3 tests). 590 tests, 16/16 sabotages.
+
+Phase 3, as built (`src/features/journey/nudges.ts`; phone + controls in the Applications tab):
+- **Planned, not improvised:** `planNudges(apps, now, state)` is pure. Kinds, in priority order: a mock when under 48 h
+  remain and readiness has a gap; a prep circle within 7 days if none is linked; intel within 7 days if some is
+  unread. The mock peer comes from the mock network (company, strong in the missing topic, free in the evening, and
+  not someone the student has already practiced with up to the network's repeat limit): Jordan for Aditya.
+- **Anonymous until consent:** the nudge says "a student in your pipeline who's strong in System Design is free
+  tonight, 7:00–9:30 PM", not the name (the original example used "Jordan"; names unlock only after both agree).
+- **Rate limits:** each kind once per job; at most 1 per job per day and 2 per student per day. **Mute** per job (in
+  the journey card, or "Mute these" on the nudge) or everything (hero button); the store also refuses to record a
+  nudge for a muted job.
+- **Delivery:** the student's agent phone in the Applications tab (do it / not now / mute). The tab is always
+  mounted, so planning runs whichever tab is open. In live mode Aditya's open nudge also goes out as a Discord DM
+  (`nudge` kind in live-notify: copy built server-side from status / company / topic / window only; Yes / Not now
+  buttons; typed yes / no through the existing ingestion). `useLiveHelp` gained a `kind` parameter for this.
+- **Demo clock:** "Now: Sun, Oct 25 · 6:00 PM" and "Skip to 2 days before the interview" in the hero.
+- New sabotage: a nudge is sent for a muted job (caught). 596 tests, 17/17 sabotages. Browser: the skip produces
+  exactly the mock nudge; "Set up the mock" opens Mock; mute stops further nudges; mocked live mode sends one
+  `nudge` DM and a Discord yes lands as "Yes · via Discord".
+
+Phase 4, as built (`src/features/journey/closing.ts`, Applications / Intel / Community / Prep wiring, live `reveal`):
+- **After the interview:** `planFollowUps` asks once when the demo clock is on or past the invite's interview
+  date. The Applications phone offers Share intel (opens Intel), Got an offer, or Rejected (updates stage).
+  Submitting an Intel report calls `applyStore.shareIntel`: links `intel-shared`, awards `BASE_POINTS` once via
+  the Community `PointsLedger.awardIntelShare`, and marks the follow-up done. Hero: "Skip to after the interview".
+- **Everyone said yes:** when the prep circle hits `reveal`/`complete` in live mode, Discord gets a `reveal` DM
+  (no buttons) built server-side from company / role / window / date, with a Google Calendar link when the window
+  parses. Member identities never travel in the details.
+- **Thank your mentor:** after a Community help session the newcomer can leave a private note; `makeThankYou`
+  reuses Intel's scrubber (phones, @handles, emails, dates). The note lands on the mentor's proof-of-work card
+  (`EvidenceFile.thankYouNotes`) and `discloseEvidence` never copies it, so referrers never see it.
+- New sabotage: a thank-you note leaks into what referrers see (caught). 601 tests, 18/18 sabotages.
+
+### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
+Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains
+`feature/discord-parity` plus its SQL/typecheck fixes and Discord ratings (`feature/discord-parity` alone fails typecheck).
+
+| Phase | Scope | Status |
+|---|---|---|
+| A | Help requests, points ledger, levels, Community tab, live Discord ask, drawer, tests, 3 sabotages | done |
+| B | Question packs unlocked by level | done |
+| C | Project collaboration board (stretch) | done (A and B were done by 10:00 AM) |
+
+Phase A, as built (`src/features/community/`, `tests/features/community/`, `tests/live/help.test.ts`):
+- **Points are deterministic** (`points.ts`): base 10 x multiplier (helped a newcomer 3x, a level below 2x, a peer 1x),
+  computed from both sides' standing before the session. Only the helper earns. Settled only when BOTH confirm;
+  confirming twice is a no-op. A pair (either direction) earns points at most twice per ISO week; later sessions still
+  count as completed sessions, with 0 points. Newcomer status = fewer than 3 completed sessions.
+- **There is no spend API.** `CommunityHub.redeemForReferral()` exists only to refuse (the side card's "Trade points
+  for a referral?" button shows the rule). Perks are by level: matching priority, a badge on the proof-of-work card,
+  question packs (1 / 3 / all). A referral is never a perk.
+- **Standing needs** (`community.ts`): the listing has the handle, company, round, topic and "this week / next week";
+  never the name or exact date. Mentor agents check their human's private rules (topics, newcomers per week, evenings
+  only) on their own; the capacity-check event goes only to that mentor's own agent. A mentor gets one ask at a time;
+  the next open need goes to them once they answer. Higher-level askers are matched first. Saying no costs nothing
+  and keeps the need open. Needs expire the day after the deadline; the owner can cancel before booking.
+- **Names** come from the engine's `IdentityVault` + consent map, only after both said yes.
+- **Trust tie-in:** a confirmed session is recorded in the shared trust network as kind `mentor`. The evidence file
+  gains `mentoring` (sessions, newcomers helped, average rating after 2+ ratings), present only for people who have
+  mentored, so stage-1 disclosure is unchanged for everyone else. Points never appear in the evidence file.
+  `TrustLedger.summary()` takes an optional session filter (no new public method; a test pins the method list).
+- **Live mode** (`?live=1`): Aditya's ask goes out as a real DM through `/api/live-notify` with a new `help` kind
+  (`helpCopy` + two buttons, built from the anonymous listing). Typed yes / no work through the existing live-state
+  ingestion; a typed time counts as yes (the slot his agent found is kept). No new SQL.
+- **One existing test changed:** `tests/app/tabs.test.ts` pins the tab list, which now includes Community.
+- Checks at the end of Phase A: 527 tests, typecheck, build, 15/15 sabotages; real-browser run of the golden path
+  offline and in mocked live mode (no console errors).
+
+Phase B, as built (`src/features/community/packs.ts`, `tests/features/community/packs.test.ts`):
+- **Four packs, all from existing data:** Microsoft technical DSA (4 interview questions + 2 intel tips), Microsoft
+  system design (3), Microsoft behavioral and final round (2 + 2 tips), Google technical (4). Items are copied word
+  for word from `REPORTS` (mock) and `MICROSOFT_SEED_INTEL` (intel) and keep their source id and label. There is no
+  Amazon pack because there is no Amazon data; nothing is invented.
+- **Unlocks by level, never by spending:** a newcomer's free starter is the pack closest to their need (Priya:
+  Microsoft technical DSA, sent to her phone while she waits). Contributor unlocks 3 (starter first, then catalog
+  order), Mentor and Senior mentor all 4. Aditya's level-up card on his phone lists his 3.
+- Tests: verbatim sourcing, unlock rules, no identity (no author fields; no name, email or handle from any seed),
+  and the hub wiring. 531 tests, 15/15 sabotages.
+
+Phase C, as built (`src/features/community/projects.ts`, `ProjectBoardView.tsx`, `tests/features/community/projects.test.ts`):
+- **Community tab has two views** ("Help requests" | "Project board"); both stay mounted, global Reset returns to
+  Help requests with everything cleared.
+- **Flow:** Sam (Mentor level) posts "Campus ride-share matcher" (TypeScript, React, Postgres; 5 h/week cap; frontend
+  and backend). Three junior agents apply with anonymous profiles. Sam's agent shortlists by his PRIVATE rules
+  (1+ stack skill, within the hours cap, an open role; team of at most 2); the decisions go only to Sam's agent.
+  Riya (Go, 8 h) is filtered; Priya and Sumit are shortlisted. Sam picks (his yes); Priya joins (hers); names unlock
+  through the same `IdentityVault` + consent gate.
+- **Hours cap is a hard limit** per junior per week (`HoursCapError`). Hours are credited, including after leaving.
+- **Points:** each week both confirm registers a session in the same `PointsLedger` as help requests (senior =
+  helper), so the multiplier, pair cap and both-confirm rule apply unchanged. Priya is a newcomer, so Sam earns 30.
+- **Leaving** never changes the junior's points; their credit stays, marked "left".
+- Tests: shortlist + hours cap, anonymity, consent (the pick alone unlocks nothing), decline costs nothing, weekly
+  cap, points only after both confirm, leaving keeps points and credit, team-size cap. 537 tests, 15/15 sabotages.
+
+Finish (10:08 AM):
+- Typecheck, 537 tests (34 files), `test:sabotage` 15/15, build: all pass.
+- Real-browser pass at 1440x900 and 1280x800: all 8 tabs render with no emoji, no console errors and no horizontal
+  overflow; global Reset returns Prep circle and both Community views to their start screens. Golden paths run in a
+  browser: help request offline and in mocked live mode (one `help` DM, reply applied), project board end to end.
+- README: journey row, criteria table, "Pay it forward" section (points never buy referrals; anti-abuse rules), demo
+  steps. Landing: a "Pay it forward" section in the Problem section's style (existing site.css classes only); the
+  sabotage terminal now reads 15 of 15 and 537 tests.
+- Deploy: no new SQL for Pay it forward (the live `help` DM reuses the live tables). The Discord ratings functions
+  from `claude/focused-archimedes-i453fr` (`t2_live_put_rating`, `t2_live_get_ratings`) must already be in Supabase
+  for live ratings; they are included in `supabase/live.sql` here too.
 
 ### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
 | Phase | Scope | Status |
@@ -310,8 +467,8 @@ Connection first, proof of work, the human decides. New tab **🤝 Referral** (6
      and earns +1 give-back credit; Not yet and No use none.
 - **Decoy:** Theo (2 sessions, ★ 4.3) fails the rating rule only. Theo hears just "This referrer isn't taking you on
   right now"; no rule, threshold, referrer name or stage 2 ever reaches Theo, and Nadia never learns Theo's name.
-- **Limit in the demo:** after Jordan is referred, "Next applicant: Theo →" keeps Nadia's month (0 of 2 left), so the
-  fit card shows ✗ rating and ✗ limit. Starting Theo from the idle screen shows the rating failure alone.
+- **Limit in the demo:** Nadia starts with **2 of 2** left. After one Refer, "Next applicant: Theo →" shows **1 of 2**.
+  Exhaust both slots before the monthly limit fails alone; starting Theo from idle shows the rating failure.
 - **Under the hood:** fit check per rule (referrer's private view), staged disclosure (stage 1/2/3: shared / never
   shared / waiting), referrals left + credit, and the plain-English feed with judge lenses.
 - **Verified:** 409 tests (23 new referral tests: each rule pass/fail, the monthly limit, no identity before consent,
@@ -332,6 +489,12 @@ Phase E decisions:
   one at a time.
 - **Nadia's name** is shown on their own phone and, after consent, to Jordan. Before consent Jordan sees only "a
   student who interned at Stripe".
+
+### Live Discord parity (`feature/discord-parity`, not merged to main)
+- Typed DMs (`yes` / `no` / `8pm`) are ingested on the live-state poll and ACK'd in Discord; junk text gets help, not an answer.
+- Routing is per `(session, prompt, student)` with `DISCORD_USER_ADITYA` (alias `DISCORD_ADITYA_USER_ID`), `DISCORD_USER_SUMIT`, `DISCORD_USER_MAYA`. Students without an id stay on the simulated phone.
+- Additive SQL: `t2_live_student_replies`, `t2_live_prompts`, `t2_live_ratings` in `supabase/live.sql` (RLS on, service_role only). Re-run the file in the SQL editor.
+- Buttons still work; Suggest a time includes Other → modal. Poll interval 800ms. 502 tests.
 
 ### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
 - `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya

@@ -1,8 +1,9 @@
 import type { Skill } from '../../engine/types';
 import { RUBRIC, type Rubric } from '../mock/scores';
-import { discloseEvidence, type EvidenceFile, type EvidenceStage1, type EvidenceStage2 } from './evidence';
+import { discloseEvidence, type EvidenceFile, type EvidenceStage1, type EvidenceStage2, type ThankYouOnFile } from './evidence';
 import { TrustLedger, round1, type Rating, type TrustSummary } from './ledger';
 import { getIntelContributionCount } from '../intel/logic';
+import type { ThankYouNote } from '../journey/closing';
 import { PAST_SESSIONS, PEOPLE_SEED, type PersonSeed } from './seed';
 
 /** Intel reports contributed, from the Intel feature (keyed by prep agent id: person p4 ↔ a4). */
@@ -12,9 +13,11 @@ export class EvidenceLockedError extends Error {}
 
 interface Session {
   id: string;
-  kind: 'prep' | 'mock';
+  kind: 'prep' | 'mock' | 'mentor';
   members: string[];
   taught: Record<string, Skill[]>;
+  /** Mentor sessions (Pay it forward): members who were newcomers at the time. */
+  newcomers?: string[];
 }
 
 /**
@@ -29,6 +32,10 @@ export class TrustNetwork {
   #noShows = new Set<string>();
   #people: Record<string, PersonSeed> = {};
   #intelCount: (person: string) => number = intelFromFeature;
+  /** Private thank-yous keyed by mentor person id. Never leave via disclose(). */
+  #thanks = new Map<string, ThankYouOnFile[]>();
+  /** "mentor|sessionId" so the same session can't leave two notes. */
+  #thankSessions = new Set<string>();
   #listeners = new Set<() => void>();
   #version = 0;
   #resetKey: number | null = null;
@@ -84,6 +91,18 @@ export class TrustNetwork {
     this.#changed();
   }
 
+  /**
+   * A private thank-you for a mentor's proof of work. Idempotent per session. The text must already be
+   * scrubbed (see makeThankYou); this store never rewrites it.
+   */
+  addThankYou(note: ThankYouNote): void {
+    const key = `${note.mentor}|${note.sessionId}`;
+    if (this.#thankSessions.has(key)) return;
+    this.#thankSessions.add(key);
+    this.#thanks.set(note.mentor, [...(this.#thanks.get(note.mentor) ?? []), { fromLabel: note.fromLabel, text: note.text, at: note.at }]);
+    this.#changed();
+  }
+
   // ---- evidence file -------------------------------------------------------------------------------
 
   /** The full evidence file, readable only by its owner. */
@@ -129,6 +148,17 @@ export class TrustNetwork {
     }
     const summary = this.#ledger.summary(person);
     const seed = this.#people[person] ?? { targetRoles: [], projectLinks: [] };
+    // Mentoring (Pay it forward): sessions where this person taught. Points are not part of the file.
+    const mentored = attended.filter((s) => s.kind === 'mentor' && (s.taught[person] ?? []).length);
+    const mentorRatings = this.#ledger.summary(person, new Set(mentored.map((s) => s.id)));
+    const mentoring = mentored.length
+      ? {
+          sessions: mentored.length,
+          newcomersHelped: new Set(mentored.flatMap((s) => (s.newcomers ?? []).filter((n) => n !== person))).size,
+          averageRating: mentorRatings.reliability,
+          ratingCount: mentorRatings.count,
+        }
+      : null;
     return {
       owner: person,
       sessionsAttended: attended.length,
@@ -140,6 +170,8 @@ export class TrustNetwork {
       skillsTaught: taught,
       targetRoles: [...seed.targetRoles],
       projectLinks: [...seed.projectLinks],
+      mentoring,
+      thankYouNotes: structuredClone(this.#thanks.get(person) ?? []),
     };
   }
 
@@ -152,6 +184,8 @@ export class TrustNetwork {
     this.#sessions = new Map();
     this.#mockScores = new Map();
     this.#noShows = new Set();
+    this.#thanks = new Map();
+    this.#thankSessions = new Set();
     this.#people = structuredClone(PEOPLE_SEED);
     this.#intelCount = intelFromFeature;
     for (const s of PAST_SESSIONS) {

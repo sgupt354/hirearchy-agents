@@ -50,8 +50,9 @@ export class TrustLedger {
     return (this.#bySubject.get(subject) ?? []).some((e) => e.rater === rater && e.session === session);
   }
 
-  summary(subject: string): TrustSummary {
-    const list = this.#bySubject.get(subject) ?? [];
+  /** Optionally counting only ratings from the given sessions (e.g. someone's mentoring sessions). */
+  summary(subject: string, sessions?: Set<string>): TrustSummary {
+    const list = (this.#bySubject.get(subject) ?? []).filter((e) => !sessions || sessions.has(e.session));
     if (list.length < MIN_RATINGS) return { count: list.length, reliability: null, showUpRate: null };
     return {
       count: list.length,

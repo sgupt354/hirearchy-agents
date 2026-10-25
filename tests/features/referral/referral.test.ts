@@ -80,8 +80,13 @@ describe('referral: deterministic fit check, one result per private rule', () =>
 });
 
 describe('referral: the monthly limit is enforced', () => {
-  it('after one referral (2 of 2 used) the next passing seeker fails on the limit only', () => {
+  it('after two referrals the next passing seeker fails on the limit only', () => {
     const b = toDecision();
+    b.decide(REFERRER, 'refer');
+    expect(b.referrerStatus()).toMatchObject({ left: 1, used: 1, limit: 2 });
+
+    b.nextSeeker();
+    toDecision(b, SEEKER);
     b.decide(REFERRER, 'refer');
     expect(b.referrerStatus()).toMatchObject({ left: 0, used: 2, limit: 2 });
 
@@ -98,7 +103,7 @@ describe('referral: the monthly limit is enforced', () => {
     for (const d of ['not_yet', 'no'] as const) {
       const b = toDecision();
       b.decide(REFERRER, d, 'Do one more system design mock');
-      expect(b.referrerStatus()).toMatchObject({ left: 1, used: 1, credits: 0 });
+      expect(b.referrerStatus()).toMatchObject({ left: 2, used: 0, credits: 0 });
     }
   });
 
@@ -106,9 +111,9 @@ describe('referral: the monthly limit is enforced', () => {
     const b = toDecision();
     b.decide(REFERRER, 'refer');
     b.nextSeeker();
-    expect(b.referrerStatus().left).toBe(0);
+    expect(b.referrerStatus().left).toBe(1);
     b.reset();
-    expect(b.referrerStatus()).toEqual({ left: 1, used: 1, limit: 2, credits: 0 });
+    expect(b.referrerStatus()).toEqual({ left: 2, used: 0, limit: 2, credits: 0 });
   });
 });
 

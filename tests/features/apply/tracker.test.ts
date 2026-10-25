@@ -13,7 +13,7 @@ describe('tracker export (generic CSV / JSON; Huntr has no student import API)',
     const lines = csv.trimEnd().split('\r\n');
     expect(lines[0]).toBe(TRACKER_COLUMNS.join(','));
     expect(lines[1]).toBe('Stripe,"Software Engineer, Intern",Saved,"Seattle, WA",https://stripe.com/jobs/1,2026-10-25,Live job board');
-    expect(lines[2]).toBe('Ramp,SWE Intern,Saved,New York; San Francisco,,2026-10-25,Demo data');
+    expect(lines[2]).toBe('Ramp,SWE Intern,Saved,New York; San Francisco,,2026-10-25,Saved posting');
     expect(csv.endsWith('\r\n')).toBe(true);
   });
 

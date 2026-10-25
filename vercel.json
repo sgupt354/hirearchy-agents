@@ -1,0 +1,3 @@
+{
+  "redirects": [{ "source": "/live", "destination": "/app/?live=1", "permanent": false }]
+}

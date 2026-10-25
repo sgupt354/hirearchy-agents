@@ -33,7 +33,7 @@ export const REFERRER_RULES: ReferrerRules = {
   minMockAverage: 4.0,
   mustMeetFirst: true,
   monthlyLimit: 2,
-  usedThisMonth: 1,
+  usedThisMonth: 0,
 };
 
 const policy: Policy = {

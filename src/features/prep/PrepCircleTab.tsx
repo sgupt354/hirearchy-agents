@@ -2,12 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, PIPELINE, TRIGGER_AGENT_ID, type CoordinationState, type HumanReply, type PhoneMessage } from '../../engine';
 import { prettify, studentCopy, windowText } from '../../ui/copy';
 import { USE_LLM_COPY, downloadIcs, generateMessage, notifyPhone, parseInvite } from '../../ui/integrations';
-import { Icon } from '../../ui/Icon';
 import { InviteModal } from '../../ui/InviteModal';
 import { IPhone, type ChatItem } from '../../ui/IPhone';
 import { UnderTheHood } from '../../ui/UnderTheHood';
 import { deriveGraph, inviteOutcome, messagesAvailable, stateAt, type InviteOutcome, type Lens } from '../../ui/view';
-import summary from '../../ui/test-summary.json';
 import { SPEEDS } from '../../app/speed';
 import type { TabProps } from '../types';
 import { isLiveRequested } from '../../live/client';
@@ -17,6 +15,8 @@ import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
 import type { Rating } from '../trust/ledger';
 import type { Skill } from '../../engine/types';
+import { TRIGGER_INVITE } from '../../engine/seed';
+import { applyStore } from '../apply/store';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
@@ -44,13 +44,13 @@ function heroStatus(state: CoordinationState, window: string): { text: string; t
   return { text: "Aditya's agent is finding a prep circle…", tone: 'busy' };
 }
 
-/** The prep-circle demo: three students' phones plus the Under the hood drawer. */
+/** The prep-circle tab: students' phones coordinating a session. */
 export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const engine = useMemo(() => new Engine(), []);
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [error, setError] = useState('');
-  const [drawer, setDrawer] = useState(false);
+  const [howItWorks, setHowItWorks] = useState(false);
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePending, setInvitePending] = useState(false);
@@ -60,6 +60,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const requested = useRef(new Set<string>());
   const trustNet = useTrust();
   const [ratedAt, setRatedAt] = useState<Record<string, string>>({});
+  const [ratedVia, setRatedVia] = useState<Record<string, 'discord'>>({});
   // Bumped on reset so async results and phone state from a previous run are dropped.
   const run = useRef(0);
 
@@ -69,6 +70,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const state = stateAt(engine.history(), cursor);
   const labels = engine.labels();
   const label = (id: string) => (id === VIEWER ? 'You' : id === 'broker' ? 'Broker' : (labels[id] ?? id));
+  const view = deriveGraph(shown, IDS, VIEWER);
 
   // Replay new events one by one so the agents' conversation unfolds live.
   useEffect(() => {
@@ -78,11 +80,11 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   }, [cursor, caughtUp, speed]);
 
   useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
+    if (!howItWorks) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setHowItWorks(false);
     window.addEventListener('keydown', esc);
     return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
+  }, [howItWorks]);
 
   // Each phone only shows messages whose causing event has been replayed.
   const inbox: Record<string, PhoneMessage[]> = {};
@@ -122,7 +124,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   // In LLM mode a structured message waits for its wording (generateMessage resolves within ~3 s).
   const ready = (id: string, m: PhoneMessage) => !USE_LLM_COPY || !m.kind || keyOf(id, m) in generated;
 
-  const view = deriveGraph(shown, IDS, VIEWER);
   const namesFor = (owner: string) => {
     const names: Record<string, string> = {};
     for (const id of IDS) {
@@ -149,7 +150,12 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     return ok;
   };
 
-  const start = () => act(() => engine.simulateInterviewInvite());
+  const start = () =>
+    act(() => {
+      engine.simulateInterviewInvite();
+      // The invite is the source of truth for the stage and the date on Aditya's application record.
+      applyStore.recordApplication({ owner: personOf(VIEWER), company: PIPELINE.company, role: PIPELINE.role, stage: 'Interview', interviewDate: TRIGGER_INVITE.interview_date });
+    });
 
   const reply = (id: string, r: HumanReply, bubble: string) => {
     const after = inbox[id].at(-1)?.id ?? 0;
@@ -164,26 +170,54 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     engine.resetDemo();
     trustNet.resetFor(resetKey);
     setRatedAt({});
+    setRatedVia({});
     requested.current.clear();
     setGenerated({});
     setReplies({});
     setCursor(0);
-    setDrawer(false);
-    setLenses([]);
     setInviteOpen(false);
     setInvitePending(false);
     setInviteStatus(null);
+    setHowItWorks(false);
+    setLenses([]);
     act(() => {});
   };
 
+  const sessionId = `prep-${run.current}`;
+
   // Live Discord mode (?live=1): Aditya answers their prompts in Discord; the simulated phone still works.
+  // Once the circle has met, Aditya can also rate it privately from Discord.
   const liveRequested = useMemo(() => isLiveRequested(), []);
   const adityaLast = inbox[VIEWER].at(-1);
+  const adityaOthers = (engine.circle?.members ?? []).filter((x) => x !== VIEWER);
+  const adityaRates =
+    trustNet.hasSession(sessionId) && adityaOthers.length > 0 && !trustNet.hasRated(personOf(VIEWER), personOf(adityaOthers[0]), sessionId)
+      ? { people: adityaOthers.map((x) => ({ id: x, name: (namesFor(VIEWER)[x] ?? 'Member').split(' ')[0] })) }
+      : null;
+  // Proposal/counter need a reply; complete goes to Discord as calendar first (rating waits until that lands).
+  const livePending =
+    adityaLast && (adityaLast.actions.length || adityaLast.kind === 'complete')
+      ? {
+          ...adityaLast,
+          details: {
+            ...(adityaLast.details ?? {}),
+            company: PIPELINE.company,
+            role: PIPELINE.role,
+            // Calendar link uses today's date for "tonight" (the circle's slot), never the interview date.
+            date: today(),
+            window: adityaLast.details?.window ?? (engine.window ? windowText(engine.window) : ''),
+          },
+        }
+      : null;
+  // Rating survey only after the complete (calendar) message exists, so Discord order is calendar → rate.
+  const liveRating = adityaRates && inbox[VIEWER].some((m) => m.kind === 'complete') ? adityaRates : null;
   const live = useLiveDiscord({
     enabled: liveRequested,
     runKey: run.current,
-    pending: adityaLast?.actions.length ? adityaLast : null,
+    pending: livePending,
     onReply: (r, bubble) => reply(VIEWER, r, bubble),
+    rating: liveRating,
+    onRated: (ratings) => rateCircle(VIEWER, ratings, 'discord'),
   });
 
   const firstReset = useRef(resetKey);
@@ -208,18 +242,26 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   };
 
   // After the circle meets, it becomes a session on everyone's record and each member rates the others privately.
-  const sessionId = `prep-${run.current}`;
   useEffect(() => {
     const circle = engine.circle;
     if (engine.state !== 'COMPLETED' || !caughtUp || !circle || trustNet.hasSession(sessionId)) return;
     const taught: Record<string, Skill[]> = {};
     for (const e of circle.edges) taught[personOf(e.from)] = [...(taught[personOf(e.from)] ?? []), ...e.skills];
     trustNet.recordSession({ id: sessionId, kind: 'prep', members: circle.members.map(personOf), taught });
+    // Aditya's application for this job gets the circle, with the topics he taught and was taught.
+    const topics = [...new Set(circle.edges.filter((e) => e.from === VIEWER || e.to === VIEWER).flatMap((e) => e.skills))];
+    applyStore.linkApplication(
+      { owner: personOf(VIEWER), company: PIPELINE.company, role: PIPELINE.role, stage: 'Interview' },
+      { kind: 'prep', ref: sessionId, summary: `With ${circle.members.length - 1} students in your pipeline`, topics },
+    );
   });
 
-  const rateCircle = (id: string, ratings: Record<string, Rating>) => {
+  const rateCircle = (id: string, ratings: Record<string, Rating>, via?: 'discord') => {
+    const others = Object.keys(ratings);
+    if (others.length && trustNet.hasRated(personOf(id), personOf(others[0]), sessionId)) return; // already rated on the phone
     if (act(() => Object.entries(ratings).forEach(([other, r]) => trustNet.rate(personOf(id), personOf(other), sessionId, r)))) {
       setRatedAt((all) => ({ ...all, [id]: clock() }));
+      if (via) setRatedVia((all) => ({ ...all, [id]: via }));
     }
   };
 
@@ -234,7 +276,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
       items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={others.map((x) => ({ id: x, name: (names[x] ?? 'Member').split(' ')[0] }))} onSubmit={(r) => rateCircle(id, r)} /> });
       return items;
     }
-    items.push({ key: 't-done', from: 'me', text: 'Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-done', from: 'me', text: ratedVia[id] ? 'Rated privately · via Discord' : 'Rated privately', time: ratedAt[id] });
     items.push({ key: 't-thanks', from: 'agent', text: "Thanks! A rating only counts once someone has two or more. Here's your proof of work so far:" });
     items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
     return items;
@@ -297,10 +339,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
           )}
         </div>
         <div className="hero-meta">
-          <span className="proof-pill" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
-            <Icon name={summary.privacyTest.passed ? 'lock' : 'alert'} size={12} /> Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
-          </span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
+          <button type="button" className="ghost small" onClick={() => setHowItWorks(true)}>How it works</button>
           {live !== 'off' && <LiveBadge status={live} />}
         </div>
       </header>
@@ -334,8 +373,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
       />
 
       <UnderTheHood
-        open={drawer}
-        onClose={() => setDrawer(false)}
+        open={howItWorks}
+        onClose={() => setHowItWorks(false)}
         state={state}
         events={shown}
         ids={IDS}

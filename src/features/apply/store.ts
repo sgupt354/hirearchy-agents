@@ -1,13 +1,16 @@
 import { useSyncExternalStore } from 'react';
 import type { ScoredPosting } from './jobs/match';
 import { DEMO_PROFILE, type Profile } from './resume/profile';
+import type { TrackerStatus } from './tracker/stages';
+import { addLink, applicationId, mergeApplication, newApplication, type Application, type JourneyLink, type Stage } from './applications';
+import type { Nudge, NudgeState } from '../journey/nudges';
+import { EMPTY_FOLLOWUPS, type FollowUp, type FollowUpState } from '../journey/closing';
+import { PointsLedger } from '../community/points';
 
 // Session-only state for the apply suite: tracked postings, the student's profile and the posting being applied to.
 // Nothing is persisted; global Reset clears it.
 
-/** Where an application stands (jobapp's pipeline): Saved → Applied → OA → Interview → Offer, or Rejected. */
-export const TRACKER_STATUSES = ['Saved', 'Applied', 'OA', 'Interview', 'Offer', 'Rejected'] as const;
-export type TrackerStatus = (typeof TRACKER_STATUSES)[number];
+export { TRACKER_STATUSES, type TrackerStatus } from './tracker/stages';
 
 export interface TrackedPosting extends ScoredPosting {
   /** "live" from the public boards, or "demo" when live search was unavailable. */
@@ -15,6 +18,20 @@ export interface TrackedPosting extends ScoredPosting {
   trackedAt: string;
   /** Defaults to "Saved" when absent. */
   status?: TrackerStatus;
+}
+
+/** The student using Find and Apply (Aditya, person p1 in the trust network). */
+export const STUDENT = 'p1';
+/** The demo clock starts where the agents' event log does: Sunday Oct 25, 6:00 PM. */
+export const DEMO_NOW = '2026-10-25T18:00';
+
+export interface ApplicationKey {
+  owner: string;
+  company: string;
+  role: string;
+  /** What the tab knows for sure, e.g. an interview invite means Interview. Only moves the stage forward. */
+  stage?: Stage;
+  interviewDate?: string | null;
 }
 
 class ApplyStore {
@@ -25,6 +42,14 @@ class ApplyStore {
   #version = 0;
   #listeners = new Set<() => void>();
   #resetKey = 0;
+  #apps: Application[] = [];
+  #now = DEMO_NOW;
+  #nudges: NudgeState = { sent: [], muted: [], mutedAll: false };
+  #answers: Record<string, 'yes' | 'no'> = {};
+  #followUps: FollowUpState = structuredClone(EMPTY_FOLLOWUPS);
+  /** Points for sharing post-interview intel (same ledger rules as Community). */
+  #intelPoints = new PointsLedger();
+  #intelPointEntries: ReturnType<PointsLedger['entries']> = [];
 
   tracked(): TrackedPosting[] {
     return [...this.#tracked];
@@ -38,7 +63,138 @@ class ApplyStore {
     if (this.isTracked(p.id)) return;
     this.#tracked = [...this.#tracked, { ...p, source, trackedAt: at }];
     this.#selected = p.id;
+    this.#upsert({ owner: STUDENT, company: p.company, role: p.title, stage: 'Saved' }, p.id);
     this.#emit();
+  }
+
+  // ---- application records (one per student per job) -----------------------------------------------
+
+  applications(owner?: string): Application[] {
+    return structuredClone(owner ? this.#apps.filter((a) => a.owner === owner) : this.#apps);
+  }
+
+  application(id: string): Application | null {
+    const a = this.#apps.find((x) => x.id === id);
+    return a ? structuredClone(a) : null;
+  }
+
+  /** Create the record if it's new; otherwise only move it forward. Returns its id. */
+  recordApplication(key: ApplicationKey): string {
+    const id = this.#upsert(key);
+    this.#emit();
+    return id;
+  }
+
+  /** A tab links one step of the journey (a prep circle, a mock, a referral...) to the job it was for. */
+  linkApplication(key: ApplicationKey, link: Omit<JourneyLink, 'at'>): string {
+    const id = this.#upsert(key);
+    this.#apps = this.#apps.map((a) => (a.id === id ? addLink(a, { ...link, at: this.today() }) : a));
+    this.#emit();
+    return id;
+  }
+
+  /** The student sets the stage themselves (any stage; it's their record). Keeps the Apply tracker in step. */
+  setStage(id: string, stage: Stage): void {
+    const app = this.#apps.find((a) => a.id === id);
+    if (!app) return;
+    this.#apps = this.#apps.map((a) => (a.id === id ? { ...a, stage, dates: { ...a.dates, [stage]: this.today() } } : a));
+    if (app.postingId) this.#tracked = this.#tracked.map((p) => (p.id === app.postingId ? { ...p, status: stage } : p));
+    this.#emit();
+  }
+
+  /** Demo clock (ISO local, "YYYY-MM-DDTHH:MM"). Nudges and follow-ups read it; nothing reads the real clock. */
+  now(): string {
+    return this.#now;
+  }
+
+  today(): string {
+    return this.#now.slice(0, 10);
+  }
+
+  setNow(iso: string): void {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(iso)) throw new Error('Use YYYY-MM-DDTHH:MM');
+    this.#now = iso;
+    this.#emit();
+  }
+
+  // ---- proactive nudges (planned by journey/nudges.ts; the store only keeps what was sent and the mutes) ----
+
+  nudges(): NudgeState {
+    return structuredClone(this.#nudges);
+  }
+
+  /** Record nudges as sent. Ignores any for a muted application, so a mute always wins. */
+  recordNudges(list: Nudge[]): Nudge[] {
+    const fresh = list.filter((n) => !this.#nudges.mutedAll && !this.#nudges.muted.includes(n.appId) && !this.#nudges.sent.some((s) => s.id === n.id));
+    if (!fresh.length) return [];
+    this.#nudges = { ...this.#nudges, sent: [...this.#nudges.sent, ...structuredClone(fresh)] };
+    this.#emit();
+    return fresh;
+  }
+
+  mute(appId: string | 'all', on = true): void {
+    if (appId === 'all') this.#nudges = { ...this.#nudges, mutedAll: on };
+    else this.#nudges = { ...this.#nudges, muted: on ? [...new Set([...this.#nudges.muted, appId])] : this.#nudges.muted.filter((m) => m !== appId) };
+    this.#emit();
+  }
+
+  answerNudge(id: string, answer: 'yes' | 'no'): void {
+    if (this.#answers[id]) return;
+    this.#answers = { ...this.#answers, [id]: answer };
+    this.#emit();
+  }
+
+  nudgeAnswer(id: string): 'yes' | 'no' | null {
+    return this.#answers[id] ?? null;
+  }
+
+  // ---- closing the loop (post-interview follow-up + intel share points) -----------------------------
+
+  followUps(): FollowUpState {
+    return structuredClone(this.#followUps);
+  }
+
+  /** Record follow-up asks as sent. Idempotent per id. */
+  recordFollowUps(list: FollowUp[]): FollowUp[] {
+    const fresh = list.filter((f) => !this.#followUps.sent.some((s) => s.id === f.id) && !this.#followUps.done.includes(f.appId));
+    if (!fresh.length) return [];
+    this.#followUps = { ...this.#followUps, sent: [...this.#followUps.sent, ...structuredClone(fresh)] };
+    this.#emit();
+    return fresh;
+  }
+
+  /** Mark a follow-up answered so it won't be asked again. */
+  completeFollowUp(appId: string): void {
+    if (this.#followUps.done.includes(appId)) return;
+    this.#followUps = { ...this.#followUps, done: [...this.#followUps.done, appId] };
+    this.#emit();
+  }
+
+  /**
+   * After the student shares an intel report for a job: link it, award community points once, and
+   * mark the follow-up done. Returns the point entry when points were awarded.
+   */
+  shareIntel(key: ApplicationKey, summary: string): ReturnType<PointsLedger['awardIntelShare']> {
+    const id = this.#upsert(key);
+    this.#apps = this.#apps.map((a) => (a.id === id ? addLink(a, { kind: 'intel-shared', ref: `shared-${id}`, at: this.today(), summary }) : a));
+    this.completeFollowUp(id);
+    const entry = this.#intelPoints.awardIntelShare(key.owner, `intel-share:${id}`, key.company);
+    if (entry) this.#intelPointEntries = [...this.#intelPointEntries, entry];
+    this.#emit();
+    return entry;
+  }
+
+  intelPointEntries() {
+    return this.#intelPointEntries.map((e) => ({ ...e }));
+  }
+
+  #upsert(key: ApplicationKey, postingId: string | null = null): string {
+    const id = applicationId(key.owner, key.company, key.role);
+    const existing = this.#apps.find((a) => a.id === id);
+    const input = { stage: key.stage, at: this.today(), interviewDate: key.interviewDate ?? null, postingId };
+    if (existing) this.#apps = this.#apps.map((a) => (a.id === id ? mergeApplication(a, input) : a));
+    else this.#apps = [...this.#apps, newApplication({ owner: key.owner, company: key.company, role: key.role, ...input })];
+    return id;
   }
 
   /** The student's profile (starts as the labelled demo profile). */
@@ -67,6 +223,8 @@ class ApplyStore {
 
   setStatus(id: string, status: TrackerStatus): void {
     this.#tracked = this.#tracked.map((p) => (p.id === id ? { ...p, status } : p));
+    // The same job's application record follows the tracker.
+    this.#apps = this.#apps.map((a) => (a.postingId === id ? { ...a, stage: status, dates: { ...a.dates, [status]: this.today() } } : a));
     this.#emit();
   }
 
@@ -83,6 +241,13 @@ class ApplyStore {
     this.#profile = structuredClone(DEMO_PROFILE);
     this.#profileIsDemo = true;
     this.#selected = null;
+    this.#apps = [];
+    this.#now = DEMO_NOW;
+    this.#nudges = { sent: [], muted: [], mutedAll: false };
+    this.#answers = {};
+    this.#followUps = structuredClone(EMPTY_FOLLOWUPS);
+    this.#intelPoints = new PointsLedger();
+    this.#intelPointEntries = [];
     this.#emit();
   }
 

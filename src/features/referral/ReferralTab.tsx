@@ -11,7 +11,25 @@ import { describeReferral } from './copy';
 import { ReferralBridge, type ReferralState, type StateChange } from './referralBridge';
 import { ReferralPhone, type ReferralAction, type ReferralChatItem } from './ReferralPhone';
 import type { RuleResult } from './rules';
-import { DECOY, REFERRER, SEEKER } from './seed';
+import { DECOY, OPENING, REFERRER, SEEKER } from './seed';
+import { applyStore } from '../apply/store';
+
+const STATE_TEXT: Record<ReferralState, string> = {
+  IDLE: 'Ready',
+  OFFERED: 'Offered',
+  WITHDRAWN: 'Withdrawn',
+  FIT_CHECK: 'Fit check',
+  NOT_A_FIT: 'Not a fit',
+  NEGOTIATING: 'Negotiating',
+  AWAITING_HUMANS: 'Awaiting humans',
+  AWAITING_CONSENT: 'Awaiting consent',
+  DECLINED: 'Declined',
+  CONFIRMED: 'Confirmed',
+  CHAT_DONE: 'Chat done',
+  REFERRED: 'Referred',
+  NOT_YET: 'Not yet',
+  NO_REFERRAL: 'No referral',
+};
 
 const PEOPLE: Record<string, string> = { p4: 'Jordan', p10: 'Theo', r1: 'Nadia' };
 const LABELS: Record<string, string> = { p4: 'Applicant #4', p10: 'Applicant #10', r1: 'Stripe alum' };
@@ -25,22 +43,6 @@ interface Reply {
 const stateAt = (history: StateChange[], cursor: number): ReferralState =>
   history.reduce<ReferralState>((s, h) => (h.afterEvents <= cursor ? h.to : s), 'IDLE');
 
-const STATE_TEXT: Record<ReferralState, string> = {
-  IDLE: 'Ready',
-  OFFERED: 'Asking the seeker',
-  WITHDRAWN: 'Seeker said not now',
-  FIT_CHECK: 'Fit check',
-  NOT_A_FIT: 'Not a fit',
-  NEGOTIATING: 'Negotiating',
-  AWAITING_HUMANS: 'Waiting on students',
-  AWAITING_CONSENT: 'Waiting on students',
-  DECLINED: 'Chat called off',
-  CONFIRMED: 'Chat booked',
-  CHAT_DONE: 'Referrer decides',
-  REFERRED: 'Referred',
-  NOT_YET: 'Not yet',
-  NO_REFERRAL: 'No referral',
-};
 
 function heroStatus(state: ReferralState, seeker: string): { text: string; tone: string } {
   const name = PEOPLE[seeker] ?? 'The student';
@@ -60,6 +62,14 @@ function heroStatus(state: ReferralState, seeker: string): { text: string; tone:
   }
 }
 
+/** How each outcome reads on the seeker's application timeline. */
+const OUTCOME: Partial<Record<ReferralState, string>> = {
+  REFERRED: 'Referred by an alum',
+  NOT_YET: 'Not yet: got a coaching note from an alum',
+  NO_REFERRAL: 'An alum decided not to refer this time',
+  NOT_A_FIT: 'Asked for a referral: not a fit right now',
+};
+
 const DONE: ReferralState[] = ['REFERRED', 'NOT_YET', 'NO_REFERRAL', 'NOT_A_FIT', 'WITHDRAWN', 'DECLINED'];
 
 /** Referral Bridge: connection first, proof of work, the referrer's human decides. */
@@ -67,7 +77,7 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
   const bridge = useMemo(() => new ReferralBridge(sharedTrust), []);
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
-  const [drawer, setDrawer] = useState(false);
+  const [howItWorks, setHowItWorks] = useState(false);
   const [lenses, setLenses] = useState<Lens[]>([]);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
@@ -96,11 +106,11 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
   }, [resetKey]);
 
   useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
+    if (!howItWorks) return;
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setHowItWorks(false);
     window.addEventListener('keydown', esc);
     return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
+  }, [howItWorks]);
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -121,18 +131,18 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     setPacket(new ApplicationPacket(SEEKER, REFERRER, () => unlocked.current));
     setCursor(0);
     setReplies({});
+    setHowItWorks(false);
+    setLenses([]);
   };
 
   function reset() {
     bridge.reset();
     sharedTrust.resetFor(resetKey);
     clearRun();
-    setDrawer(false);
-    setLenses([]);
     act(() => {});
   }
 
-  /** Fresh start (the referrer has 1 referral left this month). */
+  /** Fresh start (the referrer has a full month: 2 of 2 left). */
   const begin = (who: string) => {
     bridge.reset();
     clearRun();
@@ -168,6 +178,14 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     act(() => packet.prepare(JORDAN_PROFILE, DEMO_POSTINGS[0], PEOPLE[REFERRER]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caughtUp, state, seeker, packet]);
+
+  // The outcome lands on the seeker's own application for this job (they applied, so it's at least Applied).
+  useEffect(() => {
+    const summary = OUTCOME[bridge.state];
+    if (!caughtUp || !summary || !seeker) return;
+    applyStore.linkApplication({ owner: seeker, company: OPENING.company, role: OPENING.role, stage: 'Applied' }, { kind: 'referral', ref: `referral-${run.current}-${seeker}`, summary });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caughtUp, bridge.state, seeker]);
 
   const chatFor = (id: string): ReferralChatItem[] => {
     const items: ReferralChatItem[] = [];
@@ -218,8 +236,7 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
           )}
         </div>
         <div className="hero-meta">
-          <span className="proof-pill">Stats first · links only if it fits · names after both say yes · only a human refers</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
+          <button type="button" className="ghost small" onClick={() => setHowItWorks(true)}>How it works</button>
         </div>
       </header>
 
@@ -240,10 +257,10 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
       {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
 
       <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle="How the agents handled the referral. Students never see this."
+        open={howItWorks}
+        onClose={() => setHowItWorks(false)}
+        title="How it works"
+        subtitle="Fit check, staged disclosure, and the agent feed. Students never see this."
         badge={<span className={`state-pill ref-${state}`}>{STATE_TEXT[state]}</span>}
       >
         <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
@@ -293,7 +310,7 @@ function Stages({ events }: { events: AgentEvent[] }) {
   const row = (n: number, what: string, done: boolean, when: string) => (
     <li key={n} className={`board-row tone-${done ? 'good' : failed ? 'muted' : 'idle'}`}>
       <b>Stage {n} · {what}</b>
-      <span>{done ? 'Shared ✓' : failed ? 'Never shared' : when}</span>
+      <span>{done ? 'Shared' : failed ? 'Never shared' : when}</span>
     </li>
   );
   return (

@@ -6,7 +6,7 @@ import { Inspector } from './Inspector';
 import { JudgeLegend } from './JudgeLegend';
 import type { GraphView, Lens } from './view';
 
-/** Judges' view: the network from Aditya's side and the live agent feed, in a right-side drawer. */
+/** Demo inspector: network from Aditya's side and the live agent feed. Students never see this. */
 export function UnderTheHood({ open, onClose, state, events, ids, labels, label, view, names, lenses, onToggleLens }: {
   open: boolean;
   onClose: () => void;
@@ -24,8 +24,8 @@ export function UnderTheHood({ open, onClose, state, events, ids, labels, label,
     <Drawer
       open={open}
       onClose={onClose}
-      title="Under the hood"
-      subtitle="What the agents are doing, live. Students never see this."
+      title="How it works"
+      subtitle="Agent negotiation and privacy, live. Students never see this."
       badge={<span className={`state-pill state-${state}`}>{STATE_TEXT[state]}</span>}
     >
       <JudgeLegend active={lenses} onToggle={onToggleLens} />

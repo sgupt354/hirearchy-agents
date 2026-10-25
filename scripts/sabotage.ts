@@ -85,6 +85,42 @@ const SABOTAGES: Sabotage[] = [
     find: '    .map((x) => x.s);',
     replace: '    .map((x) => x.s)\n    .concat([...want].filter((t) => !profile.skills.some((s) => s.toLowerCase() === t)).map(label));',
   },
+  {
+    name: 'Pay it forward: points awarded for a session only one side confirmed',
+    file: 'src/features/community/points.ts',
+    find: '    if (!(set.has(s.helper) && set.has(s.helped)) || this.isSettled(sessionId)) return null;',
+    replace: '    if (this.isSettled(sessionId)) return null;',
+  },
+  {
+    name: 'Pay it forward: a referral granted by spending points',
+    file: 'src/features/community/community.ts',
+    find: '    throw new PointsCannotBuyReferralError(REFERRAL_RULE);',
+    replace: '    return { referred: true, spent: this.#ledger.pointsOf(person) } as never;',
+  },
+  {
+    name: "Pay it forward: the newcomer's name is in the listing, before consent",
+    file: 'src/features/community/community.ts',
+    find: '      handle: p.label,',
+    replace: '      handle: p.private.name,',
+  },
+  {
+    name: 'Readiness counts a mock interview that never happened',
+    file: 'src/features/journey/readiness.ts',
+    find: "  const mocks = linked('mock').length;",
+    replace: "  const mocks = Math.max(1, linked('mock').length);",
+  },
+  {
+    name: 'A nudge is sent for a muted job',
+    file: 'src/features/journey/nudges.ts',
+    find: '    if (state.mutedAll || state.muted.includes(app.id)) continue;',
+    replace: '    if (false) continue;',
+  },
+  {
+    name: 'A thank-you note leaks into what referrers see',
+    file: 'src/features/trust/evidence.ts',
+    find: '  if (stage === 1) return { stage: 1, ...base };',
+    replace: '  if (stage === 1) return { stage: 1, ...base, thankYouNotes: file.thankYouNotes } as EvidenceStage1;',
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';

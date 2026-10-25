@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AgentEvent } from '../../engine/types';
-import { Drawer, Inspector, JudgeLegend, SPEEDS, clock, type Lens } from '../../ui/kit';
-import { longReason, shortReason } from '../../ui/copy';
+import { SPEEDS, clock } from '../../ui/kit';
 import type { TabProps } from '../types';
-import { describeMock } from './copy';
 import { MockPhone, type MockAction, type MockChatItem } from './MockPhone';
 import { MockSwap, type MockState, type StateChange } from './mockSwap';
 import { MOCK_SEEKER, SOLO_SEEKER, createMockSeed } from './seed';
 import type { Skill } from '../../engine/types';
 import type { Rating } from '../trust/ledger';
-import { trust as sharedTrust, type TrustNetwork } from '../trust/network';
+import { trust as sharedTrust } from '../trust/network';
 import { personOf } from '../trust/people';
 import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
+import { applyStore } from '../apply/store';
+
+/** The job the seeker's round is for (from the mock seed's own pipeline field). */
+const SEEKER_JOB = createMockSeed().find((p) => p.agent_id === MOCK_SEEKER)!.pipeline;
 
 const PEOPLE: Record<string, string> = { m1: 'Aditya', m4: 'Jordan', m5: 'Priya', m8: 'Riya' };
 
@@ -25,22 +26,6 @@ interface Reply {
 const stateAt = (history: StateChange[], cursor: number): MockState =>
   history.reduce<MockState>((s, h) => (h.afterEvents <= cursor ? h.to : s), 'IDLE');
 
-const STATE_TEXT: Record<MockState, string> = {
-  IDLE: 'Ready',
-  MATCHING: 'Finding a partner',
-  MATCH_FOUND: 'Partner found',
-  NEGOTIATING: 'Negotiating',
-  AWAITING_HUMANS: 'Waiting on students',
-  AWAITING_CONSENT: 'Waiting on students',
-  DECLINED: 'Someone said no',
-  CONFIRMED: 'Confirmed',
-  ROUND_1: 'Round 1',
-  ROUND_2: 'Round 2',
-  SCORING: 'Scoring',
-  COMPLETED: 'Done',
-  NO_PEER: 'No peer free',
-  SOLO: 'Practicing with agent',
-};
 
 function heroStatus(state: MockState, solo: boolean): { text: string; tone: string } {
   if (state === 'COMPLETED') return { text: solo ? '✓ Practice done · self-scores saved privately' : '✓ Mock swap done · scores went privately to each person', tone: 'good' };
@@ -61,19 +46,14 @@ export function MockTab({ speed, resetKey }: TabProps) {
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [solo, setSolo] = useState(false);
-  const [drawer, setDrawer] = useState(false);
-  const [lenses, setLenses] = useState<Lens[]>([]);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
   const run = useRef(0);
 
   const events = mock.events();
   const caughtUp = cursor >= events.length;
-  const shown = events.slice(0, cursor);
   const state = stateAt(mock.history(), cursor);
   const labels = mock.labels();
-  const viewer = solo ? SOLO_SEEKER : MOCK_SEEKER;
-  const label = (id: string) => (id === viewer ? 'You' : id === 'broker' ? 'Broker' : (labels[id] ?? id));
 
   useEffect(() => {
     if (caughtUp) return;
@@ -87,12 +67,6 @@ export function MockTab({ speed, resetKey }: TabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -114,8 +88,6 @@ export function MockTab({ speed, resetKey }: TabProps) {
     setRatedAt({});
     setCursor(0);
     setSolo(false);
-    setDrawer(false);
-    setLenses([]);
     setReplies({});
     act(() => {});
   }
@@ -150,6 +122,14 @@ export function MockTab({ speed, resetKey }: TabProps) {
     const taught = Object.fromEntries(pair.map((id) => [personOf(id), match?.teaches[id] ?? []]));
     trustNet.recordSession({ id: sessionId, kind: 'mock', members: pair.map(personOf), taught });
     for (const id of pair) trustNet.addMockScores(personOf(id), ownScores(id).filter((s) => !s.practice).map((s) => s.rubric));
+    // The seeker's application for this job gets the mock and the topics both sides practiced.
+    if (pair.includes(MOCK_SEEKER)) {
+      const topics = [...new Set(pair.flatMap((id) => match?.teaches[id] ?? []))];
+      applyStore.linkApplication(
+        { owner: personOf(MOCK_SEEKER), company: SEEKER_JOB.company, role: SEEKER_JOB.role, stage: 'Interview' },
+        { kind: 'mock', ref: sessionId, summary: 'Swapped with a peer, scored privately', topics },
+      );
+    }
   });
 
   const ratePartner = (id: string, ratings: Record<string, Rating>) => {
@@ -222,10 +202,6 @@ export function MockTab({ speed, resetKey }: TabProps) {
             </span>
           )}
         </div>
-        <div className="hero-meta">
-          <span className="proof-pill">Scores go only to the person scored · names unlock after both say yes</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
-        </div>
       </header>
 
       <main className="phones">
@@ -247,82 +223,6 @@ export function MockTab({ speed, resetKey }: TabProps) {
 
       {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
 
-      <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle="How the agents found a mock partner. Students never see this."
-        badge={<span className={`state-pill mock-${state}`}>{STATE_TEXT[state]}</span>}
-      >
-        <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
-        <div className="drawer-body">
-          <section className="card">
-            <h3>Match board · {solo ? "Riya's" : "Aditya's"} view</h3>
-            <MatchBoard events={shown} viewer={viewer} labels={labels} trust={trustNet} />
-          </section>
-          <section className="card feed-card">
-            <h3>Agent conversation</h3>
-            <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeMock} />
-          </section>
-        </div>
-      </Drawer>
     </div>
   );
-}
-
-function Reliability({ trust, person }: { trust: TrustNetwork; person: string }) {
-  const s = trust.summary(person);
-  return <small className="rel">{s.reliability !== null ? `★ ${s.reliability.toFixed(1)} · ${s.count} ratings` : 'New'}</small>;
-}
-
-const RULES = [
-  'Same company and round',
-  'At least 60 minutes free together',
-  'Same difficulty preference',
-  'Never a 3rd mock with the same person (private)',
-  'Complementary weak spots first, then the more reliable partner',
-];
-
-/** Every candidate from the seeker's side: matched, backup, skipped or filtered (with the reason). */
-function MatchBoard({ events, viewer, labels, trust }: { events: AgentEvent[]; viewer: string; labels: Record<string, string>; trust: TrustNetwork }) {
-  const status: Record<string, { text: string; tone: string; title?: string }> = {};
-  let current: string[] = [];
-  for (const e of events.filter((x) => x.from === viewer || x.to.includes(viewer))) {
-    if (e.type === 'FILTERED') status[e.payload.handle as string] = { text: shortMockReason(e.payload.reason as string), tone: 'muted', title: longReason(e.payload.reason as string) };
-    if (e.type === 'REJECT' && e.payload.handle) status[e.payload.handle as string] = { text: 'Skipped · private rule', tone: 'warn' };
-    if (e.type === 'DISCOVER' && e.payload.match) {
-      for (const id of current) if (id !== viewer) status[id] = { text: 'Earlier match', tone: 'muted' };
-      current = (e.payload.match as { members: string[] }).members;
-      for (const id of current) if (id !== viewer) status[id] = { text: 'Paired ✓', tone: 'good' };
-      for (const id of e.payload.backups as string[]) status[id] = { text: 'Backup', tone: 'info' };
-    }
-  }
-  const ids = Object.keys(labels).filter((id) => id !== viewer);
-  return (
-    <div className="board">
-      <ul className="board-list">
-        {ids.map((id) => (
-          <li key={id} className={`board-row tone-${status[id]?.tone ?? 'idle'}`} title={status[id]?.title}>
-            <b>
-              {labels[id]}
-              <Reliability trust={trust} person={personOf(id)} />
-            </b>
-            <span>{status[id]?.text ?? (events.length ? 'Checking…' : 'Waiting')}</span>
-          </li>
-        ))}
-      </ul>
-      <p className="board-note">★ = reliability from private post-session ratings, shown only after 2+ ratings. It breaks ties between equally good partners.</p>
-      <h3>Rules the agents enforce</h3>
-      <ul className="rules">
-        {RULES.map((r) => <li key={r}>✓ {r}</li>)}
-      </ul>
-    </div>
-  );
-}
-
-function shortMockReason(reason: string): string {
-  if (/round/.test(reason)) return 'Different round';
-  if (/60 minutes/.test(reason)) return 'Not enough time together';
-  if (/difficulty/.test(reason)) return 'Different difficulty';
-  return shortReason(reason);
 }

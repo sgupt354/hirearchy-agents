@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChatBubble, Drawer, PhoneFrame, QuickReplies, clock } from '../../ui/kit';
+import { ChatBubble, PhoneFrame, QuickReplies, clock } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
 import { findContacts, type ContactsOutcome } from './outreach/contacts';
@@ -30,7 +30,6 @@ export function ApplyTab({ resetKey }: TabProps) {
   const [printing, setPrinting] = useState(false);
   const [found, setFound] = useState<(ContactsOutcome & { postingId: string }) | null>(null);
   const [looking, setLooking] = useState(false);
-  const [drawer, setDrawer] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
 
   const firstReset = useRef(resetKey);
@@ -40,7 +39,6 @@ export function ApplyTab({ resetKey }: TabProps) {
     setView('resume');
     setLines([]);
     setFound(null);
-    setDrawer(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
@@ -111,7 +109,6 @@ export function ApplyTab({ resetKey }: TabProps) {
     did('Save as PDF', `Opened the print dialog. Choose "Save as PDF"; the file is named "${fileName}".`);
   };
 
-  const demoPosting = posting.source === 'demo';
   const contacts = found?.postingId === posting.id ? found : null;
 
   const lookUp = async () => {
@@ -123,7 +120,7 @@ export function ApplyTab({ resetKey }: TabProps) {
       `Find contacts at ${posting.company}`,
       out.source === 'apollo'
         ? `Found ${out.contacts.length} people at ${posting.company} through Apollo. Pick one and I'll draft an intro; you send it.`
-        : `Here are 3 sample contacts, clearly marked as demo data${out.note === 'rate_limited' ? ' (Apollo is rate limited right now)' : ''}. Real ones need an Apollo key on the server.`,
+        : `Here are 3 sample contacts${out.note === 'rate_limited' ? ' (Apollo is rate limited right now)' : ''}. Connect Apollo on the server for live results.`,
     );
   };
 
@@ -136,7 +133,7 @@ export function ApplyTab({ resetKey }: TabProps) {
         <div className="live-form">
           <select className="field wide" aria-label="Posting" value={posting.id} onChange={(e) => store.select(e.target.value)}>
             {postings.map((p) => (
-              <option key={p.id} value={p.id}>{`${p.company} · ${p.title}${p.source === 'demo' ? ' (demo posting)' : ''}`}</option>
+              <option key={p.id} value={p.id}>{`${p.company} · ${p.title}`}</option>
             ))}
           </select>
           <div className="segmented" role="group" aria-label="View">
@@ -145,14 +142,10 @@ export function ApplyTab({ resetKey }: TabProps) {
             ))}
           </div>
         </div>
-        <div className="hero-meta">
-          <span className="proof-pill">Only your own bullets and skills · requirements you don't meet are listed, never invented</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agent is doing</button>
-        </div>
       </header>
 
       <main className="phones">
-        <PhoneFrame owner="Aditya" caption={demoPosting ? 'applying (demo posting)' : `applying to ${posting.company}`} chatRef={chat}>
+        <PhoneFrame owner="Aditya" caption={`applying to ${posting.company}`} chatRef={chat}>
           <p className="chat-day">Today {lines[0]?.time ?? clock()}</p>
           <ChatBubble from="agent" text={`For ${posting.company} ${posting.title}: I picked ${r.kept} of your ${r.total} bullets${r.matched.length ? ` and put ${list(r.matched.slice(0, 4))} first` : ''}. I only used what's in your profile.`} />
           <ChatBubble
@@ -194,7 +187,7 @@ export function ApplyTab({ resetKey }: TabProps) {
                       <span>{t.company} · {t.location || 'Location not listed'} · saved {t.trackedAt}</span>
                     </div>
                     <div className="job-actions tracker-row-actions">
-                      {t.source === 'demo' && <span className="chip withheld">Demo data</span>}
+                      
                       <select className="field status" aria-label={`Status for ${t.company}`} value={t.status ?? 'Saved'} onChange={(e) => changeStatus(t.id, t.company, e.target.value as TrackerStatus)}>
                         {TRACKER_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
                       </select>
@@ -214,7 +207,7 @@ export function ApplyTab({ resetKey }: TabProps) {
               <h3>Intro email · {posting.company}</h3>
               <div className="find-contacts">
                 <button className="ghost small" disabled={looking} onClick={lookUp}><Icon name="users" /> {looking ? 'Looking' : `Find contacts at ${posting.company}`}</button>
-                {contacts && <span className={`chip ${contacts.source === 'apollo' ? 'shared' : 'withheld'}`}>{contacts.source === 'apollo' ? 'From Apollo' : 'Demo data'}</span>}
+                {contacts && <span className={`chip ${contacts.source === 'apollo' ? 'shared' : 'withheld'}`}>{contacts.source === 'apollo' ? 'From Apollo' : 'Sample contacts'}</span>}
               </div>
               <OutreachPanel
                 key={posting.id}
@@ -258,30 +251,6 @@ export function ApplyTab({ resetKey }: TabProps) {
         </section>
       </main>
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Under the hood" subtitle="What your agent did for this application, and what left your device.">
-        <div className="drawer-body single">
-          <section className="card feed-card">
-            <h3>Steps</h3>
-            <ol className="steps">
-              {[
-                { t: `Read the ${posting.company} posting`, shared: [], summarized: [`${r.matched.length + r.unmet.length} requirement terms`], hidden: [] },
-                { t: 'Tailored your resume', shared: [], summarized: [`${r.kept} of ${r.total} of your bullets`], hidden: ['bullets it left out', 'anything you didn\'t write'] },
-                ...(contacts ? [{ t: contacts.source === 'apollo' ? 'Looked up contacts through Apollo' : 'Showed demo contacts', shared: contacts.source === 'apollo' ? [`company: ${posting.company}`, 'job titles'] : [], summarized: [], hidden: ['your profile', 'your resume'] }] : []),
-                ...lines.filter((l) => l.from === 'me').map((l) => ({ t: l.text, shared: [], summarized: [], hidden: [/draft/i.test(l.text) ? 'the draft: you send it yourself' : 'the file stays on your computer'] })),
-              ].map((st, i) => (
-                <li key={i} className="step">
-                  <b>{st.t}</b>
-                  <div className="job-chips">
-                    {st.shared.length ? st.shared.map((x) => <span key={x} className="chip shared">Shared: {x}</span>) : <span className="chip shared">Shared: nothing</span>}
-                    {st.summarized.map((x) => <span key={x} className="chip abstracted">Summarized: {x}</span>)}
-                    {st.hidden.map((x) => <span key={x} className="chip withheld">Hidden: {x}</span>)}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        </div>
-      </Drawer>
 
       {printing && createPortal(<div className="print-root"><ResumeDoc r={r} /></div>, document.body)}
     </div>

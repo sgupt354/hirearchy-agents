@@ -61,11 +61,10 @@ input, textarea { font: inherit; color: var(--text); }
 
 /* ---------- layout ---------- */
 .shell { height: 100vh; min-height: 640px; display: flex; flex-direction: column; padding: 0 28px; max-width: 1480px; margin: 0 auto; }
-.journey-line { margin: -4px 0 8px; text-align: center; font-size: 12.5px; color: var(--muted); letter-spacing: 0.01em; flex: none; }
-.journey-line b { color: var(--text); font-weight: 600; }
 .tab-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .tab-panel[hidden] { display: none; }
 .app { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: 18px; }
+.app[hidden] { display: none; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; flex: none; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); }
 .brand { text-decoration: none; }
@@ -82,6 +81,9 @@ input, textarea { font: inherit; color: var(--text); }
 }
 .tab:hover { color: var(--text); }
 .tab.on { background: var(--ink); color: white; box-shadow: 0 4px 12px -4px rgba(10, 37, 64, 0.5); }
+/* Nine-plus tabs: tighter on laptop widths, icons dropped before anything clips. */
+@media (max-width: 1440px) { .tab { padding: 7px 10px; gap: 5px; } }
+@media (max-width: 1320px) { .tab { padding: 7px 9px; font-size: 12.5px; } .tab .ico { display: none; } }
 .hero-meta { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; max-width: 100%; }
 .hero-meta .hood-btn { padding: 5px 13px; font-size: 12.5px; }
 .hood-btn {
@@ -482,6 +484,12 @@ button.chip:hover { border-color: var(--border-strong); color: var(--text); }
 .coach-form { display: flex; gap: 1.6cqw; width: 100%; }
 .coach-form input { flex: 1; min-width: 0; padding: 2cqw 3cqw; border-radius: 99px; border: 1px solid var(--border-strong); background: white; color: inherit; font-size: 3.8cqw; outline: none; }
 .coach-form input:focus { border-color: var(--accent); }
+/* Ask the network: the composer inside the phone (same look as the coach note input). */
+.composer { display: flex; gap: 1.6cqw; width: 100%; margin-top: 1.6cqw; }
+.composer input { flex: 1; min-width: 0; padding: 2cqw 3cqw; border-radius: 99px; border: 1px solid var(--border-strong); background: white; color: inherit; font-size: 3.8cqw; outline: none; }
+.composer input:focus { border-color: var(--accent); }
+.composer .send { width: auto; height: auto; padding: 1.8cqw 3.6cqw; border-radius: 99px; font-size: 3.6cqw; font-weight: 600; }
+.composer .send:disabled { opacity: 0.45; }
 
 /* ---------- apply suite: live search, apply, outreach ---------- */
 .tab-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
@@ -591,3 +599,52 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .tracker-summary span { font-size: 11px; color: var(--muted); }
 .tracker-row-actions { align-items: center; }
 .field.status { min-width: 0; height: 32px; width: 132px; font-size: 12.5px; }
+
+/* ---------- pay it forward ---------- */
+.ev-badge { margin-left: auto; font-family: var(--font); font-size: 3cqw; font-weight: 650; padding: 0.6cqw 2.2cqw; border-radius: 999px; color: var(--human); background: var(--human-bg); border: 1px solid rgba(139, 92, 246, 0.3); }
+.points-card { margin-top: 1.4cqw; padding: 3.4cqw; max-width: 92%; border-radius: 4.4cqw; background: linear-gradient(180deg, #faf8ff, #ffffff); border: 1px solid rgba(139, 92, 246, 0.35); display: flex; flex-direction: column; gap: 1.6cqw; animation: pop 260ms var(--ease) both; }
+.points-card .pts { font-family: var(--display); font-size: 7cqw; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.points-card small { font-size: 3.2cqw; color: var(--muted); line-height: 1.4; }
+.lvl { display: flex; flex-direction: column; gap: 6px; }
+.lvl-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; color: var(--ink); }
+.lvl-head b { font-family: var(--display); font-size: 18px; }
+.lvl-head span { color: var(--muted); font-size: 12px; }
+.lvl-bar { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.lvl-bar i { display: block; min-width: 8px; height: 100%; border-radius: inherit; background: var(--accent); transition: width 600ms var(--ease); }
+.points-card .lvl-bar { height: 1.8cqw; }
+.points-card .lvl-head { font-size: 3.4cqw; }
+.points-card .lvl-head b { font-size: 4.2cqw; }
+.points-card .lvl-head span { font-size: 3cqw; }
+.cm-rules { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--body); line-height: 1.55; }
+.perks-block { display: flex; flex-direction: column; gap: 8px; }
+.perks-block .board-list { margin: 0; }
+.cm-side { max-height: calc(100cqh - 20px); overflow: auto; }
+.cm-refusal { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; color: var(--warn); background: var(--warn-bg); border: 1px solid rgba(245, 158, 11, 0.35); }
+.state-pill.cm-OPEN, .state-pill.cm-MATCHED { color: var(--human); background: var(--human-bg); border-color: rgba(139, 92, 246, 0.3); }
+.state-pill.cm-BOOKED, .state-pill.cm-DONE { color: var(--good); background: var(--good-bg); border-color: rgba(16, 185, 129, 0.3); }
+.state-pill.cm-EXPIRED, .state-pill.cm-CANCELLED { color: var(--muted); background: var(--surface-3); border-color: var(--border); }
+.pack-q { display: flex; flex-direction: column; gap: 0.6cqw; }
+
+/* ---------- my applications ---------- */
+.apps-card { gap: 10px; }
+.app-pick { width: 100%; text-align: left; cursor: pointer; font: inherit; }
+.board-row.tone-idle b { color: var(--ink); }
+.stage-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-steps button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; transition: all 200ms var(--ease); }
+.stage-steps button b { font-weight: 650; }
+.stage-steps button span { font-size: 11px; color: var(--faint); min-height: 14px; }
+.stage-steps .done button { color: var(--good); border-color: rgba(16, 185, 129, 0.4); background: #f0fdf7; }
+.stage-steps .now button { color: white; background: var(--ink); border-color: var(--ink); }
+.stage-steps .now button span { color: rgba(255, 255, 255, 0.7); }
+.next-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.thank-form { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; }
+.thank-form textarea { resize: vertical; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); line-height: 1.4; width: 100%; box-sizing: border-box; }
+.ev-thanks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; text-align: left; font-weight: 500; }
+.ev-thanks i { font-style: normal; color: var(--muted); }
+.readiness { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.readiness .cta.small { align-self: flex-start; }
+.readiness-parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--body); }
+.readiness-parts li { display: flex; justify-content: space-between; gap: 10px; }
+.readiness-parts li b { color: var(--muted); font-weight: 650; white-space: nowrap; }
+.readiness-parts li.full b { color: var(--good); }
+.readiness-parts li.none b { color: var(--warn); }
