@@ -38,7 +38,15 @@ h2 { margin: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.06
   border-radius: 999px; padding: 4px 10px;
 }
 .proof i { color: var(--muted); }
-.error { margin: 0; color: var(--bad); }
+.error { color: var(--bad); font-size: 13px; }
+.status-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.invite { display: flex; gap: 6px; }
+.invite input { width: 230px; }
+.invite-ok { color: var(--good); font-size: 13px; }
+.invite-bad { color: var(--warn); font-size: 13px; }
+.speed { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.speed button { border: none; border-radius: 0; padding: 7px 10px; text-transform: capitalize; background: var(--panel); }
+.speed button.on { background: var(--panel-2); color: var(--accent); font-weight: 600; }
 
 .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
 .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 14px; min-width: 0; }
@@ -114,4 +122,6 @@ footer { display: flex; justify-content: flex-end; }
 @media (max-width: 900px) {
   .grid { grid-template-columns: minmax(0, 1fr); }
   .controls { justify-content: flex-start; }
+  .invite { flex: 1 1 100%; }
+  .invite input { flex: 1; width: auto; }
 }

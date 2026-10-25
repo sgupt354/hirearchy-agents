@@ -1,26 +1,34 @@
-import { durationMinutes, formatWindow12h, fromMinutes, toMinutes } from './time';
-import type { Skill, TimeWindow } from './types';
+import { durationMinutes, fromMinutes, toMinutes } from './time';
+import type { TimeWindow } from './types';
 
-// Template messages from an agent to its own human. Phase 4 adds a Claude rewrite with this as the fallback.
+// Template text for messages an agent sends its own human. This is the single source of the fallback
+// text; the UI routes these through generateMessage() (integrations) and falls back to this.
 
-export interface ProposalContext {
-  pipeline: { company: string; role: string };
-  circleSize: number;
-  gives: Skill[];
-  gets: Skill[];
-  window: TimeWindow;
-  updated: boolean;
-}
+export type MessageKind = 'proposal' | 'counter' | 'reveal' | 'complete';
 
-export function proposalMessage(c: ProposalContext): string {
-  const lead = c.updated
-    ? `Updated time for your ${c.pipeline.company} ${c.pipeline.role} prep circle.`
-    : `Your agent found a ${c.circleSize}-person prep circle in your ${c.pipeline.company} ${c.pipeline.role} pipeline.`;
-  return (
-    `${lead} You'd get help with ${c.gets.join(', ')} and help someone with ${c.gives.join(', ')}. ` +
-    `Time: ${formatWindow12h(c.window)}. Names and contacts stay hidden until everyone accepts. ` +
-    `Accept, counter, or decline?`
-  );
+export function messageText(kind: MessageKind, d: Record<string, string>): string {
+  switch (kind) {
+    case 'proposal': {
+      const lead =
+        d.updated === 'true'
+          ? `Updated time for your ${d.company} ${d.role} prep circle.`
+          : `Your agent found a ${d.circleSize}-person prep circle in your ${d.company} ${d.role} pipeline.`;
+      return (
+        `${lead} You'd get help with ${d.gets} and help someone with ${d.gives}. ` +
+        `Time: ${d.window}. Names and contacts stay hidden until everyone accepts. ` +
+        `Accept, counter, or decline?`
+      );
+    }
+    case 'counter':
+      if (d.status === 'proposing') return `Proposing ${d.window} to the others…`;
+      if (d.status === 'rejected') return `Your counter didn't fit everyone. ${d.reason}`;
+      if (d.status === 'own_conflict') return `${d.window} doesn't work with your own availability.`;
+      return `I couldn't find a time in "${d.text}". Try "8pm" or "20:00-21:00".`;
+    case 'reveal':
+      return `Everyone said yes! Your circle: ${d.members}.`;
+    case 'complete':
+      return `Prep Circle Created ✓ · ${d.window} · ${d.skills}`;
+  }
 }
 
 const TIME = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/gi;

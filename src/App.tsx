@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Engine, TRIGGER_AGENT_ID, type HumanReply, type PhoneMessage, type Skill, type TimeWindow } from './engine';
+import { Engine, PIPELINE, TRIGGER_AGENT_ID, type HumanReply, type PhoneMessage, type Skill, type TimeWindow } from './engine';
 import { shortWindow } from './ui/format';
 import { Graph } from './ui/Graph';
 import { Inspector } from './ui/Inspector';
+import { downloadIcs, generateMessage, notifyPhone, parseInvite } from './ui/integrationsStub';
 import { Phone } from './ui/Phone';
 import { deriveGraph, stateAt } from './ui/view';
 import summary from './ui/test-summary.json';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
-const STEP_MS = 260;
+const SPEEDS = { slow: 700, normal: 260, fast: 80 } as const;
+type Speed = keyof typeof SPEEDS;
 // Demo personas for each student's own phone. Names on the graph come only from getIdentity().
 const PHONES = [
   { id: 'a1', owner: "Aditya's phone" },
@@ -18,12 +20,22 @@ const PHONES = [
   { id: 'a4', owner: "Jordan's phone" },
 ];
 
+const today = () => new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD, local time
+
 export default function App() {
   const engine = useMemo(() => new Engine(), []);
   const [, setVersion] = useState(0);
+  const [speed, setSpeed] = useState<Speed>('normal');
   const [cursor, setCursor] = useState(0);
   const [error, setError] = useState('');
+  const [invite, setInvite] = useState('');
+  const [inviteStatus, setInviteStatus] = useState('');
+  const [invitePending, setInvitePending] = useState(false);
+  const [generated, setGenerated] = useState<Record<string, string>>({});
   const phones = useRef<Record<string, PhoneMessage[]>>({});
+  const requested = useRef(new Set<string>());
+  // Bumped on reset so async results from a previous run are dropped.
+  const run = useRef(0);
 
   const events = engine.events();
   const caughtUp = cursor >= events.length;
@@ -34,11 +46,33 @@ export default function App() {
   // Replay new events one by one so the feed and graph read as a live conversation.
   useEffect(() => {
     if (caughtUp) return;
-    const t = setTimeout(() => setCursor((c) => c + 1), STEP_MS);
+    const t = setTimeout(() => setCursor((c) => c + 1), SPEEDS[speed]);
     return () => clearTimeout(t);
-  }, [cursor, caughtUp]);
+  }, [cursor, caughtUp, speed]);
 
   if (caughtUp) phones.current = Object.fromEntries(PHONES.map((p) => [p.id, engine.phone(p.id)]));
+
+  // Every structured phone message goes through generateMessage(); the template text is the fallback.
+  // Aditya's "human required" messages are also pushed with notifyPhone().
+  useEffect(() => {
+    if (!caughtUp) return;
+    const thisRun = run.current;
+    for (const p of PHONES) {
+      for (const m of phones.current[p.id] ?? []) {
+        const key = `${thisRun}:${p.id}:${m.id}`;
+        if (requested.current.has(key)) continue;
+        requested.current.add(key);
+        const text = m.kind
+          ? generateMessage({ recipientLabel: labels[p.id], kind: m.kind, details: m.details ?? {} }).catch(() => m.text)
+          : Promise.resolve(m.text);
+        text.then((t) => {
+          if (run.current !== thisRun) return;
+          if (m.kind) setGenerated((g) => ({ ...g, [key]: t }));
+          if (p.id === VIEWER && m.actions.length) notifyPhone(t).catch(() => {});
+        });
+      }
+    }
+  });
 
   const view = deriveGraph(shown, IDS, VIEWER);
   const names: Record<string, string> = {};
@@ -62,14 +96,51 @@ export default function App() {
     setVersion((v) => v + 1);
   };
   const reply = (id: string, r: HumanReply) => act(() => engine.reply(id, r));
+
+  /** Back to the exact start state. Only the presenter's speed setting is kept. */
   const reset = () => {
+    run.current += 1;
     engine.resetDemo();
     phones.current = {};
+    requested.current.clear();
+    setGenerated({});
     setCursor(0);
+    setInvite('');
+    setInviteStatus('');
+    setInvitePending(false);
     act(() => {});
   };
 
+  const readInvite = async () => {
+    const thisRun = run.current;
+    setInvitePending(true);
+    setInviteStatus('');
+    const parsed = await parseInvite(invite).catch(() => null);
+    if (run.current !== thisRun) return;
+    setInvitePending(false);
+    const ok =
+      parsed && /interview/i.test(parsed.stage) && parsed.company === PIPELINE.company && parsed.role === PIPELINE.role;
+    if (!ok) return setInviteStatus('Not an interview invite');
+    setInviteStatus(`Interview invite: ${parsed.company} / ${parsed.role}`);
+    act(() => engine.simulateInterviewInvite());
+  };
+
   const complete = caughtUp ? events.find((e) => e.type === 'COMPLETE') : undefined;
+  const pipeline = complete?.payload.pipeline as { company: string; role: string } | undefined;
+  const slot = complete?.payload.window as TimeWindow | undefined;
+  const skills = complete?.payload.skills as Skill[] | undefined;
+  const saveIcs = () => {
+    const members = (complete!.payload.members as string[]).map((id) => engine.getIdentity(VIEWER, id).name);
+    downloadIcs({
+      title: `Prep Circle · ${pipeline!.company} ${pipeline!.role}`,
+      start: slot!.start,
+      end: slot!.end,
+      date: today(),
+      description: `Skills: ${skills!.join(', ')}\nMembers: ${members.join(', ')}`,
+    });
+  };
+
+  const idle = engine.state === 'IDLE';
   const mayaCanDecline = caughtUp && Boolean(phones.current.a3?.at(-1)?.actions.length);
   const visiblePhones = PHONES.filter((p) => p.id !== 'a4' || (phones.current.a4?.length ?? 0) > 0);
 
@@ -83,26 +154,51 @@ export default function App() {
           </p>
         </div>
         <div className="controls">
-          <button className="primary" disabled={engine.state !== 'IDLE'} onClick={() => act(() => engine.simulateInterviewInvite())}>
+          <button className="primary" disabled={!idle} onClick={() => act(() => engine.simulateInterviewInvite())}>
             📩 Simulate interview invite
           </button>
+          <form
+            className="invite"
+            onSubmit={(e) => {
+              e.preventDefault();
+              readInvite();
+            }}
+          >
+            <input
+              value={invite}
+              onChange={(e) => setInvite(e.target.value)}
+              placeholder="📩 Paste an interview invite"
+              aria-label="Paste an interview invite"
+              disabled={!idle || invitePending}
+            />
+            <button type="submit" disabled={!idle || invitePending || !invite.trim()}>
+              {invitePending ? 'Reading…' : 'Read'}
+            </button>
+          </form>
           <button disabled={!mayaCanDecline} onClick={() => reply('a3', { kind: 'decline' })}>Decline as Maya</button>
-          <span className="proof" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
-            {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
-          </span>
+          <div className="speed" role="group" aria-label="Playback speed">
+            {(Object.keys(SPEEDS) as Speed[]).map((s) => (
+              <button key={s} className={s === speed ? 'on' : ''} aria-pressed={s === speed} onClick={() => setSpeed(s)}>
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
-
-      {error && <p className="error" role="alert">{error}</p>}
+      <div className="status-row">
+        <span className="proof" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
+          {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
+        </span>
+        {inviteStatus && <span className={inviteStatus.startsWith('Not') ? 'invite-bad' : 'invite-ok'}>{inviteStatus}</span>}
+        {error && <span className="error" role="alert">{error}</span>}
+      </div>
 
       {complete && (
         <section className="final">
           <span>
-            Prep Circle Created ✓ · {(complete.payload.pipeline as { company: string; role: string }).company}{' '}
-            {(complete.payload.pipeline as { company: string; role: string }).role} · {shortWindow(complete.payload.window as TimeWindow)} ·{' '}
-            {(complete.payload.skills as Skill[]).join(', ')}
+            Prep Circle Created ✓ · {pipeline!.company} {pipeline!.role} · {shortWindow(slot!)} · {skills!.join(', ')}
           </span>
-          <button disabled title=".ics download arrives in phase 5">📅 Download .ics</button>
+          <button onClick={saveIcs}>📅 Download .ics</button>
         </section>
       )}
 
@@ -119,10 +215,10 @@ export default function App() {
       <section className="phones">
         {visiblePhones.map((p) => (
           <Phone
-            key={p.id}
+            key={`${run.current}:${p.id}`}
             owner={p.owner}
             subtitle={`Others see: ${labels[p.id]}`}
-            messages={phones.current[p.id] ?? []}
+            messages={(phones.current[p.id] ?? []).map((m) => ({ ...m, text: generated[`${run.current}:${p.id}:${m.id}`] ?? m.text }))}
             busy={!caughtUp}
             onReply={(r) => reply(p.id, r)}
           />

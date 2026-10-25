@@ -4,7 +4,7 @@ import { evaluateAvailabilityCheck, evaluateJoin, evaluateOwnCounter, evaluateSc
 import { BROKER } from './events';
 import { formatWindow, formatWindow12h } from './time';
 import type { AgentEvent, AgentProfile, Draft, HumanReply, Identity, PhoneMessage, Skill, TimeWindow } from './types';
-import { parseCounter, proposalMessage } from './voice';
+import { messageText, parseCounter, type MessageKind } from './voice';
 
 interface Circle {
   members: string[];
@@ -59,17 +59,17 @@ export class Agent {
         if (p.kind === 'join') return [this.#join(event)];
         return [];
       case 'CONFLICT':
-        if (p.counter_rejected) this.#notify(`Your counter didn't fit everyone. ${p.reason}`, ['accept', 'counter', 'decline']);
+        if (p.counter_rejected) this.#message('counter', { status: 'rejected', reason: p.reason as string }, ['accept', 'counter', 'decline']);
         return [];
       case 'DISSOLVED':
         this.#pending = null;
         this.#notify(`${p.reason}. Nothing about you was shared. Your agent is looking for another match.`);
         return [];
       case 'REVEAL':
-        this.#notify(`Everyone said yes! Your circle: ${(p.identities as Identity[]).map((i) => `${i.name} (${i.email}, ${i.discord_id})`).join('; ')}.`);
+        this.#message('reveal', { members: (p.identities as Identity[]).map((i) => `${i.name} (${i.email}, ${i.discord_id})`).join('; ') });
         return [];
       case 'COMPLETE':
-        this.#notify(`Prep Circle Created ✓ · ${formatWindow12h(p.window as TimeWindow)} · ${(p.skills as Skill[]).join(', ')}`);
+        this.#message('complete', { window: formatWindow12h(p.window as TimeWindow), skills: (p.skills as Skill[]).join(', ') });
         return [];
       default:
         return [];
@@ -111,16 +111,16 @@ export class Agent {
 
     const counter = parseCounter(reply.text, window);
     if (!counter) {
-      this.#notify(`I couldn't find a time in "${reply.text}". Try "8pm" or "20:00-21:00".`, ['accept', 'counter', 'decline']);
+      this.#message('counter', { status: 'unreadable', text: reply.text }, ['accept', 'counter', 'decline']);
       return [];
     }
     const own = evaluateOwnCounter(this.#profile, counter);
     if (!own.ok) {
-      this.#notify(`${formatWindow12h(counter)} doesn't work with your own availability.`, ['accept', 'counter', 'decline']);
+      this.#message('counter', { status: 'own_conflict', window: formatWindow12h(counter) }, ['accept', 'counter', 'decline']);
       return [];
     }
     this.#pending = null;
-    this.#notify(`Proposing ${formatWindow12h(counter)} to the others…`);
+    this.#message('counter', { status: 'proposing', window: formatWindow12h(counter) });
     return [
       {
         type: 'COUNTER',
@@ -175,15 +175,17 @@ export class Agent {
       return { type: 'CONSENT', to: [BROKER], payload: { round }, human_readable: `${this.label}'s agent joins on its own` };
     }
     this.#pending = { round, window };
-    this.#notify(
-      proposalMessage({
-        pipeline: this.#profile.pipeline,
-        circleSize: circle.members.length,
-        gives: circle.edges.filter((e) => e.from === this.id).flatMap((e) => e.skills),
-        gets: circle.edges.filter((e) => e.to === this.id).flatMap((e) => e.skills),
-        window,
-        updated: Boolean(p.updated),
-      }),
+    this.#message(
+      'proposal',
+      {
+        company: this.#profile.pipeline.company,
+        role: this.#profile.pipeline.role,
+        circleSize: String(circle.members.length),
+        gives: circle.edges.filter((e) => e.from === this.id).flatMap((e) => e.skills).join(', '),
+        gets: circle.edges.filter((e) => e.to === this.id).flatMap((e) => e.skills).join(', '),
+        window: formatWindow12h(window),
+        updated: String(Boolean(p.updated)),
+      },
       ['accept', 'counter', 'decline'],
     );
     return {
@@ -195,7 +197,13 @@ export class Agent {
     };
   }
 
+  /** Plain status line on the human's phone (acknowledgements, welcome, dissolved). */
   #notify(text: string, actions: PhoneMessage['actions'] = []) {
     this.#phone.push({ id: this.#phone.length + 1, text, actions });
+  }
+
+  /** Structured message; text is the template fallback, kind + details let the UI regenerate it. */
+  #message(kind: MessageKind, details: Record<string, string>, actions: PhoneMessage['actions'] = []) {
+    this.#phone.push({ id: this.#phone.length + 1, text: messageText(kind, details), actions, kind, details });
   }
 }

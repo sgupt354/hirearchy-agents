@@ -16,14 +16,37 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
   ✓ "Common window found: 19:30-21:00" (CONFLICT_FOUND -> CONFLICT_RESOLVED).
 - `supabase/track2.sql` written (t2_ tables, RLS on, functions only). **Not connected** — the app is in-memory only.
   Checked by running it on PGlite (Postgres in WASM): seed loads, identity locked at 2/3 consents, open at 3/3.
-- 28 Vitest tests, all passing.
+- **Integration stubs + demo polish.** `src/ui/integrationsStub.ts` with the agreed signatures
+  (`parseInvite`, `generateMessage`, `notifyPhone`, `downloadIcs`). Structured phone messages go through
+  `generateMessage` (engine template as fallback); Aditya's "human required" messages call `notifyPhone`;
+  the .ics button works via `downloadIcs`. "📩 Paste an interview invite" box (calls `parseInvite`, starts the
+  run only for a Microsoft / SWE Intern interview, otherwise "Not an interview invite"). Slow / Normal / Fast
+  playback. Reset returns to the exact start state (verified in a browser: page identical to a fresh load,
+  both mid-replay and after a completed run).
+- 31 Vitest tests, all passing.
+
+## Team / ownership
+- **Aditya (branch `aditya/integrations`) owns voice (Claude), the .ics generator, Discord/phone notify and
+  invite parsing, server-side.** Phase 4 voice and phase 5 .ics are skipped here.
+- **Do not create or edit anything in `api/` or `src/integrations/`** on this branch.
+- After merge: replace the import in `src/App.tsx`
+  (`from './ui/integrationsStub'` -> his module) and delete the stub. Signatures are identical.
+- `supabase/track2.sql` stays as written and is **not wired**.
+
+## Open issue: requester id in track2.sql (must fix before wiring Supabase)
+`t2_get_identity`, `t2_record_consent`, `t2_get_events` and `t2_append_event` take the requester / agent id as a
+plain parameter and are executable by `anon`. The consent gate itself holds (no identity until every member has
+accepted), but any caller can claim to be any agent: record a "yes" for someone else, read another agent's
+events, or append events as them. Fix before connecting: derive the caller's agent from `auth.uid()` (a
+`t2_agent_profiles.user_id` column checked inside each function), or call these functions only from a server
+route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- Nothing. Waiting for go-ahead on phase 4.
+- Nothing. Waiting for the next task.
 
 ## Exact next step
-Phase 4 — voice: Claude API rewrite of the template phone messages (ANTHROPIC_API_KEY, 3s timeout,
-template fallback) and LLM fallback for counter parsing when the regex finds no time.
+Phase 6 — README with the one-liner, how to run, and the demo steps (unless the team reprioritises).
+Merge `aditya/integrations` when ready and swap the stub import.
 
 ## How to run
 ```
@@ -78,10 +101,31 @@ Phase 3 decisions:
   asks for "Decline as Maya". Names on the graph come only from `getIdentity()`.
 - **Jordan's phone appears only after Jordan gets a message**, so the backup circle can be completed.
 - **Final card reads "Microsoft SWE Intern"** (from the pipeline data), not "Microsoft SWE".
-- **.ics button is shown but disabled** until phase 5.
+- **.ics button is shown but disabled** until phase 5. *Superseded: now enabled via the `downloadIcs` stub.*
 - **Privacy proof badge** reads `src/ui/test-summary.json`, written by `npm run test:badge` from a real
   Vitest run (runs automatically before `dev` and `build`; committed so it shows without running).
 - **track2.sql security caveat:** functions are executable by `anon` and take the requester as a parameter.
   The consent gate still holds, but anyone could call `t2_record_consent` for anyone. Before connecting it,
   requester should be bound to `auth.uid()` (or calls moved server-side).
 - **Supabase wiring skipped** per instruction; `@supabase/supabase-js` is not installed.
+
+Integration-stub decisions:
+- **Engine phone messages now carry `kind` + `details`** (proposal / counter / reveal / complete) next to the
+  template `text`. One template function (`messageText` in `src/engine/voice.ts`) produces the fallback, and the
+  stub's `generateMessage` calls the same function. A test checks they match for every structured message.
+- **"Counter" kind covers all counter feedback:** proposing, rejected by another member, outside your own
+  hours, and unreadable reply.
+- **Not routed through `generateMessage`:** plain status lines that don't fit the four kinds (welcome on invite,
+  "You accepted", "You declined", "One member couldn't join"). They show the engine text directly.
+- **`notifyPhone` is called for every Aditya message that needs his action** (the proposal, the updated time,
+  and a rejected counter), once per message, with the generated text.
+- **Reveal details include names/emails/Discord** (only after full consent). When `generateMessage` becomes a
+  server call, those identities leave the browser; that's fine post-consent but worth knowing.
+- **.ics stub:** date is today's local date (the seed has no session date); time is the agreed window;
+  description lists skills and the revealed member names. Floating local time, no timezone.
+- **Paste invite:** the stub's `parseInvite` is a keyword match (needs "interview", a known company, and no
+  rejection wording). Anything other than Microsoft / SWE Intern shows "Not an interview invite", as asked.
+  The run it starts is the same golden path as the Simulate button.
+- **Speed:** Slow 700 ms, Normal 260 ms, Fast 80 ms per event. It's a presenter setting, so Reset keeps it.
+- **Reset** also drops in-flight async results (message generation, invite parsing) from the previous run, clears
+  the invite box and status, and remounts the phones so typed counters are cleared.
