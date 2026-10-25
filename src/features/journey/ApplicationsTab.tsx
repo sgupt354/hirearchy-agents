@@ -3,6 +3,7 @@ import { openTab } from '../../app/navigate';
 import type { TabProps } from '../types';
 import { STAGES, nextSteps, type Application, type JourneyLink } from '../apply/applications';
 import { STUDENT, useApplyStore } from '../apply/store';
+import { readiness, type Readiness } from './readiness';
 
 /** Each student's own view of their own records, so their own name is fine here. */
 export const OWNER_NAMES: Record<string, string> = { p1: 'Aditya', p4: 'Jordan', p9: 'Priya', p10: 'Theo' };
@@ -82,14 +83,15 @@ export function ApplicationsTab({ resetKey }: TabProps) {
             </ul>
           )}
         </section>
-        {app && <JourneyCard app={app} onStage={(s) => store.setStage(app.id, s)} />}
+        {app && <JourneyCard app={app} today={store.today()} onStage={(s) => store.setStage(app.id, s)} />}
       </main>
     </div>
   );
 }
 
-function JourneyCard({ app, onStage }: { app: Application; onStage: (s: Application['stage']) => void }) {
+function JourneyCard({ app, today, onStage }: { app: Application; today: string; onStage: (s: Application['stage']) => void }) {
   const steps = nextSteps(app);
+  const ready = app.stage === 'OA' || app.stage === 'Interview' ? readiness(app, today) : null;
   const path = STAGES.filter((s) => s !== 'Rejected' || app.stage === 'Rejected');
   const reached = STAGES.indexOf(app.stage);
   return (
@@ -109,6 +111,7 @@ function JourneyCard({ app, onStage }: { app: Application; onStage: (s: Applicat
         })}
       </ol>
       {app.interviewDate && <p className="board-note">Interview: {shortDate(app.interviewDate)} (from the invite)</p>}
+      {ready && <ReadinessBlock r={ready} />}
       <h3>Journey</h3>
       {app.links.length === 0 ? (
         <p className="board-note">No steps linked yet.</p>
@@ -135,5 +138,34 @@ function JourneyCard({ app, onStage }: { app: Application; onStage: (s: Applicat
         </div>
       )}
     </section>
+  );
+}
+
+/** "Ready: 70%. Next: one System Design mock", with every reason and its points. */
+function ReadinessBlock({ r }: { r: Readiness }) {
+  if (!r.ready) return <p className="board-note">Readiness: {r.reason}</p>;
+  return (
+    <div className="readiness" aria-label="Readiness">
+      <div className="lvl-head">
+        <b>Ready: {r.score}%{r.next ? `. Next: ${r.next.text}` : '. Nothing missing'}</b>
+        <span>{r.daysLeft === 0 ? 'Interview today' : `${r.daysLeft} ${r.daysLeft === 1 ? 'day' : 'days'} left`}</span>
+      </div>
+      <div className="lvl-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={r.score} aria-label="Readiness">
+        <i style={{ width: `${r.score}%` }} />
+      </div>
+      <ul className="readiness-parts">
+        {r.parts.map((p) => (
+          <li key={p.id} className={p.points === p.max ? 'full' : p.points === 0 ? 'none' : ''}>
+            <span>{p.label}: {p.detail}</span>
+            <b>{p.points}/{p.max}</b>
+          </li>
+        ))}
+      </ul>
+      {r.next && (
+        <button type="button" className="cta small" onClick={() => openTab(r.next!.tab)}>
+          {r.next.text.charAt(0).toUpperCase() + r.next.text.slice(1)} →
+        </button>
+      )}
+    </div>
   );
 }

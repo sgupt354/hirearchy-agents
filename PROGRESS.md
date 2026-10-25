@@ -157,8 +157,8 @@ tab-bar spacing so ten tabs fit at 1280px.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | One application record per job + "Applications" tab | done |
-| 2 | Readiness score per interview | next |
-| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | |
+| 2 | Readiness score per interview | done |
+| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | next |
 | 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | |
 
 Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/features/journey/ApplicationsTab.tsx`):
@@ -178,6 +178,16 @@ Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/featur
 - The other tabs only gained one-line hooks; their logic is unchanged. `tests/app/tabs.test.ts` lists the new tabs.
 - Checks: 584 tests, 15/15 sabotages, typecheck, build; browser: Find track + full prep circle gives one Microsoft
   record (Applied Oct 25 → Interview Oct 25, interview Nov 4, circle linked), no console errors, tabs fit at 1280.
+
+Phase 2, as built (`src/features/journey/readiness.ts`, shown in the Applications journey card):
+- **Score = points earned / points available x 100**, from: mocks linked (2 = full, 25 pts), topics covered vs the
+  company's question-pack topics (35; topics come from linked circles, mocks and community help), intel reports read
+  vs those that exist (15), a prep circle linked (25). Days left come from the invite's interview date.
+- **Never invented:** a part with no data behind it is left out (Stripe has no pack and no intel, so only mocks and
+  circle count); no score without a real interview date or after it; reads are capped at what exists.
+- Shows "Ready: 48%. Next: one System Design mock", each part with its detail and points, days left, and a button to
+  the tab that does the next step ("tonight" when 2 days or fewer are left).
+- New sabotage: readiness counts a mock that never happened (caught by 3 tests). 590 tests, 16/16 sabotages.
 
 ### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
 Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains

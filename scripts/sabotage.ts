@@ -103,6 +103,12 @@ const SABOTAGES: Sabotage[] = [
     find: '      handle: p.label,',
     replace: '      handle: p.private.name,',
   },
+  {
+    name: 'Readiness counts a mock interview that never happened',
+    file: 'src/features/journey/readiness.ts',
+    find: "  const mocks = linked('mock').length;",
+    replace: "  const mocks = Math.max(1, linked('mock').length);",
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';

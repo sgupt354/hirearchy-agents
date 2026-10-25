@@ -636,3 +636,10 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .stage-steps .now button { color: white; background: var(--ink); border-color: var(--ink); }
 .stage-steps .now button span { color: rgba(255, 255, 255, 0.7); }
 .next-steps { display: flex; flex-wrap: wrap; gap: 6px; }
+.readiness { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.readiness .cta.small { align-self: flex-start; }
+.readiness-parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--body); }
+.readiness-parts li { display: flex; justify-content: space-between; gap: 10px; }
+.readiness-parts li b { color: var(--muted); font-weight: 650; white-space: nowrap; }
+.readiness-parts li.full b { color: var(--good); }
+.readiness-parts li.none b { color: var(--warn); }
