@@ -3,6 +3,10 @@ import type { AgentEvent } from '../../engine/types';
 import { Drawer, Inspector, JudgeLegend, SPEEDS, clock, type Lens } from '../../ui/kit';
 import type { TabProps } from '../types';
 import { trust as sharedTrust } from '../trust/network';
+import { ApplicationPacket, JORDAN_PROFILE } from '../apply/packet';
+import { describePacket } from '../apply/packetCopy';
+import { DEMO_POSTINGS } from '../apply/postings';
+import { PacketCard } from '../apply/ui/PacketCard';
 import { describeReferral } from './copy';
 import { ReferralBridge, type ReferralState, type StateChange } from './referralBridge';
 import { ReferralPhone, type ReferralAction, type ReferralChatItem } from './ReferralPhone';
@@ -68,6 +72,9 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
   const run = useRef(0);
+  // Apply-suite tie-in: the seeker's application packet, shared only after the referrer asks and the seeker agrees.
+  const unlocked = useRef(false);
+  const [packet, setPacket] = useState(() => new ApplicationPacket(SEEKER, REFERRER, () => unlocked.current));
 
   const events = bridge.events();
   const caughtUp = cursor >= events.length;
@@ -110,6 +117,8 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
 
   const clearRun = () => {
     run.current += 1;
+    unlocked.current = false;
+    setPacket(new ApplicationPacket(SEEKER, REFERRER, () => unlocked.current));
     setCursor(0);
     setReplies({});
   };
@@ -152,11 +161,27 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     if (ok) setReplies((all) => ({ ...all, [id]: [...(all[id] ?? []), { after, text: bubble, time: clock() }] }));
   };
 
+  // Names are unlocked once the chat is booked; then Jordan's agent prepares the packet (it stays with Jordan).
+  unlocked.current = ['CONFIRMED', 'CHAT_DONE', 'REFERRED', 'NOT_YET', 'NO_REFERRAL'].includes(state);
+  useEffect(() => {
+    if (!caughtUp || !unlocked.current || seeker !== SEEKER || packet.state !== 'NONE') return;
+    act(() => packet.prepare(JORDAN_PROFILE, DEMO_POSTINGS[0], PEOPLE[REFERRER]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caughtUp, state, seeker, packet]);
+
   const chatFor = (id: string): ReferralChatItem[] => {
     const items: ReferralChatItem[] = [];
     for (const m of inbox(id)) {
       items.push({ key: `m${m.id}`, from: 'agent', text: m.text, needsHuman: m.needsHuman, kind: m.kind, data: m.data });
       for (const [i, r] of (replies[id] ?? []).entries()) if (r.after === m.id) items.push({ key: `r${i}`, from: 'me', text: r.text, time: r.time });
+      if (m.kind === 'chat' && packet.summary() && seeker === SEEKER) {
+        items.push({
+          key: 'packet',
+          from: 'agent',
+          text: '',
+          custom: <PacketCard packet={packet} viewer={id === REFERRER ? 'referrer' : 'seeker'} referrerName={PEOPLE[REFERRER]} seekerName={PEOPLE[SEEKER]} onChange={(fn) => act(fn)} />,
+        });
+      }
     }
     return items;
   };
@@ -234,7 +259,7 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
           </section>
           <section className="card feed-card">
             <h3>Agent conversation</h3>
-            <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeReferral} />
+            <Inspector events={[...shown, ...(caughtUp ? packet.events() : [])]} label={label} lenses={lenses} describeEvent={(e, ctx) => describePacket(e) ?? describeReferral(e, ctx)} />
           </section>
         </div>
       </Drawer>

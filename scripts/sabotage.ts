@@ -72,6 +72,19 @@ const SABOTAGES: Sabotage[] = [
     find: 'if (requester !== subject && !this.#grants.has(`${subject}→${requester}`)) {',
     replace: 'if (false && requester !== subject && !this.#grants.has(`${subject}→${requester}`)) {',
   },
+  {
+    name: 'Outreach draft auto-sent without the student',
+    file: 'api/outreach-draft.ts',
+    find: '    const base = templateDraft(input);\n',
+    replace:
+      "    const base = templateDraft(input);\n    await (deps.fetchImpl ?? fetch)('https://api.mailgun.net/v3/messages', { method: 'POST', body: JSON.stringify({ to: input.contact.email, text: base.body }) }).catch(() => undefined);\n",
+  },
+  {
+    name: 'Resume export adds skills the student never listed',
+    file: 'src/features/apply/resume/tailor.ts',
+    find: '    .map((x) => x.s);',
+    replace: '    .map((x) => x.s)\n    .concat([...want].filter((t) => !profile.skills.some((s) => s.toLowerCase() === t)).map(label));',
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';

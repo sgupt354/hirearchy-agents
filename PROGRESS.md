@@ -149,6 +149,95 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Audit + research (AUDIT.md); landing copy without hackathon / track mentions | done |
+| 1 | Real Job Sniper: live board search behind a toggle | done |
+| 2 | Resume builder + LaTeX / Overleaf / PDF | done |
+| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | done |
+| 4 | Apollo contact lookup (official API, demo data without key) | done |
+| 5 | Huntr: honest export (no public API for students) | done |
+| 6 | Agent tie-in + 2 new sabotages | done |
+| 7 | Alignment doc, README, full checks | done |
+
+**Phase 1 (Job Sniper live):** `src/features/apply/jobs/` is the TypeScript port of hiring-pulse `jobs_core.py`
+(parsers for the four public board shapes, role / level / US / visa-risk filters, resume-overlap score, dedupe) plus
+all 443 boards (`boards.ts`). `api/jobs-search.ts` reads up to 60 boards (named companies, else a priority list of
+well-known companies), 16 at a time, 3.5 s per board, 7 s total, caches raw results 10 min, `JOBS_SEARCH=off` turns it
+off. The Find tab gets a **Live search** switch in the top bar (off by default, so the recorded demo is unchanged);
+on, it shows real postings with Apply links and Track. Any failure falls back to the seeded postings, labelled
+"Demo data". Global Reset turns live search off again. 21 new tests (fixtures for every board shape, filters,
+scoring, dedupe, per-board timeout, overall budget, cache, off switch). Note: this build container can't reach the
+boards, so the live path was checked with a recorded response; it runs for real on Vercel.
+
+**Phase 2 (Apply tab, resume):** new **Apply** tab after Find (iPhone + side card). Profile = structured entries the
+student types or pastes (deterministic parser, then editable); starts as a labelled demo profile. `tailor()` picks and
+reorders the student's own bullets and skills by match to the chosen posting (tracked live postings, else three labelled
+demo postings), keeps experience in the student's order, trims least-relevant bullets to a one-page budget, and lists
+"Requirements you don't meet" (missing skills, degree level, years, clearance). Exports: `.tex` download (every special
+character escaped), Open in Overleaf (documented form POST, `encoded_snip`), Save as PDF (print view; the default file
+name is "Resume - <Company> - <Role>"). 14 new tests: escaping of `& % $ # _ { } ~ ^ \`, brace balance, one-page guard,
+output text is a subset of the profile, unmet detection, parser, file names, Overleaf fields. The tab registry test now
+expects the Apply tab (the one existing assertion changed). Optional LLM parsing was not added; parsing is deterministic.
+
+**Phase 3 (outreach drafts):** Apply tab → **Outreach**. Recruiter / alum / referrer templates (under 120 words, filled from
+the posting, the contact and one of the student's own resume bullets; cold contacts get a "won't follow up again"
+line). Actions: Copy, Open in Gmail (compose URL), Email app (`mailto:`). Nothing is ever sent by us. `api/outreach-draft.ts`
+returns the template, or, with `ANTHROPIC_API_KEY`, Claude's rewording (3 s timeout) only if it keeps the cap, leaves
+no placeholder, names the company and adds no number that wasn't in the facts. Rate limits: 10 drafts / 10 min per
+session, 20 / 10 min per IP on the server. 17 new tests.
+
+**Phase 4 (Apollo contacts):** Outreach → **Find contacts at <company>**. `api/apollo-search.ts` calls only Apollo's
+documented People API Search (`POST /api/v1/mixed_people/api_search`, `x-api-key`, 0 credits, no emails returned) with
+recruiting titles plus the target role and the company domain (or keyword). Name, title, company, LinkedIn; an email only
+if a plan ever returns a real one. No key, 401/403, 429, 5xx or network failure → three contacts labelled "Demo data"
+with a note. 10-minute in-memory cache to spare Apollo's rate limits; nothing persisted, contacts live in the tab's
+session state. Picking a contact fills the draft (recruiter template for recruiting titles, alum otherwise).
+7 new tests (request shape, keyword fallback, missing key, 429 / 403 / 500 / network, cache, no fake emails).
+
+**Phase 5 (Huntr):** Huntr's only API is the Organization API (career centres); there's no API or documented import
+format for individual job seekers. So, option (3): Apply → **Tracker** lists the jobs tracked from live search and
+exports them as CSV (RFC 4180, formulas neutralised) or versioned JSON, plus an **Open Huntr** link. The UI and README
+say plainly that Huntr has no public integration for students. 4 new tests.
+
+**Phase 6 (agent tie-in):** no engine changes.
+- **Find → the agent network:** tracking a live posting makes the agent offer the existing flows (prep circle, mock
+  swap, Referral Bridge, tailored resume) and opens that tab (`src/app/navigate.ts`), saying which demo network it runs
+  in (Microsoft for circles and mocks, Stripe for the referral).
+- **Referral → application packet** (`src/features/apply/packet.ts`): once names are unlocked, Jordan's agent prepares
+  a resume tailored to the role from Jordan's own resume plus an intro draft, held by Jordan's agent. Nadia can request
+  it (only Nadia, only after the chat is booked); Jordan's agent asks Jordan; shared to Nadia only on Jordan's yes; a no
+  keeps it private. Nothing is emailed. The steps appear in the Referral feed (prepared → requested → asked → consent →
+  shared) with what was shared / summarized / withheld, and the Apply tab has its own Under-the-hood steps list.
+  The Referral tab only gained a card slot (`custom` items in `ReferralPhone`); `ReferralBridge` is unchanged.
+- **Sabotage: 12/12.** New: "Outreach draft auto-sent without the student" (a mail-API call planted in
+  `api/outreach-draft.ts`, caught by 3 tests) and "Resume export adds skills the student never listed" (planted in
+  `tailor()`, caught by 3 tests). 6 new tests (packet gates, private by default, subset of the profile, outreach's only
+  outbound call is the optional Claude rewording).
+
+**Port from jobapp: evidence-backed visa + graduation screening.** `src/features/apply/jobs/screen.ts` ports jobapp's
+`app/screen.py` classifiers: F-1 (compatible / needs verification / incompatible; an explicit "no" wins, silence is
+never assumed friendly, event or relocation "sponsor" doesn't count) and graduation window (fits / not excluded /
+excludes / unclear), each with the exact sentence as evidence. The grad year comes from the student's own Apply
+profile (the demo profile's May 2027), not from any personal file. Shown as chips plus the quoted sentence on every
+live posting and in Apply's requirements box. `match.ts` is unchanged. 11 new tests.
+
+**Port from jobapp: application status pipeline.** Apply → Tracker: each tracked job has a status (Saved, Applied,
+OA, Interview, Offer, Rejected; default Saved), a summary strip (tracked, applied, OA, interviews, offers, interview
+rate = (Interview + Offer) / applied, as in jobapp's tracker) and the agent's next-step note when a status changes
+(for an interview it points to the prep circle and mock partner). CSV / JSON exports carry the status. Session-only;
+global Reset clears it. 4 new tests; the existing tracker test is unchanged.
+
+**Phase 7 (checks + docs):** README: new tab, an "Apply suite: what's live and what's demo" table, the new functions
+and env vars, 12 sabotages, demo steps (prep circle stays the hero). `.env.example` lists `APOLLO_API_KEY`,
+`OUTREACH_MODEL`, `JOBS_SEARCH` (server-side). Emoji now stripped at display in every phone card (Mock and Referral
+cards rendered some copy raw). Landing terminal shows 12 sabotages / 482 tests. The eligibility mapping was delivered
+separately, not committed (no event mentions in the public repo). Verified with zero keys (every fallback): typecheck,
+482 tests, test:sabotage 12/12, build, demo:run; Chromium at 1440×900 and 1280×800: all 7 tabs fit, no emoji, no
+"->", no 24-hour times, global Reset restores every tab; live search, Apply exports, outreach, contacts, tracker,
+referral packet and landing interactions all run with no console errors (only the sandbox's blocked Google Fonts).
+
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:
   same sections, copy, Tailwind classes and timings (read from the site's own bundle), styled by its own compiled
@@ -365,7 +454,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: all phases (0, B, Live, D, E, F, G) done. Not merged to main; waiting for Sumedha's review.
+- `feature/apply-suite`: phases 0-7 done. Not merged to main; waiting for Sumedha's review.
 
 ## Exact next step
 1. Sumedha reviews `feature/full-journey` (nothing is merged to main).

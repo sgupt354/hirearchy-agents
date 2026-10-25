@@ -516,7 +516,7 @@ function ProofOfWork() {
   );
 }
 
-const TERMINAL = ['$ npm run test:sabotage', 'Planting 10 privacy bugs...', '10 of 10 caught', '414 tests passing'];
+const TERMINAL = ['$ npm run test:sabotage', 'Planting 12 privacy bugs...', '12 of 12 caught', '482 tests passing'];
 
 function SabotageTerminal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -676,7 +676,7 @@ const FAQ: [string, string][] = [
   ['Is this just matching?', 'No. Each agent has private data and its own rules, and decides for itself. The broker never sees private data.'],
   ['Why not a group chat?', 'Nobody posts their weak spots publicly, and nobody finds a three-way match by scrolling.'],
   ['What if someone lies about their skills?', 'Peer ratings and mock scores build a reliability record.'],
-  ['Does it run on Cubbie?', 'Cubbie has no agent-to-agent API yet, so we built the protocol ourselves, ready to plug in.'],
+  ['Which messaging apps does it work with?', 'The agent lives in your messages: an iMessage-style chat in the demo, plus live Discord DMs. The agent protocol is app-agnostic, so new apps plug in without changing the rules.'],
 ];
 
 function Faq() {
@@ -712,7 +712,7 @@ function FinalCta() {
       <Container className="relative text-center">
         <Reveal>
           <Award aria-hidden className="mx-auto h-8 w-8 text-primary" />
-          <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">Track 1 built the applicant network. Track 2 makes the network work for you.</h2>
+          <h2 className="mx-auto mt-6 max-w-3xl text-3xl font-bold leading-tight md:text-5xl">Stop prepping alone. Your agent already found your circle.</h2>
           <CtaLink href={DEMO} className="mt-10">
             Try the live demo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
           </CtaLink>
@@ -743,7 +743,7 @@ function Footer() {
           ))}
           <div>
             <p className="text-sm font-semibold text-foreground">Project</p>
-            <p className="mt-4 text-sm">Built at the Cubbie Hackathon 2026</p>
+            <p className="mt-4 text-sm">Built by students, for students.</p>
           </div>
         </div>
         <div className="mt-16 flex items-center justify-between border-t pt-8">
