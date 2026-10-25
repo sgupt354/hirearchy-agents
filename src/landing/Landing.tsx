@@ -11,7 +11,10 @@ import { Presence, Reveal, cn, useInView, useReducedMotion } from './motion';
 
 type IconType = ComponentType<SVGProps<SVGSVGElement>>;
 
-export const DEMO = '/app/';
+/** Every "try the demo" link opens live mode, so the prep circle DMs Aditya on Discord (same as /live). */
+export const DEMO = '/app/?live=1';
+/** The embedded preview stays on the simulated phones, so clicking around in it never sends a DM. */
+const PREVIEW = '/app/';
 const GITHUB = 'https://github.com/sgupt354/hirearchy-agents';
 
 function Container({ children, className }: { children: ReactNode; className?: string }) {
@@ -630,7 +633,7 @@ function Demo() {
         </Reveal>
         <Reveal className="mx-auto mt-16 max-w-5xl">
           <div className="rounded-t-2xl border-[10px] border-b-0 border-ink bg-ink">
-            <iframe src={DEMO} title="Hirearchy live app" loading="lazy" className="aspect-[16/10] w-full rounded-t-md bg-background" />
+            <iframe src={PREVIEW} title="Hirearchy live app" loading="lazy" className="aspect-[16/10] w-full rounded-t-md bg-background" />
           </div>
           <div className="mx-auto h-4 w-[106%] -translate-x-[3%] rounded-b-xl bg-ink-soft" />
           <div className="mt-6 text-center">

@@ -83,6 +83,9 @@ input, textarea { font: inherit; color: var(--text); }
 }
 .tab:hover { color: var(--text); }
 .tab.on { background: var(--ink); color: white; box-shadow: 0 4px 12px -4px rgba(10, 37, 64, 0.5); }
+/* Nine-plus tabs: tighter on laptop widths, icons dropped before anything clips. */
+@media (max-width: 1440px) { .tab { padding: 7px 10px; gap: 5px; } }
+@media (max-width: 1320px) { .tab { padding: 7px 9px; font-size: 12.5px; } .tab .ico { display: none; } }
 .hero-meta { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; max-width: 100%; }
 .hero-meta .hood-btn { padding: 5px 13px; font-size: 12.5px; }
 .hood-btn {
@@ -483,6 +486,12 @@ button.chip:hover { border-color: var(--border-strong); color: var(--text); }
 .coach-form { display: flex; gap: 1.6cqw; width: 100%; }
 .coach-form input { flex: 1; min-width: 0; padding: 2cqw 3cqw; border-radius: 99px; border: 1px solid var(--border-strong); background: white; color: inherit; font-size: 3.8cqw; outline: none; }
 .coach-form input:focus { border-color: var(--accent); }
+/* Ask the network: the composer inside the phone (same look as the coach note input). */
+.composer { display: flex; gap: 1.6cqw; width: 100%; margin-top: 1.6cqw; }
+.composer input { flex: 1; min-width: 0; padding: 2cqw 3cqw; border-radius: 99px; border: 1px solid var(--border-strong); background: white; color: inherit; font-size: 3.8cqw; outline: none; }
+.composer input:focus { border-color: var(--accent); }
+.composer .send { width: auto; height: auto; padding: 1.8cqw 3.6cqw; border-radius: 99px; font-size: 3.6cqw; font-weight: 600; }
+.composer .send:disabled { opacity: 0.45; }
 
 /* ---------- apply suite: live search, apply, outreach ---------- */
 .tab-view { flex: 1; min-height: 0; display: flex; flex-direction: column; }
