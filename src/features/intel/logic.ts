@@ -250,3 +250,29 @@ export const MICROSOFT_SEED_INTEL: readonly SharedInterviewReport[] = [
     when: GENERALIZED_DATE,
   },
 ];
+
+// ---- demo contribution counts --------------------------------------------
+
+/**
+ * Intel reports contributed per student, for the evidence file wired in at merge.
+ * Keyed by the engine's agent ids. This is read-only demo data: it is never written to,
+ * never reaches a SharedInterviewReport, and never appears in a PrivacyEvent.
+ */
+const CONTRIBUTION_COUNTS: Readonly<Record<string, number>> = {
+  a1: 1,
+  a2: 3,
+  a3: 2,
+  a4: 0,
+  a5: 1,
+  a6: 0,
+  a7: 4,
+  a8: 0,
+};
+
+/** How many intel reports a student has contributed. Unknown or blank ids return 0. */
+export function getIntelContributionCount(studentId: string): number {
+  if (typeof studentId !== 'string') return 0;
+  const key = studentId.trim().toLowerCase();
+  // hasOwn keeps inherited keys such as "constructor" from resolving to a prototype member.
+  return Object.hasOwn(CONTRIBUTION_COUNTS, key) ? CONTRIBUTION_COUNTS[key] : 0;
+}
