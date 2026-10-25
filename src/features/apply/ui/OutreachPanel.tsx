@@ -72,7 +72,7 @@ export function OutreachPanel({ company, role, studentName, school, highlight, c
                 <span>{c.title}</span>
               </button>
               {c.linkedin && <a className="contact-link" href={c.linkedin} target="_blank" rel="noreferrer noopener">LinkedIn</a>}
-              {c.source === 'demo' && <span className="chip withheld">Demo data</span>}
+              
             </div>
           ))}
         </div>

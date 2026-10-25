@@ -60,12 +60,9 @@ export function Shell() {
           <button className="icon-btn reset" onClick={() => {
             setLive({});
             setResetKey((k) => k + 1);
-          }} title="Reset demo" aria-label="Reset demo"><Icon name="reset" size={16} /></button>
+          }} title="Reset" aria-label="Reset"><Icon name="reset" size={16} /></button>
         </div>
       </nav>
-      <p className="journey-line">
-        Find the job. Prep with your pipeline. Earn the referral. <b>Your agent negotiates. You decide.</b>
-      </p>
       {VISIBLE_TABS.map(({ id, Component, Live }) => (
         <section key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} className="tab-panel" hidden={id !== active}>
           {/* Both stay mounted so switching keeps each one's state. */}

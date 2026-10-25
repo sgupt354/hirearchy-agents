@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChatBubble, Drawer, Icon, PhoneFrame, SPEEDS, TypingIndicator, clock, type TabProps } from '../../ui/kit';
+import { ChatBubble, Icon, PhoneFrame, SPEEDS, TypingIndicator, clock, type TabProps } from '../../ui/kit';
 import {
   MIN_REPORTS,
   STAT_KEYS,
@@ -28,7 +28,6 @@ function splitDisplay(display: string): { value: string; caption: string } {
 export function PipelineTab({ speed, resetKey }: TabProps) {
   const [company, setCompany] = useState(DEFAULT_COMPANY);
   const [typing, setTyping] = useState(false);
-  const [drawer, setDrawer] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
 
   const pace = SPEEDS[speed].pace;
@@ -37,7 +36,6 @@ export function PipelineTab({ speed, resetKey }: TabProps) {
   const reset = () => {
     setCompany(DEFAULT_COMPANY);
     setTyping(false);
-    setDrawer(false);
   };
 
   const firstReset = useRef(resetKey);
@@ -72,16 +70,10 @@ export function PipelineTab({ speed, resetKey }: TabProps) {
           Once you track a role, your agent shows how that cohort is moving — in aggregate only. A number appears
           after {MIN_REPORTS}+ anonymous reports, never before.
         </p>
-        <div className="hero-meta">
-          <span className="proof-pill">Anonymous cohort · stats require {MIN_REPORTS}+ reports</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>
-            See which stats were held back
-          </button>
-        </div>
       </header>
 
       <main className="phones">
-        <PhoneFrame owner="Aditya" caption="tracked through Job Sniper" chatRef={chat}>
+        <PhoneFrame owner="Aditya" caption="watching your applications" chatRef={chat}>
           <p className="chat-day">Today {clock()}</p>
           <ChatBubble from="agent" text={`Here's where your ${company} application stands.`} />
           {typing && <TypingIndicator />}
@@ -134,29 +126,6 @@ export function PipelineTab({ speed, resetKey }: TabProps) {
         </section>
       </main>
 
-      <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle={`Why each ${company} stat was shown or held back. Students never see this.`}
-        badge={<span className={`state-pill ${hiddenCount ? 'tone-warn' : 'tone-good'}`}>{`${hiddenCount} hidden`}</span>}
-      >
-        <div className="drawer-body">
-          <section className="card feed-card">
-            <h3>Threshold decisions</h3>
-            <div className="feed">
-              {inspector.map((entry) => (
-                <p key={entry.stat} className="msg">
-                  <b>{entry.status === 'visible' ? 'VISIBLE' : 'HIDDEN'}</b> · {STAT_LABEL[entry.stat]} · {entry.reason}
-                </p>
-              ))}
-            </div>
-            <p className="sub">
-              Report counts are aggregate. No student, record or identity is ever read to make this decision.
-            </p>
-          </section>
-        </div>
-      </Drawer>
     </div>
   );
 }

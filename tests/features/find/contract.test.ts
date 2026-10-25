@@ -45,17 +45,13 @@ describe('FindTab contract', () => {
   });
 
   it('delegates every decision to logic.ts', () => {
-    for (const fn of ['surfacedMatches(', 'trackJob(', 'dismissJob(', 'describeMatch(', 'describeTrack(', 'describeDismiss(']) {
+    for (const fn of ['surfacedMatches(', 'trackJob(', 'dismissJob(']) {
       expect(TAB_SOURCE).toContain(fn);
     }
   });
 
   it('holds no backend, network or global state', () => {
     expect(TAB_SOURCE).not.toMatch(/\bfetch\(|localStorage|sessionStorage|Math\.random/);
-  });
-
-  it('credits Job Sniper so the Track 1 link is visible', () => {
-    expect(TAB_SOURCE).toContain('Job Sniper');
   });
 
   it('is registered by the app tab registry, never by itself', () => {

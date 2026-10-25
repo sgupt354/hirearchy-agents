@@ -2,12 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, PIPELINE, TRIGGER_AGENT_ID, type CoordinationState, type HumanReply, type PhoneMessage } from '../../engine';
 import { prettify, studentCopy, windowText } from '../../ui/copy';
 import { USE_LLM_COPY, downloadIcs, generateMessage, notifyPhone, parseInvite } from '../../ui/integrations';
-import { Icon } from '../../ui/Icon';
 import { InviteModal } from '../../ui/InviteModal';
 import { IPhone, type ChatItem } from '../../ui/IPhone';
-import { UnderTheHood } from '../../ui/UnderTheHood';
-import { deriveGraph, inviteOutcome, messagesAvailable, stateAt, type InviteOutcome, type Lens } from '../../ui/view';
-import summary from '../../ui/test-summary.json';
+import { inviteOutcome, messagesAvailable, stateAt, type InviteOutcome } from '../../ui/view';
 import { SPEEDS } from '../../app/speed';
 import type { TabProps } from '../types';
 import { isLiveRequested } from '../../live/client';
@@ -46,14 +43,12 @@ function heroStatus(state: CoordinationState, window: string): { text: string; t
   return { text: "Aditya's agent is finding a prep circle…", tone: 'busy' };
 }
 
-/** The prep-circle demo: three students' phones plus the Under the hood drawer. */
+/** The prep-circle tab: students' phones coordinating a session. */
 export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const engine = useMemo(() => new Engine(), []);
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [error, setError] = useState('');
-  const [drawer, setDrawer] = useState(false);
-  const [lenses, setLenses] = useState<Lens[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
   const [invitePending, setInvitePending] = useState(false);
   const [inviteStatus, setInviteStatus] = useState<InviteOutcome | null>(null);
@@ -68,10 +63,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
 
   const events = engine.events();
   const caughtUp = cursor >= events.length;
-  const shown = events.slice(0, cursor);
   const state = stateAt(engine.history(), cursor);
   const labels = engine.labels();
-  const label = (id: string) => (id === VIEWER ? 'You' : id === 'broker' ? 'Broker' : (labels[id] ?? id));
 
   // Replay new events one by one so the agents' conversation unfolds live.
   useEffect(() => {
@@ -80,12 +73,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     return () => clearTimeout(t);
   }, [cursor, caughtUp, speed]);
 
-  useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
 
   // Each phone only shows messages whose causing event has been replayed.
   const inbox: Record<string, PhoneMessage[]> = {};
@@ -125,7 +112,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   // In LLM mode a structured message waits for its wording (generateMessage resolves within ~3 s).
   const ready = (id: string, m: PhoneMessage) => !USE_LLM_COPY || !m.kind || keyOf(id, m) in generated;
 
-  const view = deriveGraph(shown, IDS, VIEWER);
   const namesFor = (owner: string) => {
     const names: Record<string, string> = {};
     for (const id of IDS) {
@@ -137,7 +123,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     }
     return names;
   };
-  const graphNames = view.revealed ? namesFor(VIEWER) : {};
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -177,8 +162,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     setGenerated({});
     setReplies({});
     setCursor(0);
-    setDrawer(false);
-    setLenses([]);
     setInviteOpen(false);
     setInvitePending(false);
     setInviteStatus(null);
@@ -338,13 +321,11 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
             </span>
           )}
         </div>
-        <div className="hero-meta">
-          <span className="proof-pill" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
-            <Icon name={summary.privacyTest.passed ? 'lock' : 'alert'} size={12} /> Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
-          </span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
-          {live !== 'off' && <LiveBadge status={live} />}
-        </div>
+        {live !== 'off' && (
+          <div className="hero-meta">
+            <LiveBadge status={live} />
+          </div>
+        )}
       </header>
 
       <main className="phones">
@@ -375,19 +356,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
         }}
       />
 
-      <UnderTheHood
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        state={state}
-        events={shown}
-        ids={IDS}
-        labels={labels}
-        label={label}
-        view={view}
-        names={graphNames}
-        lenses={lenses}
-        onToggleLens={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
-      />
     </div>
   );
 }

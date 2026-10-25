@@ -96,7 +96,7 @@ describe('IntelTab contract', () => {
     const body = TAB_SOURCE.slice(TAB_SOURCE.indexOf('const reset = ()'), TAB_SOURCE.indexOf('const firstReset'));
     for (const setter of [
       'setStep', 'setRound', 'setTopics', 'setDifficulty', 'setDraft',
-      'setSaid', 'setCredits', 'setShared', 'setEvents', 'setTyping', 'setDrawer',
+      'setSaid', 'setCredits', 'setShared', 'setEvents', 'setTyping',
     ]) {
       expect(body).toContain(`${setter}(`);
     }
@@ -112,7 +112,7 @@ describe('IntelTab contract', () => {
   it('delegates every privacy decision to logic.ts', () => {
     for (const fn of [
       'anonymizeReport', 'checkIntelAccess', 'recordContribution', 'selectRelevantIntel',
-      'describeAnonymization', 'describeAccess',
+      'describeAnonymization',
     ]) {
       expect(TAB_SOURCE).toContain(`${fn}(`);
     }

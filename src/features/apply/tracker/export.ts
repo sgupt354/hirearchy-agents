@@ -14,7 +14,7 @@ export interface TrackerRow {
   location: string;
   url: string;
   dateSaved: string;
-  source: 'Live job board' | 'Demo data';
+  source: 'Live job board' | 'Saved posting';
 }
 
 export function trackerRows(tracked: TrackedPosting[], savedOn: string): TrackerRow[] {
@@ -25,7 +25,7 @@ export function trackerRows(tracked: TrackedPosting[], savedOn: string): Tracker
     location: p.location,
     url: p.url,
     dateSaved: savedOn,
-    source: p.source === 'live' ? 'Live job board' : 'Demo data',
+    source: p.source === 'live' ? 'Live job board' : 'Saved posting',
   }));
 }
 

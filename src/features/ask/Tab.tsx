@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { CommunityHub } from '../community/community';
-import { ChatBubble, Drawer, PhoneFrame, QuickReplies, SPEEDS, TypingIndicator, clean, clock, type TabProps } from '../../ui/kit';
+import { ChatBubble, PhoneFrame, QuickReplies, SPEEDS, TypingIndicator, clean, clock, type TabProps } from '../../ui/kit';
 import {
   SUGGESTED_QUESTIONS,
   answerQuestion,
@@ -22,7 +22,6 @@ export function AskTab({ speed, resetKey }: TabProps) {
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, setPending] = useState<AskAnswer | null>(null);
   const [typing, setTyping] = useState(false);
-  const [drawer, setDrawer] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
   const pace = SPEEDS[speed].pace;
 
@@ -31,7 +30,6 @@ export function AskTab({ speed, resetKey }: TabProps) {
     setTurns([]);
     setPending(null);
     setTyping(false);
-    setDrawer(false);
     hub.reset();
   };
 
@@ -68,8 +66,6 @@ export function AskTab({ speed, resetKey }: TabProps) {
     void ask(draft);
   };
 
-  const latest = turns.at(-1)?.answer;
-  const inspect = pending ?? latest;
 
   return (
     <div className="app started">
@@ -81,12 +77,6 @@ export function AskTab({ speed, resetKey }: TabProps) {
           One question in plain English. Your agent routes it to help, intel, pipeline stats, or an intro —
           and strips identity before anything is stored.
         </p>
-        <div className="hero-meta">
-          <span className="proof-pill">Anonymous answers · names only after both say yes</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>
-            See what was shared versus hidden
-          </button>
-        </div>
       </header>
 
       <main className="phones">
@@ -145,43 +135,6 @@ export function AskTab({ speed, resetKey }: TabProps) {
         </section>
       </main>
 
-      <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle="Parsed intent and what left the agent versus what stayed private."
-        badge={<span className="state-pill tone-good">{inspect?.intent ?? 'idle'}</span>}
-      >
-        <div className="drawer-body">
-          <section className="card feed-card">
-            <h3>Parsed intent</h3>
-            <p className="msg">
-              <b>INTENT</b> · {inspect?.intent ?? 'none yet'}
-              {inspect?.company ? ` · company ${inspect.company}` : ''}
-            </p>
-          </section>
-          <section className="card feed-card">
-            <h3>Shared</h3>
-            <div className="feed">
-              {(inspect?.disclosure.shared.length ? inspect.disclosure.shared : ['nothing yet']).map((item) => (
-                <p key={item} className="msg">
-                  <b>SHARED</b> · {item}
-                </p>
-              ))}
-            </div>
-          </section>
-          <section className="card feed-card">
-            <h3>Hidden</h3>
-            <div className="feed">
-              {(inspect?.disclosure.hidden.length ? inspect.disclosure.hidden : ['identity']).map((item) => (
-                <p key={item} className="msg">
-                  <b>HIDDEN</b> · {item}
-                </p>
-              ))}
-            </div>
-          </section>
-        </div>
-      </Drawer>
     </div>
   );
 }

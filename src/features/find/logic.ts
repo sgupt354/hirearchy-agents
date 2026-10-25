@@ -1,5 +1,5 @@
 /**
- * Job Sniper matches (Track 1) feeding the Track 2 journey. Pure and deterministic:
+ * Deterministic job matches for Find. Pure:
  * no React, no browser APIs, no network, no randomness, no current-time dependency.
  */
 

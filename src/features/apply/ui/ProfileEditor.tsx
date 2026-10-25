@@ -24,8 +24,8 @@ export function ProfileEditor({ profile, isDemo, onChange }: { profile: Profile;
   return (
     <div className="profile-editor">
       <div className="pe-head">
-        <span className={`chip ${isDemo ? 'withheld' : 'shared'}`}>{isDemo ? 'Demo profile' : 'Your profile'}</span>
-        {!isDemo && <button className="ghost small" onClick={() => onChange(DEMO_PROFILE, true)}>Use demo profile</button>}
+        <span className={`chip ${isDemo ? 'withheld' : 'shared'}`}>{isDemo ? 'Sample profile' : 'Your profile'}</span>
+        {!isDemo && <button className="ghost small" onClick={() => onChange(DEMO_PROFILE, true)}>Use sample profile</button>}
       </div>
       <label className="pe-label" htmlFor="pe-paste">Paste your resume text</label>
       <textarea id="pe-paste" className="pe-area" rows={4} value={paste} onChange={(e) => setPaste(e.target.value)} placeholder="Name, contact line, then Education / Experience / Projects / Skills with one bullet per line" />

@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { AgentEvent } from '../../engine/types';
 import { isLiveRequested } from '../../live/client';
 import { downloadIcs } from '../../ui/integrations';
-import { CalendarCard, Drawer, Inspector, JudgeLegend, SPEEDS, clock, range12, type Lens } from '../../ui/kit';
+import { CalendarCard, SPEEDS, clock, range12 } from '../../ui/kit';
 import type { TabProps } from '../types';
 import { trust as sharedTrust } from '../trust/network';
 import { personOf } from '../trust/people';
@@ -11,7 +10,6 @@ import { useTrust } from '../trust/useTrust';
 import { CommunityHub, PointsCannotBuyReferralError, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
 import { ProjectBoardView } from './ProjectBoardView';
-import { describeCommunity } from './copy';
 import { LevelProgress, PacksCard, PointsCard, RulesCard } from './cards';
 import { PACKS, unlockedPacks } from './packs';
 import { levelOf, perksFor, type PointEntry } from './points';
@@ -50,8 +48,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const trustNet = useTrust();
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
-  const [drawer, setDrawer] = useState(false);
-  const [lenses, setLenses] = useState<Lens[]>([]);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const [error, setError] = useState('');
   const [refusal, setRefusal] = useState('');
@@ -79,12 +75,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
-  useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -107,8 +97,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     setCursor(0);
     setReplies({});
     setRefusal('');
-    setDrawer(false);
-    setLenses([]);
     setView('help');
     setThankDraft('');
     setThanked(false);
@@ -322,8 +310,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
             )}
           </div>
           <div className="hero-meta">
-            <span className="proof-pill">Anonymous until both say yes · points only after both confirm · points never buy a referral</span>
-            <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
             {live !== 'off' && <LiveBadge status={live} />}
           </div>
         </header>
@@ -409,38 +395,6 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
 
         {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
 
-        <Drawer
-          open={drawer}
-          onClose={() => setDrawer(false)}
-          title="Under the hood"
-          subtitle="How the agents handled the help request. Students never see this."
-          badge={<span className={`state-pill cm-${state ?? 'OPEN'}`}>{state ? NEED_TEXT[state] : 'Ready'}</span>}
-        >
-          <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
-          <div className="drawer-body">
-            <section className="card">
-              <h3>Capacity checks · each mentor's private view</h3>
-              <CapacityBoard events={shown} label={label} />
-              <h3>Points</h3>
-              {entries.length ? (
-                <ul className="board-list">
-                  {entries.map((e) => (
-                    <li key={e.session} className="board-row tone-good">
-                      <b>{label(e.person)}: {e.base} x {e.multiplier}</b>
-                      <span>{e.reason}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="board-note">Nothing yet. Points need both confirmations.</p>
-              )}
-            </section>
-            <section className="card feed-card">
-              <h3>Agent conversation</h3>
-              <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeCommunity} />
-            </section>
-          </div>
-        </Drawer>
       </div>
     </>
   );
@@ -473,23 +427,6 @@ function helpDetails(m: CommunityMessage): Record<string, string> {
 
 
 
-function CapacityBoard({ events, label }: { events: AgentEvent[]; label: (id: string) => string }) {
-  const checks = events.filter((e) => e.payload.kind === 'capacity');
-  if (!checks.length) return <p className="board-note">{events.length ? 'Waiting for a mentor agent…' : 'Waiting'}</p>;
-  return (
-    <ul className="board-list">
-      {checks.map((e) => {
-        const failed = (e.payload.results as RuleCheck[]).filter((r) => !r.pass);
-        return (
-          <li key={e.id} className={`board-row tone-${e.type === 'ACCEPT' ? 'good' : 'warn'}`}>
-            <b>{label(e.from)}</b>
-            <span>{e.type === 'ACCEPT' ? '✓ fits' : `✗ ${failed.map((r) => r.observed).join('; ')}`}</span>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
 
 function LiveBadge({ status }: { status: Exclude<LiveHelpStatus, 'off'> }) {
   const text = { connecting: 'Connecting to Discord…', live: 'Live: Aditya is on Discord', unavailable: 'Live mode unavailable, using simulated phone' }[status];

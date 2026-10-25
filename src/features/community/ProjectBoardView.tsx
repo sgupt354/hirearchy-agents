@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Drawer, Inspector, JudgeLegend, SPEEDS, clock, type Lens } from '../../ui/kit';
+import { SPEEDS, clock } from '../../ui/kit';
 import type { Speed } from '../../app/speed';
 import { LevelProgress, PointsCard, RulesCard } from './cards';
 import type { CommunityHub, CommunityMessage } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
-import { describeCommunity } from './copy';
 import type { PointEntry } from './points';
 import { DEMO_PROJECT, JUNIORS, SENIOR, STANDING_SEED } from './seed';
 
@@ -25,15 +24,12 @@ export function ProjectBoardView({ hub, speed, resetKey, viewSwitch, hidden }: {
   const [projectId, setProjectId] = useState<string | null>(null);
   const [cursor, setCursor] = useState(0);
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
-  const [drawer, setDrawer] = useState(false);
-  const [lenses, setLenses] = useState<Lens[]>([]);
   const [error, setError] = useState('');
   const run = useRef(0);
 
   const events = board.events();
   const caughtUp = cursor >= events.length;
   const shown = events.slice(0, cursor);
-  const label = (id: string) => (id === 'broker' ? 'Broker' : (LABELS[id] ?? id));
 
   useEffect(() => {
     if (caughtUp) return;
@@ -49,17 +45,9 @@ export function ProjectBoardView({ hub, speed, resetKey, viewSwitch, hidden }: {
     setProjectId(null);
     setCursor(0);
     setReplies({});
-    setDrawer(false);
-    setLenses([]);
     setError('');
   }, [resetKey]);
 
-  useEffect(() => {
-    if (!drawer) return;
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setDrawer(false);
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
-  }, [drawer]);
 
   const act = (fn: () => void): boolean => {
     setError('');
@@ -171,10 +159,6 @@ export function ProjectBoardView({ hub, speed, resetKey, viewSwitch, hidden }: {
             <button className="cta" onClick={post}>Sam posts a project: {DEMO_PROJECT.title} →</button>
           )}
         </div>
-        <div className="hero-meta">
-          <span className="proof-pill">Anonymous applications · hours capped at {DEMO_PROJECT.hoursPerWeek} a week · leave anytime, no points lost</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
-        </div>
       </header>
 
       <main className="phones">
@@ -210,30 +194,6 @@ export function ProjectBoardView({ hub, speed, resetKey, viewSwitch, hidden }: {
 
       {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
 
-      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Under the hood" subtitle="How the agents handled the project. Students never see this." badge={<span className="state-pill">{status.text}</span>}>
-        <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
-        <div className="drawer-body">
-          <section className="card">
-            <h3>Shortlist · Sam's private view</h3>
-            {apps.length ? (
-              <ul className="board-list">
-                {apps.map((a) => (
-                  <li key={a.junior} className={`board-row tone-${a.status === 'FILTERED' ? 'warn' : 'good'}`}>
-                    <b>{a.handle}</b>
-                    <span>{a.status === 'FILTERED' ? `✗ ${a.checks.filter((c) => !c.pass).map((c) => c.label.toLowerCase()).join('; ')}` : `✓ ${a.status.toLowerCase()}`}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="board-note">Waiting</p>
-            )}
-          </section>
-          <section className="card feed-card">
-            <h3>Agent conversation</h3>
-            <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeCommunity} />
-          </section>
-        </div>
-      </Drawer>
     </div>
   );
 }
