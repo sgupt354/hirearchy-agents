@@ -8,6 +8,9 @@ export function Shell() {
   const [active, setActive] = useState<TabId>(DEFAULT_TAB);
   const [speed, setSpeed] = useState<Speed>('normal');
   const [resetKey, setResetKey] = useState(0);
+  // Tabs with a live version (Find) start on their seeded demo; the switch shows the live one instead.
+  const [live, setLive] = useState<Partial<Record<TabId, boolean>>>({});
+  const activeDef = VISIBLE_TABS.find((t) => t.id === active);
 
   return (
     <div className="shell">
@@ -29,20 +32,35 @@ export function Shell() {
           ))}
         </div>
         <div className="corner">
+          {activeDef?.Live && (
+            <button
+              role="switch"
+              aria-checked={Boolean(live[active])}
+              className={`live-switch ${live[active] ? 'on' : ''}`}
+              onClick={() => setLive((l) => ({ ...l, [active]: !l[active] }))}
+            >
+              <span className="knob" aria-hidden /> Live search
+            </button>
+          )}
           <div className="segmented" role="group" aria-label="Playback speed">
             {(['slow', 'normal', 'fast'] as Speed[]).map((s) => (
               <button key={s} className={s === speed ? 'on' : ''} aria-pressed={s === speed} onClick={() => setSpeed(s)}>{s}</button>
             ))}
           </div>
-          <button className="icon-btn reset" onClick={() => setResetKey((k) => k + 1)} title="Reset demo" aria-label="Reset demo"><Icon name="reset" size={16} /></button>
+          <button className="icon-btn reset" onClick={() => {
+            setLive({});
+            setResetKey((k) => k + 1);
+          }} title="Reset demo" aria-label="Reset demo"><Icon name="reset" size={16} /></button>
         </div>
       </nav>
       <p className="journey-line">
         Find the job. Prep with your pipeline. Earn the referral. <b>Your agent negotiates. You decide.</b>
       </p>
-      {VISIBLE_TABS.map(({ id, Component }) => (
+      {VISIBLE_TABS.map(({ id, Component, Live }) => (
         <section key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} className="tab-panel" hidden={id !== active}>
-          <Component speed={speed} resetKey={resetKey} />
+          {/* Both stay mounted so switching keeps each one's state. */}
+          <div className="tab-view" hidden={Boolean(Live && live[id])}><Component speed={speed} resetKey={resetKey} /></div>
+          {Live && <div className="tab-view" hidden={!live[id]}><Live speed={speed} resetKey={resetKey} /></div>}
         </section>
       ))}
     </div>

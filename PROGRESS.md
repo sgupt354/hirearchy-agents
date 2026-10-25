@@ -153,13 +153,23 @@ Phase D decisions:
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Audit + research (AUDIT.md); landing copy without hackathon / track mentions | done |
-| 1 | Real Job Sniper: live board search behind a toggle | next |
-| 2 | Resume builder + LaTeX / Overleaf / PDF | todo |
+| 1 | Real Job Sniper: live board search behind a toggle | done |
+| 2 | Resume builder + LaTeX / Overleaf / PDF | next |
 | 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | todo |
 | 4 | Apollo contact lookup (official API, demo data without key) | todo |
 | 5 | Huntr: honest export (no public API for students) | todo |
 | 6 | Agent tie-in + 2 new sabotages | todo |
 | 7 | Alignment doc, README, full checks | todo |
+
+**Phase 1 (Job Sniper live):** `src/features/apply/jobs/` is the TypeScript port of hiring-pulse `jobs_core.py`
+(parsers for the four public board shapes, role / level / US / visa-risk filters, resume-overlap score, dedupe) plus
+all 443 boards (`boards.ts`). `api/jobs-search.ts` reads up to 60 boards (named companies, else a priority list of
+well-known companies), 16 at a time, 3.5 s per board, 7 s total, caches raw results 10 min, `JOBS_SEARCH=off` turns it
+off. The Find tab gets a **Live search** switch in the top bar (off by default, so the recorded demo is unchanged);
+on, it shows real postings with Apply links and Track. Any failure falls back to the seeded postings, labelled
+"Demo data". Global Reset turns live search off again. 21 new tests (fixtures for every board shape, filters,
+scoring, dedupe, per-board timeout, overall budget, cache, off switch). Note: this build container can't reach the
+boards, so the live path was checked with a recorded response; it runs for real on Vercel.
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:

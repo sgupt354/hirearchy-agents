@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { LiveFind } from '../features/apply/LiveFind';
 import { FindTab } from '../features/find';
 import { IntelTab } from '../features/intel';
 import { MockTab } from '../features/mock/MockTab';
@@ -15,6 +16,8 @@ export interface TabDef {
   icon: string;
   /** null = not built yet: the tab stays hidden until a real component is registered here. */
   Component: ComponentType<TabProps> | null;
+  /** Optional live version of the tab, behind the top bar's "Live search" switch (off by default). */
+  Live?: ComponentType<TabProps>;
 }
 
 /**
@@ -22,7 +25,7 @@ export interface TabDef {
  * Referral Bridge (Phase E). A tab with `Component: null` stays hidden; setting it makes the tab appear.
  */
 export const TABS: TabDef[] = [
-  { id: 'find', label: 'Find', icon: 'search', Component: FindTab },
+  { id: 'find', label: 'Find', icon: 'search', Component: FindTab, Live: LiveFind },
   { id: 'pipeline', label: 'Pipeline', icon: 'chart', Component: PipelineTab },
   { id: 'prep', label: 'Prep circle', icon: 'users', Component: PrepCircleTab },
   { id: 'mock', label: 'Mock interview', icon: 'mic', Component: MockTab },
