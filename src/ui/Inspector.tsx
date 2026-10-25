@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentEvent } from '../engine/types';
-import { describe, prettify } from './copy';
+import { describe, prettify, type EventView, type FeedContext } from './copy';
 import { matchesLens, type Lens } from './view';
 
 /** Live agent feed for judges: human titles, raw type as a tag, compact disclosure that expands. */
-export function Inspector({ events, label, lenses }: {
+export function Inspector({ events, label, lenses, describeEvent = describe }: {
   events: AgentEvent[];
   label: (id: string) => string;
   lenses: Lens[];
+  /** Plain-English title/body for an event; defaults to the prep-circle wording. */
+  describeEvent?: (e: AgentEvent, ctx: FeedContext) => EventView;
 }) {
   const list = useRef<HTMLOListElement>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export function Inspector({ events, label, lenses }: {
     <ol className="feed" ref={list}>
       {events.length === 0 && <li className="feed-empty">Nothing yet. Start the demo and the agents' conversation shows up here.</li>}
       {events.map((e) => {
-        const v = describe(e, { label, byId });
+        const v = describeEvent(e, { label, byId });
         const d = e.disclosure;
         const total = d.shared.length + d.abstracted.length + d.withheld.length;
         const expanded = open === e.id;

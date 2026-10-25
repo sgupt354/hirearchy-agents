@@ -10,8 +10,8 @@ Key idea: "Your prep circle becomes your proof of work."
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Journey shell, tab registry, `TabProps`, UI kit, global speed + Reset | ✅ done |
-| B | Mock interview swap (`src/features/mock/`) | next |
-| D | Trust ratings + evidence file (`src/features/trust/`) | todo |
+| B | Mock interview swap (`src/features/mock/`) | ✅ done |
+| D | Trust ratings + evidence file (`src/features/trust/`) | next |
 | E | Referral Bridge (`src/features/referral/`) | todo |
 | F | Polish, sabotage additions, browser checks, README | todo |
 | G | Merge `aditya/journey` (only on "merge Aditya") | waiting |
@@ -43,6 +43,50 @@ Key idea: "Your prep circle becomes your proof of work."
   1440×900 and 1280×800: prep golden path and decline branch inside the tab (no page scroll), tab switch mid-run
   keeps the run going, every placeholder renders, global Reset from another tab gives a page identical to a fresh
   load, no console errors.
+
+### Phase B — Mock interview swap: done (`src/features/mock/`, `tests/features/mock/`)
+- **Match rules (deterministic):** same pipeline AND round, at least 60 minutes free together, compatible difficulty
+  preference, never a 3rd mock with the same person, complementary weak areas ranked first (then reliability, a
+  hook Phase D fills in, then listing order). Pipeline, round, difficulty and time are filtered by the broker from
+  anonymized listings. The repeat limit is checked by the seeker's own agent against its private practice
+  history; the broker only sees "skip".
+- **Engine reuse:** listings via `buildListing` (strong areas = `offers`, weak = `needs`), time via the scheduler
+  (`schedule`), each agent decides with `evaluateSchedule` / `evaluateJoin`, consent via the consent functions,
+  names via `IdentityVault`, feed via `EventLog`, and a feature state machine (`src/features/shared/machine.ts`)
+  that throws the engine's `InvalidTransitionError`.
+- **Golden path:** Aditya (Microsoft technical) → #2 other round, #6 only 30 min together, #7 wants hard, #8 Google
+  are filtered; #3 Maya is skipped on Aditya's private repeat limit (practiced twice); Jordan is picked over Priya
+  (covers DSA + System Design both ways). 7:00–8:00 PM, both agents accept, both humans say yes, names unlock.
+  Round 1: Aditya interviews Jordan with DSA questions; round 2: Jordan interviews Aditya with System Design
+  questions. Each side scores the other (4-part rubric, 1–5) plus one note.
+- **Question packs** come from seeded anonymized reports (`questions.ts`, no author fields) for that company and
+  round: the interviewee's weak areas first, then their difficulty. Interviewees never see their own questions.
+- **Scores** live only in `ScoreVault`: readable by the person scored, or by someone they grant. Never in events
+  or on the other person's phone. Practice self-scores are kept but excluded from peer averages.
+- **Fallback:** "Practice with your agent" is offered only in `NO_PEER` (no one fits, or every peer declined):
+  a scripted mock from the question pack, then a private self-assessment. Demo: "See Riya's Google round".
+- **Decline:** goes to the next ranked peer (Priya) without naming who left.
+- **UI:** Mock interview tab in the same iMessage style: question-pack card, round card with a built-in timer
+  (30 min per round, sped up by the demo speed: ×10 slow, ×30 normal, ×120 fast) and End round, rubric form,
+  private scores card. Under the hood: match board (every candidate and why), the five rules, the agent feed
+  with judging lenses.
+- **Verified:** 153 tests (20 new mock tests), test:sabotage 6/6, typecheck, build, demo:run. Browser at 1440×900
+  and 1280×800: full swap, decline → backup, solo fallback, drawer with lens; each phone shows only its owner's
+  scores; no "->", 24-hour times, raw ids or scores in the feed; no page scroll; global Reset restores both the
+  prep and mock tabs exactly (pressed from a third tab, both mid-run); no console errors. Prep circle unchanged.
+
+Phase B decisions:
+- **Session = 60 minutes** (30 each way); the "≥ 60 min" rule means a full hour together. The agents propose the
+  earliest such hour.
+- **Difficulty is compatible** when equal or either side says "any".
+- **"Complementary preferred", not required:** Priya (no overlap in weak spots) is a valid backup.
+- **Timer is a UI aid.** Rounds end when a person taps End round (the timer shows "Time's up" at 0, it doesn't
+  force the end).
+- **Mock copy is templates** (no LLM call yet): `generateMessage` only knows the prep kinds. Can be routed
+  through it later behind `VITE_USE_LLM_COPY`.
+- **If the seeker declines**, the search ends (no agent-practice offer), since they said no to mocking now.
+- **Solo self-scores don't count as evidence** (only peer scores feed the Phase D evidence file).
+- `Inspector` gained an optional `describeEvent` prop so each feature words its own feed; the default is unchanged.
 
 
 ## Done
@@ -116,7 +160,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: Phase B (mock interview swap) next.
+- `feature/full-journey`: Phase D (trust ratings + evidence file) next.
 
 ## Exact next step
 Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
