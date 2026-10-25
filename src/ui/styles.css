@@ -383,3 +383,12 @@ input, textarea { font: inherit; color: var(--text); }
 .state-pill.mock-COMPLETED, .state-pill.mock-CONFIRMED { color: var(--good); background: rgba(48, 209, 88, 0.1); border-color: rgba(48, 209, 88, 0.35); }
 .state-pill.mock-AWAITING_HUMANS, .state-pill.mock-AWAITING_CONSENT, .state-pill.mock-ROUND_1, .state-pill.mock-ROUND_2, .state-pill.mock-SCORING { color: var(--human); background: rgba(167, 139, 250, 0.1); border-color: rgba(167, 139, 250, 0.35); }
 .state-pill.mock-NO_PEER, .state-pill.mock-SOLO, .state-pill.mock-DECLINED { color: var(--warn); background: rgba(255, 176, 32, 0.1); border-color: rgba(255, 176, 32, 0.35); }
+
+/* live Discord mode */
+.live-pill { display: inline-flex; align-items: center; gap: 7px; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 650; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--muted); }
+.live-pill i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.live-pill.live { color: #b9a6ff; border-color: rgba(88, 101, 242, 0.6); background: rgba(88, 101, 242, 0.14); }
+.live-pill.live i { background: #5865f2; box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.7); animation: pulse 1.6s infinite; }
+.live-pill.connecting i { animation: blink 1.2s infinite; }
+.live-pill.unavailable { color: var(--warn); border-color: rgba(255, 176, 32, 0.4); background: rgba(255, 176, 32, 0.07); }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(88, 101, 242, 0.7); } 70% { box-shadow: 0 0 0 7px rgba(88, 101, 242, 0); } 100% { box-shadow: 0 0 0 0 rgba(88, 101, 242, 0); } }

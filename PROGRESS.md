@@ -11,6 +11,7 @@ Key idea: "Your prep circle becomes your proof of work."
 |---|---|---|
 | 0 | Journey shell, tab registry, `TabProps`, UI kit, global speed + Reset | ✅ done |
 | B | Mock interview swap (`src/features/mock/`) | ✅ done |
+| Live | Live Discord mode for Aditya (`?live=1`), before D/E per the organizers | ✅ done (needs setup, see LIVE_DISCORD.md) |
 | D | Trust ratings + evidence file (`src/features/trust/`) | next |
 | E | Referral Bridge (`src/features/referral/`) | todo |
 | F | Polish, sabotage additions, browser checks, README | todo |
@@ -74,6 +75,37 @@ Key idea: "Your prep circle becomes your proof of work."
   and 1280×800: full swap, decline → backup, solo fallback, drawer with lens; each phone shows only its owner's
   scores; no "->", 24-hour times, raw ids or scores in the feed; no page scroll; global Reset restores both the
   prep and mock tabs exactly (pressed from a third tab, both mid-run); no console errors. Prep circle unchanged.
+
+### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
+- `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
+  each prompt that needs him (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time
+  button turns into a 7:30 / 8:00 / 8:30 PM picker), polls `/api/live-state` every 1.5 s and applies his answer once,
+  through the same `reply()` as a tap on his simulated phone (bubble tagged "· via Discord").
+- `api/discord-interactions.ts` verifies Discord's Ed25519 signature with `node:crypto` (no new package), answers
+  PING, accepts only `DISCORD_ADITYA_USER_ID`, stores the answer first-wins per (session, prompt).
+- Storage: Supabase `t2_live_replies` (`supabase/live.sql`, RLS on, functions granted to `service_role` only),
+  called server-side with `SUPABASE_SERVICE_ROLE_KEY`. Checked on PGlite: first answer wins, bad input rejected,
+  anon can neither read nor write.
+- Fallbacks: no `?live=1` → nothing changes (no live calls at all). Health fails, the DM fails, or 3 polls in a row
+  fail → "Live mode unavailable, using simulated phone"; the simulated phone keeps working throughout.
+- Tests (`tests/live/`, 12): signature valid/invalid, PING, interaction → reply mapping (buttons, picker,
+  first-wins, other users, expired picks), the poller applies a reply exactly once, a signed click reaching the
+  engine end to end, offline fallback (client + unconfigured server + failing Discord), DM text built only from
+  validated fields.
+- Browser (1440×900): without `?live=1` zero live calls; `?live=1` locally (no API) shows the unavailable badge and
+  completes; with the live functions mocked, Aditya's counter (8:00 PM) and "I'm in" arrive from "Discord", the
+  updated time is DM'd again, and the circle completes at 8:00–9:00 PM. No console errors.
+
+Live-mode decisions:
+- **Supabase over Vercel KV:** the project already exists, needs no new vendor or package, and the table follows the
+  t2_ pattern. One SQL file to run.
+- **Picker, not a modal:** "Suggest a time" swaps the buttons for a select menu (7:30 / 8:00 / 8:30 PM). Discord
+  modals only take text inputs reliably, and free text would need parsing on the server.
+- **Server builds the DM text** with the same `studentCopy` as the simulated phone, from whitelisted short fields.
+- **Each prompt has its own id** (the phone message id), so a late tap on an old DM can never answer a newer prompt.
+- **`/api/live-notify` is unauthenticated** (public demo): it can only DM Aditya, and only template text.
+- **Not exercised against real Discord/Supabase here** (no credentials in this environment); verified with signed
+  requests, PGlite, and mocked endpoints in the browser.
 
 Phase B decisions:
 - **Session = 60 minutes** (30 each way); the "≥ 60 min" rule means a full hour together. The agents propose the
@@ -160,7 +192,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: Phase D (trust ratings + evidence file) next.
+- `feature/full-journey`: Live Discord mode done; Phase D (trust ratings + evidence file) next.
 
 ## Exact next step
 Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,

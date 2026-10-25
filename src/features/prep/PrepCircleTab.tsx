@@ -9,6 +9,8 @@ import { deriveGraph, inviteOutcome, messagesAvailable, stateAt, type InviteOutc
 import summary from '../../ui/test-summary.json';
 import { SPEEDS } from '../../app/speed';
 import type { TabProps } from '../types';
+import { isLiveRequested } from '../../live/client';
+import { useLiveDiscord, type LiveStatus } from './useLiveDiscord';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
@@ -164,6 +166,16 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     act(() => {});
   };
 
+  // Live Discord mode (?live=1): Aditya answers his prompts in Discord; the simulated phone still works.
+  const liveRequested = useMemo(() => isLiveRequested(), []);
+  const adityaLast = inbox[VIEWER].at(-1);
+  const live = useLiveDiscord({
+    enabled: liveRequested,
+    runKey: run.current,
+    pending: adityaLast?.actions.length ? adityaLast : null,
+    onReply: (r, bubble) => reply(VIEWER, r, bubble),
+  });
+
   const firstReset = useRef(resetKey);
   useEffect(() => {
     if (resetKey !== firstReset.current) reset();
@@ -245,6 +257,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
             {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
           </span>
           <button className="hood-btn" onClick={() => setDrawer(true)}>🔍 See what the agents are doing</button>
+          {live !== 'off' && <LiveBadge status={live} />}
         </div>
       </header>
 
@@ -290,5 +303,19 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
         onToggleLens={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
       />
     </div>
+  );
+}
+
+function LiveBadge({ status }: { status: Exclude<LiveStatus, 'off'> }) {
+  const text = {
+    connecting: 'Connecting to Discord…',
+    live: 'Live: Aditya is on Discord',
+    unavailable: 'Live mode unavailable, using simulated phone',
+  }[status];
+  return (
+    <span className={`live-pill ${status}`} role="status">
+      <i aria-hidden />
+      {text}
+    </span>
   );
 }

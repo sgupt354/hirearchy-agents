@@ -83,6 +83,23 @@ output `dist`. The two serverless functions in `api/` are picked up automaticall
 | `DISCORD_WEBHOOK_URL` | Server (Vercel env) | Optional | Discord notification for Aditya's "needs you" messages via `/api/notify` |
 | `VITE_USE_LLM_COPY` | Build time | Optional, default off | `true` = phone messages worded by Claude; off = the built-in student copy. Only turn on with `ANTHROPIC_API_KEY` set. Redeploy after changing it (it's baked into the build). |
 
+### Live Discord mode (optional)
+
+Open the site with `?live=1` and Aditya's agent really DMs him in Discord with **✅ I'm in · 🕗 Suggest a time ·
+Not this time** buttons; his answer drives the demo exactly like a tap on his simulated phone. Without `?live=1`, or
+if anything fails, the page says "Live mode unavailable, using simulated phone" and carries on. Full setup:
+**[LIVE_DISCORD.md](LIVE_DISCORD.md)**. It adds three functions (`api/live-notify.ts`, `api/live-state.ts`,
+`api/discord-interactions.ts`), one Supabase migration (`supabase/live.sql`) and these server-only variables:
+
+| Variable | Secret? | Purpose |
+|---|---|---|
+| `DISCORD_APP_ID` | no | The Discord application |
+| `DISCORD_PUBLIC_KEY` | no | Verifies Discord's signature on every interaction |
+| `DISCORD_BOT_TOKEN` | **yes** | Sends the DM |
+| `DISCORD_ADITYA_USER_ID` | no | The only person the bot DMs and accepts clicks from |
+| `SUPABASE_URL` | no | Where replies wait for the page (`VITE_SUPABASE_URL` also works) |
+| `SUPABASE_SERVICE_ROLE_KEY` | **yes** | Server-side access to the `t2_live_*` functions |
+
 `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are listed in `.env.example` but not used yet:
 `supabase/track2.sql` is written and not connected. Never commit real values; `.env*` files are git-ignored
 except `.env.example`.
