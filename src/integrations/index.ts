@@ -161,3 +161,90 @@ export function downloadIcs(circle: CircleEvent): void {
   anchor.remove();
   URL.revokeObjectURL(url);
 }
+
+export type MessageKind = 'proposal' | 'counter' | 'reveal' | 'complete';
+
+export interface MessageInput {
+  recipientLabel: string;
+  kind: MessageKind;
+  details: Record<string, string>;
+}
+
+export const MESSAGE_KINDS: readonly MessageKind[] = ['proposal', 'counter', 'reveal', 'complete'];
+
+/** Detail keys that may carry a real identity. Matched case-insensitively as substrings. */
+const SENSITIVE_KEY_PARTS = ['name', 'identity', 'contact', 'email', 'phone', 'handle', 'discord'];
+
+/**
+ * Drop identity-bearing details unless the circle has reached `reveal`, where consent has
+ * already been recorded by the coordination engine. Applied on both client and server.
+ */
+export function sanitizeDetails(kind: MessageKind, details: Record<string, string>): Record<string, string> {
+  if (kind === 'reveal') return { ...details };
+
+  const safe: Record<string, string> = {};
+  for (const [key, value] of Object.entries(details ?? {})) {
+    const lowered = key.toLowerCase();
+    if (SENSITIVE_KEY_PARTS.some((part) => lowered.includes(part))) continue;
+    safe[key] = value;
+  }
+  return safe;
+}
+
+/** Deterministic templates used whenever generation is unavailable. Never leak identities. */
+function fallbackMessage(input: MessageInput): string {
+  const safe = sanitizeDetails(input.kind, input.details ?? {});
+  const when = safe.start && safe.end ? ` at ${safe.start}–${safe.end}` : '';
+
+  switch (input.kind) {
+    case 'proposal':
+      return `Your agent found a prep circle that matches your interview needs and availability${when}. Want to join?`;
+    case 'counter':
+      return `A new time was suggested${when} and it still works with the group's constraints. Want to accept it?`;
+    case 'reveal': {
+      const members = safe.members ?? safe.names ?? safe.identities;
+      return members
+        ? `Everyone said yes — your prep circle is confirmed with ${members}.`
+        : 'Everyone said yes — your prep circle is confirmed.';
+    }
+    case 'complete':
+    default:
+      return "Your prep circle is set. You're ready to prep.";
+  }
+}
+
+const VOICE_ENDPOINT = '/api/voice';
+const VOICE_TIMEOUT_MS = 3000;
+
+/**
+ * Ask /api/voice to phrase a coordination update. Any failure (timeout, network, bad status,
+ * malformed body, empty message) resolves to the deterministic fallback — this never throws.
+ */
+export async function generateMessage(input: MessageInput): Promise<string> {
+  const payload = {
+    recipientLabel: input.recipientLabel,
+    kind: input.kind,
+    details: sanitizeDetails(input.kind, input.details ?? {}),
+  };
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), VOICE_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(VOICE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!response.ok) return fallbackMessage(input);
+
+    const body = (await response.json()) as { message?: unknown };
+    const message = typeof body?.message === 'string' ? body.message.trim() : '';
+    return message || fallbackMessage(input);
+  } catch {
+    return fallbackMessage(input);
+  } finally {
+    clearTimeout(timer);
+  }
+}
