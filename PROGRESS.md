@@ -158,8 +158,8 @@ Phase D decisions:
 | 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | done |
 | 4 | Apollo contact lookup (official API, demo data without key) | done |
 | 5 | Huntr: honest export (no public API for students) | done |
-| 6 | Agent tie-in + 2 new sabotages | next |
-| 7 | Alignment doc, README, full checks | todo |
+| 6 | Agent tie-in + 2 new sabotages | done |
+| 7 | Alignment doc, README, full checks | next |
 
 **Phase 1 (Job Sniper live):** `src/features/apply/jobs/` is the TypeScript port of hiring-pulse `jobs_core.py`
 (parsers for the four public board shapes, role / level / US / visa-risk filters, resume-overlap score, dedupe) plus
@@ -200,6 +200,21 @@ session state. Picking a contact fills the draft (recruiter template for recruit
 format for individual job seekers. So, option (3): Apply → **Tracker** lists the jobs tracked from live search and
 exports them as CSV (RFC 4180, formulas neutralised) or versioned JSON, plus an **Open Huntr** link. The UI and README
 say plainly that Huntr has no public integration for students. 4 new tests.
+
+**Phase 6 (agent tie-in):** no engine changes.
+- **Find → the agent network:** tracking a live posting makes the agent offer the existing flows (prep circle, mock
+  swap, Referral Bridge, tailored resume) and opens that tab (`src/app/navigate.ts`), saying which demo network it runs
+  in (Microsoft for circles and mocks, Stripe for the referral).
+- **Referral → application packet** (`src/features/apply/packet.ts`): once names are unlocked, Jordan's agent prepares
+  a resume tailored to the role from Jordan's own resume plus an intro draft, held by Jordan's agent. Nadia can request
+  it (only Nadia, only after the chat is booked); Jordan's agent asks Jordan; shared to Nadia only on Jordan's yes; a no
+  keeps it private. Nothing is emailed. The steps appear in the Referral feed (prepared → requested → asked → consent →
+  shared) with what was shared / summarized / withheld, and the Apply tab has its own Under-the-hood steps list.
+  The Referral tab only gained a card slot (`custom` items in `ReferralPhone`); `ReferralBridge` is unchanged.
+- **Sabotage: 12/12.** New: "Outreach draft auto-sent without the student" (a mail-API call planted in
+  `api/outreach-draft.ts`, caught by 3 tests) and "Resume export adds skills the student never listed" (planted in
+  `tailor()`, caught by 3 tests). 6 new tests (packet gates, private by default, subset of the profile, outreach's only
+  outbound call is the optional Claude rewording).
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:

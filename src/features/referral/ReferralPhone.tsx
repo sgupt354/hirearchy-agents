@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChatBubble, Icon, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
 import { RUBRIC } from '../mock/scores';
 import type { EvidenceStage1, EvidenceStage2 } from '../trust/evidence';
@@ -10,6 +10,8 @@ export interface ReferralChatItem extends RevealItem {
   kind?: ReferralMsgKind;
   data?: Record<string, unknown>;
   time?: string;
+  /** A card from another feature (the application packet), shown full width. */
+  custom?: ReactNode;
 }
 
 export type ReferralAction =
@@ -39,6 +41,7 @@ export function ReferralPhone({ owner, caption, items, interactive, pace, onActi
 
   const render = (item: ReferralChatItem) => {
     const time = item.from === 'agent' ? timeOf(item.key) : item.time;
+    if (item.custom) return <div key={item.key} className="custom-card">{item.custom}</div>;
     const card =
       item.kind === 'summary' ? <SummaryCard summary={item.data!.summary as EvidenceStage1 | EvidenceStage2} />
       : item.kind === 'fit' ? <FitCard results={item.data!.results as RuleResult[]} />

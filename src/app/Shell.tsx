@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { OPEN_TAB } from './navigate';
 import { Icon, Mark } from '../ui/Icon';
 import type { Speed } from './speed';
 import { DEFAULT_TAB, VISIBLE_TABS, type TabId } from './tabs';
@@ -11,6 +12,15 @@ export function Shell() {
   // Tabs with a live version (Find) start on their seeded demo; the switch shows the live one instead.
   const [live, setLive] = useState<Partial<Record<TabId, boolean>>>({});
   const activeDef = VISIBLE_TABS.find((t) => t.id === active);
+
+  useEffect(() => {
+    const open = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (VISIBLE_TABS.some((t) => t.id === id)) setActive(id as TabId);
+    };
+    window.addEventListener(OPEN_TAB, open);
+    return () => window.removeEventListener(OPEN_TAB, open);
+  }, []);
 
   return (
     <div className="shell">

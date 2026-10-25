@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ChatBubble, PhoneFrame, QuickReplies, clock } from '../../ui/kit';
+import { ChatBubble, Drawer, PhoneFrame, QuickReplies, clock } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
 import { findContacts, type ContactsOutcome } from './outreach/contacts';
@@ -29,6 +29,7 @@ export function ApplyTab({ resetKey }: TabProps) {
   const [printing, setPrinting] = useState(false);
   const [found, setFound] = useState<(ContactsOutcome & { postingId: string }) | null>(null);
   const [looking, setLooking] = useState(false);
+  const [drawer, setDrawer] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
 
   const firstReset = useRef(resetKey);
@@ -38,6 +39,7 @@ export function ApplyTab({ resetKey }: TabProps) {
     setView('resume');
     setLines([]);
     setFound(null);
+    setDrawer(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
@@ -132,6 +134,7 @@ export function ApplyTab({ resetKey }: TabProps) {
         </div>
         <div className="hero-meta">
           <span className="proof-pill">Only your own bullets and skills · requirements you don't meet are listed, never invented</span>
+          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agent is doing</button>
         </div>
       </header>
 
@@ -213,6 +216,31 @@ export function ApplyTab({ resetKey }: TabProps) {
           )}
         </section>
       </main>
+
+      <Drawer open={drawer} onClose={() => setDrawer(false)} title="Under the hood" subtitle="What your agent did for this application, and what left your device.">
+        <div className="drawer-body single">
+          <section className="card feed-card">
+            <h3>Steps</h3>
+            <ol className="steps">
+              {[
+                { t: `Read the ${posting.company} posting`, shared: [], summarized: [`${r.matched.length + r.unmet.length} requirement terms`], hidden: [] },
+                { t: 'Tailored your resume', shared: [], summarized: [`${r.kept} of ${r.total} of your bullets`], hidden: ['bullets it left out', 'anything you didn\'t write'] },
+                ...(contacts ? [{ t: contacts.source === 'apollo' ? 'Looked up contacts through Apollo' : 'Showed demo contacts', shared: contacts.source === 'apollo' ? [`company: ${posting.company}`, 'job titles'] : [], summarized: [], hidden: ['your profile', 'your resume'] }] : []),
+                ...lines.filter((l) => l.from === 'me').map((l) => ({ t: l.text, shared: [], summarized: [], hidden: [/draft/i.test(l.text) ? 'the draft: you send it yourself' : 'the file stays on your computer'] })),
+              ].map((st, i) => (
+                <li key={i} className="step">
+                  <b>{st.t}</b>
+                  <div className="job-chips">
+                    {st.shared.length ? st.shared.map((x) => <span key={x} className="chip shared">Shared: {x}</span>) : <span className="chip shared">Shared: nothing</span>}
+                    {st.summarized.map((x) => <span key={x} className="chip abstracted">Summarized: {x}</span>)}
+                    {st.hidden.map((x) => <span key={x} className="chip withheld">Hidden: {x}</span>)}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
+      </Drawer>
 
       {printing && createPortal(<div className="print-root"><ResumeDoc r={r} /></div>, document.body)}
     </div>

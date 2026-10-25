@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChatBubble, PhoneFrame, TypingIndicator, clock } from '../../ui/kit';
+import { openTab } from '../../app/navigate';
+import { ChatBubble, PhoneFrame, QuickReplies, TypingIndicator, clock } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
 import { searchLive, type LiveOutcome } from './client';
@@ -26,6 +27,7 @@ export function LiveFind({ resetKey }: TabProps) {
   const [busy, setBusy] = useState(false);
   const [outcome, setOutcome] = useState<LiveOutcome | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
+  const [offer, setOffer] = useState<ScoredPosting | null>(null);
   const chat = useRef<HTMLDivElement>(null);
   const run = useRef(0);
 
@@ -41,6 +43,7 @@ export function LiveFind({ resetKey }: TabProps) {
     setBusy(false);
     setOutcome(null);
     setLines([]);
+    setOffer(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
@@ -71,7 +74,17 @@ export function LiveFind({ resetKey }: TabProps) {
     if (!outcome) return;
     store.track(p, outcome.source, clock());
     say('me', `Track ${p.company}`);
-    say('agent', `Tracked ${p.title} at ${p.company}. Open the Apply tab for a tailored resume and an intro draft.`);
+    say('agent', `Tracked ${p.title} at ${p.company}. Your agent can now work with other students' agents for this role: prep together, swap mock interviews, or ask an alum for a referral. Or open Apply for a tailored resume.`);
+    setOffer(p);
+  };
+
+  // Agent-to-agent tie-in: the existing flows run in the demo networks (Microsoft for the circle and mocks, Stripe for
+  // the referral), so say which network the student is about to see.
+  const go = (tab: string, label: string, note: string) => {
+    say('me', label);
+    say('agent', note);
+    setOffer(null);
+    openTab(tab);
   };
 
   const now = Date.now();
@@ -116,6 +129,16 @@ export function LiveFind({ resetKey }: TabProps) {
           <ChatBubble from="agent" text="Live search reads public job boards from 443 companies. Pick a role and level, and I'll check the top boards now." />
           {lines.map((l, i) => <ChatBubble key={i} from={l.from} text={l.text} time={l.time} />)}
           {busy && <TypingIndicator />}
+          {offer && !busy && (
+            <QuickReplies
+              options={[
+                { label: 'Find a prep circle', tone: 'yes', onClick: () => go('prep', 'Find a prep circle', `Opening the prep circle. It runs in the Microsoft demo network today; ${offer.company} students join the same way.`) },
+                { label: 'Swap mock interviews', onClick: () => go('mock', 'Swap mock interviews', 'Opening the mock swap (Microsoft demo network).') },
+                { label: 'Ask for a referral', onClick: () => go('referral', 'Ask for a referral', `Opening the Referral Bridge. The demo alum interned at Stripe; for ${offer.company} it works the same way.`) },
+                { label: 'Tailor my resume', onClick: () => go('apply', 'Tailor my resume', `Opening Apply with ${offer.company} selected.`) },
+              ]}
+            />
+          )}
         </PhoneFrame>
 
         <section className="card job-list" aria-label="Postings">

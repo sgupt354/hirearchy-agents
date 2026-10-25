@@ -571,3 +571,14 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .contact-link + .chip { margin-left: 6px; }
 .contact-pick { flex: 1; display: flex; align-items: baseline; gap: 8px; text-align: left; }
 .tracker-actions { justify-content: flex-start; flex-wrap: wrap; }
+.packet-card { display: flex; flex-direction: column; gap: 6px; padding: 3cqw; border-radius: 4.4cqw; background: var(--surface); border: 1px solid color-mix(in oklab, var(--accent) 30%, transparent); font-size: 3.6cqw; color: var(--body); }
+.packet-card b { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: 3.9cqw; }
+.packet-card p { margin: 0; line-height: 1.4; }
+.packet-ask { color: var(--human) !important; font-weight: 600; }
+.packet-done { display: flex; align-items: center; gap: 6px; color: var(--good) !important; font-weight: 600; }
+.packet-intro { font-style: italic; color: var(--muted) !important; }
+.packet-card .job-actions .cta.small, .packet-card .job-actions .ghost.small { height: 8.4cqw; padding: 0 3.4cqw; font-size: 3.4cqw; }
+.drawer-body.single { grid-template-columns: minmax(0, 1fr); }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+.step { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+.step b { font-size: 13px; color: var(--text); }
