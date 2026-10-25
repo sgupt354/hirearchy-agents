@@ -51,14 +51,14 @@ export function Icon({ name, size = 16, className }: { name: IconName | string; 
   );
 }
 
-/** The Hirearchy mark: three connected nodes. */
+/** The Hirearchy mark, exactly as on the marketing site: three connected nodes in brand colours. */
 export function Mark({ size = 20 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M12 5 5.5 17.5h13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" opacity=".55" />
-      <circle cx="12" cy="5" r="3" fill="currentColor" />
-      <circle cx="5.5" cy="17.5" r="3" fill="currentColor" />
-      <circle cx="18.5" cy="17.5" r="3" fill="currentColor" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden>
+      <path d="M12 5 L5 18 L19 18 Z" fill="none" stroke="currentColor" strokeOpacity="0.35" strokeWidth="1.6" />
+      <circle cx="12" cy="5" r="3" fill="var(--accent)" />
+      <circle cx="5" cy="18" r="3" fill="var(--cyan)" />
+      <circle cx="19" cy="18" r="3" fill="var(--accent)" />
     </svg>
   );
 }

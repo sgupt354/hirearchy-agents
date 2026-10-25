@@ -69,7 +69,7 @@ export function useChatReveal<T extends RevealItem>(items: T[], pace: number) {
 }
 
 /** iOS notification banner that slides down from the top of the screen. */
-export function NotificationBanner({ show, text, app = 'Hirearchy Agent' }: { show: boolean; text: string; app?: string }) {
+export function NotificationBanner({ show, text, app = 'Hirearchy agent' }: { show: boolean; text: string; app?: string }) {
   return (
     <div className={`ios-banner ${show ? 'show' : ''}`} role="status">
       <span className="app-icon"><Mark size={14} /></span>
@@ -119,7 +119,7 @@ export function QuickReplies({ options, children }: { options: QuickReplyOption[
 }
 
 /** iPhone bezel, status bar, contact header and compose bar around a scrolling chat. */
-export function PhoneFrame({ owner, caption, banner, chatRef, contact = 'Hirearchy Agent', children }: {
+export function PhoneFrame({ owner, caption, banner, chatRef, contact = 'Hirearchy agent', children }: {
   owner: string;
   caption: string;
   banner?: { show: boolean; text: string };

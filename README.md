@@ -15,6 +15,13 @@ and a human is asked before anything that matters: joining, sharing more, reveal
 Students never see a graph. They see texts from their agent and tap **✅ I'm in**, **🕗 Suggest a time** or
 **Not this time**. The agents' side sits behind **🔍 See what the agents are doing** on every tab, for judges.
 
+## Site
+
+- **`/`** is the landing page (`src/landing/`): the marketing site, ported from its Lovable build into React with its
+  own compiled stylesheet (`src/landing/site.css`) and no extra dependencies.
+- **`/app/`** is the live demo app (`app/index.html` → `src/main.tsx`). It uses the same design tokens, logo and buttons as
+  the landing page; its logo links back to `/`.
+
 ## The journey
 
 | Tab | What the agent does | Owner |
@@ -107,7 +114,7 @@ All 10 privacy sabotages were caught.
 
 ```bash
 npm install
-npm run dev            # the app, at http://localhost:5173 (runs the tests first to refresh the badge)
+npm run dev            # landing page at http://localhost:5173/, demo app at /app/ (runs the tests first to refresh the badge)
 npm test               # all unit tests
 npm run demo:run       # prints the prep-circle golden path and the backup branch, no browser needed
 npm run test:sabotage  # the privacy sabotage tests
@@ -136,7 +143,7 @@ output `dist`. The serverless functions in `api/` are picked up automatically; t
 
 ### Live Discord mode (optional)
 
-Open the site with `?live=1` and Aditya's agent really DMs them in Discord with **✅ I'm in · 🕗 Suggest a time ·
+Open the demo app with `/app/?live=1` (`/?live=1` redirects there) and Aditya's agent really DMs them in Discord with **✅ I'm in · 🕗 Suggest a time ·
 Not this time** buttons; their answer drives the demo exactly like a tap on their simulated phone. Without `?live=1`, or
 if anything fails, the page says "Live mode unavailable, using simulated phone" and carries on. Full setup:
 **[LIVE_DISCORD.md](LIVE_DISCORD.md)**. It adds three functions (`api/live-notify.ts`, `api/live-state.ts`,

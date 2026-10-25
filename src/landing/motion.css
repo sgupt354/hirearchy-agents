@@ -1,0 +1,15 @@
+/* Mount / exit animations for the landing page (stand-ins for the original framer-motion transitions). */
+@keyframes lp-rise { from { opacity: 0; transform: translateY(var(--lp-rise, 8px)); } to { opacity: 1; transform: none; } }
+@keyframes lp-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lp-blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+.lp-rise { animation: lp-rise 0.3s ease-out both; }
+.lp-rise-6 { --lp-rise: 6px; }
+.lp-rise-16 { --lp-rise: 16px; animation-duration: 0.4s; }
+.lp-fade { animation: lp-fade 0.3s ease-out both; }
+.lp-leave { opacity: 0; transition: opacity 0.3s ease-out; }
+.lp-dot { animation: lp-blink 1s ease-in-out infinite; }
+.lp-menu { animation: lp-fade 0.25s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .lp-rise, .lp-fade, .lp-menu { animation: none; }
+  .lp-rise-16 { animation: lp-fade 0.4s ease-out both; }
+}

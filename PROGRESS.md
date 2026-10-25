@@ -149,6 +149,23 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Landing page integrated (`/`), demo app moved to `/app/`
+- **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:
+  same sections, copy, Tailwind classes and timings (read from the site's own bundle), styled by its own compiled
+  stylesheet (`site.css`, vendored). Framer Motion replaced by small hooks (`motion.tsx`: reveal on scroll, mount
+  and exit fades, reduced-motion aware); exact Lucide icons (`icons.tsx`). No new dependencies.
+- **Two pages** (`vite.config.ts`): `index.html` → landing, `app/index.html` → the demo app. Separate stylesheets, so
+  neither page's CSS can affect the other. Every "Try the live demo" goes to `/app/`; the Demo section embeds `/app/`.
+  `/?live=1` redirects to `/app/?live=1`, so live-mode links keep working.
+- **App matched to the landing:** design tokens now the site's exact `oklch` values (ink, primary, muted, border,
+  success, violet, bubble, shadows); the site's coloured logo mark (brand links to `/`) and tinted agent avatars;
+  primary / outline buttons at the site's 44 px pill size; solid accent heading; the site's gradient mesh. Tabs drop
+  their icons below 1180 px so all six fit in the landing page's demo frame.
+- **Verified:** the port renders pixel-identical section heights to the original (9,668 px at 1440); hero loop,
+  How-it-works stepper (auto-play, pick, Replay), product cards, FAQ, sabotage terminal, sticky header, mobile menu,
+  links and the live redirect all work; no horizontal scroll at 390 / 768 / 1440; no console errors. App: 414 tests,
+  10/10 sabotages, build, all six tabs at 1440×900 and 1280×800, global Reset exact.
+
 ### Deploy fix: api functions crashed on Vercel (FUNCTION_INVOCATION_FAILED)
 - **Cause:** `"type": "module"` means Vercel runs each compiled `api/` file as native ES modules, and Node needs
   explicit file paths. `api/live-*.ts` and `api/discord-interactions.ts` imported `../src/live/http` (no extension),
