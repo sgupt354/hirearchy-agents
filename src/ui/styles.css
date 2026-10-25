@@ -570,3 +570,4 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .contact-link { margin-left: auto; font-size: 12px; font-weight: 600; color: var(--accent-ink); text-decoration: none; }
 .contact-link + .chip { margin-left: 6px; }
 .contact-pick { flex: 1; display: flex; align-items: baseline; gap: 8px; text-align: left; }
+.tracker-actions { justify-content: flex-start; flex-wrap: wrap; }

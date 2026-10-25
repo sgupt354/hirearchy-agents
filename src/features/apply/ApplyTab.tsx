@@ -8,6 +8,7 @@ import { DEMO_POSTINGS } from './postings';
 import { OVERLEAF_URL, overleafFields, renderLatex, resumeFileName } from './resume/latex';
 import { tailor } from './resume/tailor';
 import { useApplyStore } from './store';
+import { HUNTR_URL, toCsv, toJson, trackerFileName, trackerRows } from './tracker/export';
 import { OutreachPanel } from './ui/OutreachPanel';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { ResumeDoc } from './ui/ResumeDoc';
@@ -23,7 +24,7 @@ const list = (xs: string[]) => (xs.length <= 2 ? xs.join(' and ') : `${xs.slice(
 /** Apply: a resume tailored to one posting, built only from the student's own profile, exported as .tex / Overleaf / PDF. */
 export function ApplyTab({ resetKey }: TabProps) {
   const store = useApplyStore();
-  const [view, setView] = useState<'resume' | 'outreach' | 'profile'>('resume');
+  const [view, setView] = useState<'resume' | 'outreach' | 'tracker' | 'profile'>('resume');
   const [lines, setLines] = useState<Line[]>([]);
   const [printing, setPrinting] = useState(false);
   const [found, setFound] = useState<(ContactsOutcome & { postingId: string }) | null>(null);
@@ -53,11 +54,21 @@ export function ApplyTab({ resetKey }: TabProps) {
 
   const did = (me: string, agent: string) => setLines((ls) => [...ls, { from: 'me', text: me, time: clock() }, { from: 'agent', text: agent, time: clock() }]);
 
-  const downloadTex = () => {
-    const url = URL.createObjectURL(new Blob([tex], { type: 'application/x-tex' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: `${fileName}.tex` });
-    a.click();
+  const save = (content: string, type: string, name: string) => {
+    const url = URL.createObjectURL(new Blob([content], { type }));
+    Object.assign(document.createElement('a'), { href: url, download: name }).click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
+  const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const exportTracker = (ext: 'csv' | 'json') => {
+    const rows = trackerRows(store.tracked(), today);
+    save(ext === 'csv' ? toCsv(rows) : toJson(rows, new Date().toISOString()), ext === 'csv' ? 'text/csv' : 'application/json', trackerFileName(ext, today));
+    did(`Export tracker (${ext.toUpperCase()})`, `Saved ${rows.length} tracked ${rows.length === 1 ? 'job' : 'jobs'} as "${trackerFileName(ext, today)}". It stays on your computer.`);
+  };
+
+  const downloadTex = () => {
+    save(tex, 'application/x-tex', `${fileName}.tex`);
     did('Download LaTeX', `Saved "${fileName}.tex". It stays on your computer; nothing was sent.`);
   };
 
@@ -114,7 +125,7 @@ export function ApplyTab({ resetKey }: TabProps) {
             ))}
           </select>
           <div className="segmented" role="group" aria-label="View">
-            {(['resume', 'outreach', 'profile'] as const).map((v) => (
+            {(['resume', 'outreach', 'tracker', 'profile'] as const).map((v) => (
               <button key={v} className={view === v ? 'on' : ''} aria-pressed={view === v} onClick={() => setView(v)}>{v[0].toUpperCase() + v.slice(1)}</button>
             ))}
           </div>
@@ -143,7 +154,30 @@ export function ApplyTab({ resetKey }: TabProps) {
         </PhoneFrame>
 
         <section className="card resume-card" aria-label={view === 'resume' ? 'Tailored resume' : view === 'outreach' ? 'Outreach draft' : 'Your profile'}>
-          {view === 'outreach' ? (
+          {view === 'tracker' ? (
+            <>
+              <h3>Your tracker</h3>
+              {store.tracked().length === 0 ? (
+                <p className="feed-empty">Nothing tracked yet. Turn on Live search in Find and track a posting.</p>
+              ) : (
+                store.tracked().map((t) => (
+                  <article key={t.id} className="job-row">
+                    <div className="job-head">
+                      <b>{t.title}</b>
+                      <span>{t.company} · {t.location || 'Location not listed'} · saved {t.trackedAt}</span>
+                    </div>
+                    {t.source === 'demo' && <div className="job-chips"><span className="chip withheld">Demo data</span></div>}
+                  </article>
+                ))
+              )}
+              <div className="job-actions tracker-actions">
+                <button className="ghost small" onClick={() => exportTracker('csv')}><Icon name="file" /> Download CSV</button>
+                <button className="ghost small" onClick={() => exportTracker('json')}><Icon name="file" /> Download JSON</button>
+                <a className="ghost small" href={HUNTR_URL} target="_blank" rel="noreferrer noopener">Open Huntr <Icon name="share" /></a>
+              </div>
+              <p className="draft-note"><Icon name="alert" /> Huntr has no public integration for individual students (its API is only for career centers). Keep this file, import it into any tracker that reads CSV, or add jobs in Huntr with its Chrome extension.</p>
+            </>
+          ) : view === 'outreach' ? (
             <>
               <h3>Intro email · {posting.company}</h3>
               <div className="find-contacts">

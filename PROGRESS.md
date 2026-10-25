@@ -157,8 +157,8 @@ Phase D decisions:
 | 2 | Resume builder + LaTeX / Overleaf / PDF | done |
 | 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | done |
 | 4 | Apollo contact lookup (official API, demo data without key) | done |
-| 5 | Huntr: honest export (no public API for students) | next |
-| 6 | Agent tie-in + 2 new sabotages | todo |
+| 5 | Huntr: honest export (no public API for students) | done |
+| 6 | Agent tie-in + 2 new sabotages | next |
 | 7 | Alignment doc, README, full checks | todo |
 
 **Phase 1 (Job Sniper live):** `src/features/apply/jobs/` is the TypeScript port of hiring-pulse `jobs_core.py`
@@ -195,6 +195,11 @@ if a plan ever returns a real one. No key, 401/403, 429, 5xx or network failure 
 with a note. 10-minute in-memory cache to spare Apollo's rate limits; nothing persisted, contacts live in the tab's
 session state. Picking a contact fills the draft (recruiter template for recruiting titles, alum otherwise).
 7 new tests (request shape, keyword fallback, missing key, 429 / 403 / 500 / network, cache, no fake emails).
+
+**Phase 5 (Huntr):** Huntr's only API is the Organization API (career centres); there's no API or documented import
+format for individual job seekers. So, option (3): Apply → **Tracker** lists the jobs tracked from live search and
+exports them as CSV (RFC 4180, formulas neutralised) or versioned JSON, plus an **Open Huntr** link. The UI and README
+say plainly that Huntr has no public integration for students. 4 new tests.
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:
