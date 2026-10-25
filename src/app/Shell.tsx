@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Speed } from './speed';
-import { DEFAULT_TAB, TABS, type TabId } from './tabs';
+import { DEFAULT_TAB, VISIBLE_TABS, type TabId } from './tabs';
 
 /** Journey shell: tab bar, global speed and global Reset. Every tab stays mounted so switching never loses a run. */
 export function Shell() {
@@ -13,7 +13,7 @@ export function Shell() {
       <nav className="topbar">
         <span className="brand"><span className="logo">◆</span>Hirearchy</span>
         <div className="tabs" role="tablist" aria-label="Your job hunt">
-          {TABS.map((t) => (
+          {VISIBLE_TABS.map((t) => (
             <button
               key={t.id}
               role="tab"
@@ -36,7 +36,7 @@ export function Shell() {
           <button className="icon-btn reset" onClick={() => setResetKey((k) => k + 1)} title="Reset demo" aria-label="Reset demo">↺</button>
         </div>
       </nav>
-      {TABS.map(({ id, Component }) => (
+      {VISIBLE_TABS.map(({ id, Component }) => (
         <section key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} className="tab-panel" hidden={id !== active}>
           <Component speed={speed} resetKey={resetKey} />
         </section>

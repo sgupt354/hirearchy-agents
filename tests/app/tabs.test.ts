@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_TAB, TABS } from '../../src/app/tabs';
+import { DEFAULT_TAB, TABS, VISIBLE_TABS } from '../../src/app/tabs';
 
 describe('journey tab registry', () => {
   it('lists the journey in order', () => {
@@ -7,7 +7,13 @@ describe('journey tab registry', () => {
     expect(new Set(TABS.map((t) => t.id)).size).toBe(TABS.length);
   });
 
-  it('opens on the prep circle', () => {
+  it('shows only tabs with a real component, in journey order', () => {
+    expect(VISIBLE_TABS.map((t) => t.label)).toEqual(['Prep circle', 'Mock interview']);
+    expect(VISIBLE_TABS.every((t) => typeof t.Component === 'function')).toBe(true);
+  });
+
+  it('opens on the prep circle, which is visible', () => {
     expect(DEFAULT_TAB).toBe('prep');
+    expect(VISIBLE_TABS.some((t) => t.id === DEFAULT_TAB)).toBe(true);
   });
 });

@@ -22,13 +22,20 @@ Key idea: "Your prep circle becomes your proof of work."
   `export type TabProps = { speed: "slow" | "normal" | "fast"; resetKey: number };`
   Reset your tab's state whenever `resetKey` changes; read pacing from `SPEEDS[speed]` (`src/app/speed.ts`).
 - Suggested exports: `FindTab` from `src/features/find/index.tsx`, `PipelineTab` from `src/features/pipeline/`,
-  `IntelTab` from `src/features/intel/`. At merge they replace the `soon(...)` placeholders in `src/app/tabs.tsx`.
+  `IntelTab` from `src/features/intel/`. At merge they fill the `Component: null` entries in `src/app/tabs.tsx`,
+  and each tab appears in the nav automatically.
 - Reusable UI: import from `src/ui/kit.ts` (PhoneFrame, IPhone, ChatBubble, TypingIndicator, QuickReplies,
   NotificationBanner, CalendarCard, useChatReveal, Drawer, UnderTheHood, Inspector, JudgeLegend, Graph, lenses,
   12-hour time helpers, SPEEDS). Styles are global in `src/ui/styles.css`.
 - For the evidence file: please export a function or count for "intel reports contributed" per student;
   it gets wired in at merge (Phase G).
 - Off-limits for Sumedha's side: `src/features/{find,pipeline,intel}/`, `tests/features/{find,pipeline,intel}/`.
+
+### Deploy prep: placeholder tabs hidden
+- The nav shows only tabs with a real component (`VISIBLE_TABS` in `src/app/tabs.tsx`): currently **Prep circle** and
+  **Mock interview**; default stays Prep circle. Find, Pipeline, Intel and Referral have `Component: null` and appear
+  automatically once a component is registered. The "Coming soon" card was removed.
+- To be deployed from `feature/full-journey` (see LIVE_DISCORD.md for the order).
 
 ### Phase 0 — done
 - `src/app/Shell.tsx`: top nav tabs in order Find · Pipeline · Prep circle · Mock interview · Intel · Referral; opens

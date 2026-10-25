@@ -2,7 +2,6 @@ import type { ComponentType } from 'react';
 import { MockTab } from '../features/mock/MockTab';
 import { PrepCircleTab } from '../features/prep/PrepCircleTab';
 import type { TabProps } from '../features/types';
-import { ComingSoon } from './ComingSoon';
 
 export type TabId = 'find' | 'pipeline' | 'prep' | 'mock' | 'intel' | 'referral';
 
@@ -10,25 +9,24 @@ export interface TabDef {
   id: TabId;
   label: string;
   icon: string;
-  Component: ComponentType<TabProps>;
+  /** null = not built yet: the tab stays hidden until a real component is registered here. */
+  Component: ComponentType<TabProps> | null;
 }
 
-const soon = (icon: string, title: string, blurb: string): ComponentType<TabProps> =>
-  function Placeholder() {
-    return <ComingSoon icon={icon} title={title} blurb={blurb} />;
-  };
-
 /**
- * The journey, in order. Find, Pipeline and Intel are placeholders until Aditya's branch merges:
- * swap each `soon(...)` for his component (e.g. `FindTab` from '../features/find'), which takes TabProps.
+ * The journey, in order. Find, Pipeline and Intel arrive with Aditya's branch (e.g. `FindTab` from
+ * '../features/find'), Referral in Phase E: set `Component` and the tab appears in the nav automatically.
  */
 export const TABS: TabDef[] = [
-  { id: 'find', label: 'Find', icon: '🔎', Component: soon('🔎', 'Find', 'Your agent scans openings and surfaces the jobs that fit you.') },
-  { id: 'pipeline', label: 'Pipeline', icon: '📊', Component: soon('📊', 'Pipeline', 'See how your pipeline is moving, from applied to interviewing to offers.') },
+  { id: 'find', label: 'Find', icon: '🔎', Component: null },
+  { id: 'pipeline', label: 'Pipeline', icon: '📊', Component: null },
   { id: 'prep', label: 'Prep circle', icon: '👥', Component: PrepCircleTab },
   { id: 'mock', label: 'Mock interview', icon: '🎤', Component: MockTab },
-  { id: 'intel', label: 'Intel', icon: '💡', Component: soon('💡', 'Intel', 'Trade anonymized interview intel with your pipeline.') },
-  { id: 'referral', label: 'Referral', icon: '🤝', Component: soon('🤝', 'Referral', 'Earn a referral with proof of work, not cold messages.') },
+  { id: 'intel', label: 'Intel', icon: '💡', Component: null },
+  { id: 'referral', label: 'Referral', icon: '🤝', Component: null },
 ];
+
+/** Tabs shown in the nav: only those with a real component, in journey order. */
+export const VISIBLE_TABS = TABS.filter((t): t is TabDef & { Component: ComponentType<TabProps> } => t.Component !== null);
 
 export const DEFAULT_TAB: TabId = 'prep';
