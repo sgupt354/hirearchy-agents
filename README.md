@@ -1,49 +1,44 @@
-# Hirearchy: your agent for the whole job hunt
+# Hirearchy: hierarchical networking for the job hunt
 
-**Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide.**
+**Find the job early. Prep with your pipeline. Climb the community ladder. Earn the referral.**
 
-> **Your prep circle becomes your proof of work.**
+> **Your prep circle becomes your proof of work.** Networking is how students get hired — Hirearchy makes that ladder usable every day.
 
-Every student has a personal AI agent that lives in their messages. It finds jobs, finds other students in the same
-hiring pipeline to prep and mock-interview with, trades interview intel anonymously, and turns all of that into a
-private record that can earn a referral. Agents talk to each other through structured events and negotiate on
-their own; **deterministic code decides everything** (matching, fit, limits, consent), the LLM only words messages,
-and a human is asked before anything that matters: joining, sharing more, revealing a name, referring.
+Live app: **[hirearchy-agents.vercel.app](https://hirearchy-agents.vercel.app)** · Demo: `/app/` · Live Discord: `/app/?live=1`
+
+Every student has a personal AI agent in their messages. It finds roles from company boards (Greenhouse, Lever, Ashby, …) often **minutes after they post** — before they flood LinkedIn — then finds peers to prep and mock with, trades interview intel anonymously, lets you mentor and get mentored for points and reach, and turns all of that into a private **proof of work** an alum can trust. Agents negotiate through structured events; **deterministic code** decides matching, fit, limits and consent; the LLM only words messages; a human is asked before anything that matters: joining, sharing, revealing a name, referring.
 
 ![Three students' phones in iMessage, each with the prep-circle calendar invite after everyone said yes](docs/screenshot.png)
 
-Students never see a graph. They see texts from their agent and tap **✅ I'm in**, **🕗 Suggest a time** or
-**Not this time**. The agents' side sits behind **🔍 See what the agents are doing** on every tab, for judges.
+Students never see a graph. They see texts and tap **I'm in**, **Suggest a time** or **Not this time**. On **Prep circle** and **Referral**, **How it works** opens the agent graph and event feed for demos.
 
 ## Site
 
-- **`/`** is the landing page (`src/landing/`): the marketing site, ported from its Lovable build into React with its
-  own compiled stylesheet (`src/landing/site.css`) and no extra dependencies.
-- **`/app/`** is the live demo app (`app/index.html` → `src/main.tsx`). It uses the same design tokens, logo and buttons as
-  the landing page; its logo links back to `/`.
+- **`/`** — landing (`src/landing/`)
+- **`/app/`** — product demo (`src/main.tsx`); logo links home
 
 ## The journey
 
 | Tab | What the agent does | Owner |
 |---|---|---|
-| 🔎 **Find** | Surfaces matching postings (Job Sniper); "Track it" puts you in that company's pipeline. **Live search** switch: real postings from 443 public company job boards | Aditya (seeded), Sumedha (live) |
-| 📄 **Apply** | A resume tailored to one posting from your own bullets (LaTeX, Overleaf, PDF), intro email drafts you send yourself, contacts, tracker export | Sumedha |
-| 📊 **Pipeline** | Anonymous stats for your pipeline, each published only once enough reports back it | Aditya |
-| 👥 **Prep circle** | You landed an interview: finds 2–3 students whose skills cover your weak spots, negotiates a time, names after everyone says yes | Sumedha |
-| 🌱 **Community** | Pay it forward: a newcomer with nothing to trade asks for help; a mentor's agent decides from private capacity rules; confirmed help earns points and levels (never a referral); question packs; a project board | Sumedha |
-| 🎤 **Mock interview** | Swaps mock interviews with someone in the same company and round; scores go only to the person scored | Sumedha |
-| 💡 **Intel** | Give-to-get interview reports, scrubbed of anything identifying | Aditya |
-| 🤝 **Referral** | Your prep record, shared step by step, earns a coffee chat with an alum, who decides on the referral | Sumedha |
+| 🔎 **Find** | Matching roles; **Live search** reads up to 60 of 443 public boards (Greenhouse, Lever, Ashby, SmartRecruiters). Track puts you in that company's pipeline | Aditya (seeded), Sumedha (live) |
+| 💬 **Ask** | Ask the network | Aditya |
+| 📄 **Apply** | Tailored resume (LaTeX / Overleaf / PDF), intro drafts you send yourself, contacts, tracker | Sumedha |
+| 📋 **Applications** | One record per job: readiness, nudges, links to prep / intel / referral / community so the hunt stays connected | Sumedha |
+| 📊 **Pipeline** | Anonymous pipeline stats, published only once enough reports back them | Aditya |
+| 👥 **Prep circle** | Interview invite → 2–3 peers covering weak spots → negotiate time → names after everyone says yes → calendar, then private ratings | Sumedha |
+| 🌱 **Community** | Pay it forward: help requests + project board. Confirmed mentoring earns **points and levels** (reach, packs, mentor profile alumni can trust). Referrals stay a human decision after a chat | Sumedha |
+| 🎤 **Mock interview** | Same company + round swap; scores only for the person scored | Sumedha |
+| 💡 **Intel** | Give-to-get interview reports, scrubbed of identifying detail | Aditya |
+| 🤝 **Referral** | Staged proof of work → coffee chat → **only the alum** taps Refer | Sumedha |
 
-Prep circles and mocks feed a shared **trust network**: after each session members rate each other privately, and
-each student gets a private **🏅 proof of work** (sessions, average rating, mock scores, skills taught, intel
-reports). The Referral tab reads that record, so what you do in the other tabs really changes your referral.
+Prep, mocks, intel and community mentoring feed a shared **trust network**. Each student gets a private **proof of work**. Referral reads that record — so daily prep and helping others really change who alumni trust.
 
 ## Apply suite: what's live and what's demo
 
 | Feature | Live when | Otherwise | Notes |
 |---|---|---|---|
-| Live job search (Find → Live search) | Always on Vercel (public job-board APIs need no key) | Seeded postings, labelled "Demo data" | Official Greenhouse, Lever, Ashby and SmartRecruiters JSON endpoints only; 443 boards from Job Sniper, up to 60 per search |
+| Live job search (Find → Live search) | Always on Vercel (public job-board APIs need no key) | Seeded postings | Official Greenhouse, Lever, Ashby and SmartRecruiters JSON endpoints only; 443 boards, up to 60 per search |
 | Visa and graduation screening | Always (on each posting's text) | n/a | F-1 friendly / needs verification / not eligible and the student's graduation window, each quoting the exact sentence; silence is never assumed friendly |
 | Tailored resume (Apply) | Always (runs in the browser) | n/a | Uses only the student's own bullets and skills; lists requirements they don't meet. Starts on a labelled demo profile; paste or type your own |
 | LaTeX / Overleaf / PDF | Always | n/a | `.tex` download, Overleaf's documented "open in Overleaf" form, print to PDF; file name "Resume - <Company> - <Role>" |
@@ -56,12 +51,10 @@ Research and sources for every integration: [AUDIT.md](AUDIT.md).
 
 ## How each feature maps to the judging criteria
 
-The Prep circle, Mock interview and Referral drawers have the same three judging-lens chips; clicking one
-highlights those events in the agent conversation: **⚠ Conflicting constraints** (CONFLICT / COUNTER / REJECT), **↗ What's shared** (every event lists
-what was shared, abstracted and withheld) and **⏸️ When humans are asked** (ESCALATE / CONSENT). Find, Pipeline and Intel explain themselves in their own drawers
-(**See why these matched**, **See what was shared and hidden**).
+**Prep circle** and **Referral** open **How it works** with judging-lens chips that highlight the agent feed:
+**⚠ Conflicting constraints**, **↗ What's shared**, **⏸️ When humans are asked**.
 
-![Under the hood: the network from Aditya's view and the agent conversation, with "Conflicting constraints" on](docs/judge-legend.png)
+![How it works: network view and agent conversation with Conflicting constraints on](docs/judge-legend.png)
 
 ### 👥 Prep circle
 | Criterion | What you see |
@@ -82,7 +75,7 @@ what was shared, abstracted and withheld) and **⏸️ When humans are asked** (
 
 | Criterion | What you see |
 |---|---|
-| **Conflicting constraints** | The alum's agent holds **private rules**: SWE / backend roles only, ≥ 2 sessions, rating ≥ 4.5, mock average ≥ 4.0, must meet first, max 2 referrals a month (1 left). A deterministic fit check shows ✓/✗ per rule. Theo (★ 4.3) fails the rating rule; after Jordan is referred, the monthly limit fails too. The 15-minute chat is negotiated by the engine scheduler (7:00–7:15 PM). |
+| **Conflicting constraints** | The alum's agent holds **private rules**: SWE / backend roles only, ≥ 2 sessions, rating ≥ 4.5, mock average ≥ 4.0, must meet first, max **2 referrals a month** (demo starts at **2 of 2 left**). Fit check shows ✓/✗ per rule. Theo (★ 4.3) fails the rating rule; after two referrals the monthly limit fails. The 15-minute chat is negotiated by the engine scheduler (7:00–7:15 PM). |
 | **What's shared** | Staged: **stage 1** anonymous stats → **stage 2** project links + mock rubric breakdown, only if the fit passes → **stage 3** names, only after both say yes to the chat. A declined seeker hears only "not right now": no rule, threshold or referrer name, and the referrer never learns theirs. |
 | **When humans are asked** | The seeker OKs sharing at all; both OK the chat; after the chat **only the referrer's human** can choose 🤝 Refer / 🕗 Not yet (with a coaching note, e.g. "Do one more system design mock first.") / No. Agents never refer on their own (`decide()` is the only path and throws for anyone else). Referrers earn give-back credit. |
 
@@ -112,10 +105,11 @@ what was shared, abstracted and withheld) and **⏸️ When humans are asked** (
 Newcomers have nothing to trade yet, so a prep circle can't form for them. In the **Community** tab their agent posts
 a standing, anonymous help request instead, and mentors earn points and levels for helping.
 
-**Points never buy a referral.** There is no way to spend points at all: they unlock perks by level (matching
-priority, a badge on your proof of work, question packs), and `redeemForReferral()` exists only to refuse. A referral
-still comes only from a referrer's own decision after a chat (Referral tab). What referrers can see is your mentoring
-("helped 2 newcomers, ★ 4.8"), never your points, so helping others counts toward a referral without ever guaranteeing one.
+**Points build reach and trust — they are earned, never spent.** Levels unlock matching priority, a badge on your
+proof of work, and question packs: a stronger mentor profile. Helping beginners pays more (3× newcomers, 2× a level
+below). Alumni who hire can trust people with that standing; a referral still comes only from the referrer's own
+decision after a chat (Referral tab). Referrers see mentoring outcomes ("helped 2 newcomers, ★ 4.8"), never a
+points balance you can cash in.
 
 | Rule | Why |
 |---|---|
@@ -230,19 +224,10 @@ resets every tab at once. Tabs keep their state while you switch between them.
    *"We would like to invite you to interview for the Software Engineer Intern role at Microsoft."* and press
    **Check invite**. (An invite for another company is recognised but doesn't start a run, since only the
    Microsoft SWE Intern network is seeded.)
-3. Aditya's phone says congrats while the agent works. Open **🔍 See what the agents are doing** to watch it live:
-   8 agents found → #8 filtered (other pipeline) → #7 invisible (private profile) → #5 filtered (same skill only)
-   → #6 rejects the evening on its own → circle **You → #3 (DSA) → #2 (System Design) → You (Behavioral)**, #4
-   held as backup → ⚠ schedules conflict → agents negotiate → ✓ window agreed, 7:30–9:00 PM. Close the drawer.
-4. A notification slides down on all three phones. On **Maya's phone**, tap **🕗 Suggest a time → 8:00 PM**. The
-   other agents check 8:00–9:00 PM against their private hours, and everyone gets the new time.
-5. Tap **✅ I'm in** on all three phones. Names unlock 🔓, each phone gets a calendar invite with the circle, and
-   **Add to calendar** downloads the .ics.
-6. In the drawer, toggle the judging-lens chips to walk through each criterion. Click a "Shared · Summarized ·
-   Hidden" line to see exactly what an agent disclosed.
-7. Press the faint **↺** (top right) to reset, start again, and tap **Not this time** on Maya's phone for the
-   backup branch: the circle dissolves, nothing is revealed, nobody is told who left, and Jordan's phone appears
-   with a new circle at 7:00–9:00 PM.
+3. Aditya's phone says congrats while the agent works. Open **How it works** to watch the agent feed live, then close it.
+4. On **Maya's phone**, tap **Suggest a time → 8:00 PM**. The other agents check the new window against private hours.
+5. Tap **I'm in** on all three phones. Names unlock; each phone gets a calendar invite; **Add to calendar** downloads the .ics. Then rate privately (showed up? helpful 1–5?).
+6. In **How it works**, toggle the judging-lens chips. Press **↺** and tap **Not this time** on Maya for the backup branch (Jordan appears; nobody is named as the decliner).
 
 ### 🎤 Mock interview
 Click **🎤 Aditya's Microsoft technical round is Thursday →**. Tap **✅ I'm in** on both phones; each gets a question
@@ -250,29 +235,18 @@ pack, the rounds run on a timer (**End round**), each scores the other privately
 their proof of work. **No one in your round?** shows the practice-with-your-agent fallback.
 
 ### 🤝 Referral
-1. Click **🤝 Jordan applied to Stripe SWE Intern →**. On Jordan's phone tap **✅ Share my stats**.
-2. Nadia's phone shows the anonymous stats, then the private fit check (✓ on every rule), then the project links and
-   rubric. Both tap **✅ I'm in** for the 15-minute coffee chat; names unlock.
-3. Nadia taps **☕ We had the chat**, then decides. **🕗 Not yet** opens a coaching note; **🤝 Refer** sends the
-   referral, uses the last referral this month and earns +1 give-back credit.
-4. **Next applicant: Theo →** keeps Nadia's month: Theo fails the rating rule (and the limit). Theo's phone only
-   says "not right now". From the start screen, **Not a fit? See Theo's application** shows the rating failure alone.
-5. **🔍 See what the agents are doing** shows the fit check per rule, which stage has been shared, and referrals left.
+1. Click **Jordan applied to Stripe SWE Intern →**. On Jordan's phone tap **Share my stats**.
+2. Nadia's phone shows anonymous stats, the private fit check, then project links and rubric. Both tap **I'm in** for the coffee chat; names unlock.
+3. Nadia taps **We had the chat**, then **Refer** / **Not yet** / **No**. **Refer** uses one of **2 of 2** monthly slots and earns +1 give-back credit (**1 of 2 left** afterward).
+4. **Next applicant: Theo →** keeps Nadia's month. From idle, **Not a fit? See Theo's application** shows the rating failure alone.
+5. **How it works** shows fit per rule, staged disclosure, and referrals left.
 
 ### 🌱 Community (Pay it forward)
-1. Click **Priya, a freshman, needs help with DSA for Microsoft →**. Her agent explains that a circle needs something
-   to trade, posts an anonymous request and gives her a free starter question pack. Leo's and Sam's agents pass on
-   their own (open the drawer to see why); the request shows **Waiting for a mentor**.
-2. Click **A mentor comes online →**. Aditya's agent checks his private rules (DSA, 0 of 2 newcomers this week,
-   evenings) and asks him. With `?live=1` this is a real Discord DM: tap **I can help** or type yes.
-3. Tap **I'm in** on Priya's phone. Names unlock and both get a calendar card for 7:30–8:15 PM.
-4. Tap **We had the session** on both phones. Aditya earns **+30 (10 x 3, helped a newcomer)**, reaches
-   **Contributor**, unlocks 3 question packs, and after both rate privately his proof of work shows the Contributor
-   badge and "Helped 1 newcomer".
-5. In the side card, **Trade points for a referral?** shows the rule: points can't buy one.
-6. Switch to **Project board** and click **Sam posts a project**: three juniors apply anonymously, Sam's agent
-   shortlists two (Riya is over the hours cap), Sam picks Priya, she joins, logs 4 hours, both confirm the week (Sam
-   +30), then she leaves and keeps her credit and points.
+1. Click **Priya, a freshman, needs help with DSA for Microsoft →**. Her agent posts an anonymous request and gives a starter pack. Side card shows points, levels and perks (reach / packs / mentor profile).
+2. Click **A mentor comes online →**. Aditya's agent checks private capacity rules and asks him. With `?live=1`, that ask is a real Discord DM.
+3. Both tap **I'm in** → calendar → **We had the session** on both phones.
+4. Aditya earns **+30 (10 × 3, helped a newcomer)**, levels up, unlocks packs; both rate privately; proof of work updates. Points raise trust and reach — they do not purchase a referral.
+5. **Project board** → **Sam posts a project**: anonymous apply → shortlist → join → log hours → confirm week → leave anytime.
 
 ### 📄 Apply and live search
 1. Find → turn on **Live search** (top right), pick a level, **Search live boards**, then **Track** a posting. The agent
@@ -299,10 +273,11 @@ flowchart LR
     V["IdentityVault<br/>names only after all consents"]
   end
   subgraph Features["Journey features (src/features)"]
-    F1["find · pipeline · intel"]
-    F2["prep · mock (ScoreVault)"]
-    T["trust network<br/>ratings ledger · evidence file<br/>staged disclosure"]
-    R["referral bridge<br/>private fit check · human decides"]
+    F1["find · ask · apply · pipeline · intel"]
+    F2["prep · mock · community"]
+    J["applications<br/>readiness · nudges · closing"]
+    T["trust network<br/>ratings · proof of work"]
+    R["referral bridge<br/>fit check · human decides"]
   end
   L["LLM (api/voice)<br/>wording only, template fallback"]
   H <--> A
@@ -311,6 +286,7 @@ flowchart LR
   E --> V
   F2 --> T --> R
   F1 -.->|intel count| T
+  J -.-> Features
   Features --- E
   A -.->|phone text| L
 ```
@@ -326,16 +302,11 @@ flowchart LR
   humans. It never decides a match, a time, a fit, a limit or a consent. Templates by default; the demo works
   offline.
 
-Code map: `src/engine/` (agents, broker, pure modules), `src/features/` (`prep`, `mock`, `trust`, `referral`;
-Aditya's `find`, `pipeline`, `intel`), `src/ui/` (shared kit: iMessage phones, drawer, judge lenses, agent feed,
-student copy), `src/live/` + `api/live-*` + `api/discord-interactions.ts` (live Discord mode),
-`src/integrations/` + `api/voice.ts` + `api/notify.ts` (invite parsing, .ics, wording, notifications), `scripts/`
-(`demo:run`, test badge, sabotage tests), `tests/`, `supabase/` (`track2.sql` written but not connected;
-`live.sql` for live mode).
+Code map: `src/engine/`, `src/features/` (`find`, `ask`, `apply`, `journey`, `pipeline`, `prep`, `community`, `mock`,
+`intel`, `trust`, `referral`), `src/ui/`, `src/live/` + `api/live-*` + `api/discord-interactions.ts`,
+`src/integrations/` + `api/{voice,notify,jobs-search,...}.ts`, `scripts/`, `tests/`, `supabase/live.sql`.
 
 ## Team
 
-- **Sumedha:** coordination engine, journey shell, mock interviews, trust and proof of work, Referral Bridge
-  (`src/engine/`, `src/app/`, `src/ui/`, `src/features/{prep,mock,trust,referral}/`, live Discord mode, `scripts/`)
-- **Aditya:** integrations and deployment support, Find, Pipeline stats, Intel exchange
-  (`src/integrations/`, `api/voice.ts`, `api/notify.ts`, `src/features/{find,pipeline,intel}/`)
+- **Sumedha:** engine, journey shell, Applications, prep, community, mock, trust, Referral Bridge, live Discord
+- **Aditya:** Find / Ask / Pipeline / Intel, integrations and deployment support

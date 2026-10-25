@@ -87,8 +87,8 @@ None of them are `VITE_` variables: they never reach the browser. Env changes on
 
 ```bash
 git fetch origin
-git checkout feature/full-journey
-git pull origin feature/full-journey
+git checkout feature/connected-journey
+git pull origin feature/connected-journey
 npx vercel --prod
 ```
 

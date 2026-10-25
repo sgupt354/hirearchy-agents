@@ -1,7 +1,19 @@
 # Progress — Track 2 (hirearchy-agents)
 
-Full spec: [SPEC.md](SPEC.md). `main` = the shipped prep-circle demo. Active branch: **`feature/full-journey`**
-(branched from `main` at `a3ce531`; not merged to `main` until reviewed).
+Full spec: [SPEC.md](SPEC.md). Live: [hirearchy-agents.vercel.app](https://hirearchy-agents.vercel.app).
+
+**Active branch: `feature/connected-journey`** (not merged to `main` until reviewed).  
+`main` still has the earlier prep-circle / journey baseline.
+
+### Connected journey — shipped on this branch
+| Area | Status |
+|---|---|
+| Applications hub (one record per job, readiness, nudges, closing) | ✅ |
+| Product UI polish (no hackathon / Job Sniper / trade-for-referral framing) | ✅ |
+| Community points = reach / levels / mentor trust (not a referral shop) | ✅ |
+| Discord: calendar invite before rating survey | ✅ |
+| How it works inspector on Prep + Referral only | ✅ |
+| Referral demo quota starts at **2 of 2** left | ✅ |
 
 ## Full journey ("Hirearchy: your agent for the whole job hunt")
 Hero line: "Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide."
@@ -455,8 +467,8 @@ Connection first, proof of work, the human decides. New tab **🤝 Referral** (6
      and earns +1 give-back credit; Not yet and No use none.
 - **Decoy:** Theo (2 sessions, ★ 4.3) fails the rating rule only. Theo hears just "This referrer isn't taking you on
   right now"; no rule, threshold, referrer name or stage 2 ever reaches Theo, and Nadia never learns Theo's name.
-- **Limit in the demo:** after Jordan is referred, "Next applicant: Theo →" keeps Nadia's month (0 of 2 left), so the
-  fit card shows ✗ rating and ✗ limit. Starting Theo from the idle screen shows the rating failure alone.
+- **Limit in the demo:** Nadia starts with **2 of 2** left. After one Refer, "Next applicant: Theo →" shows **1 of 2**.
+  Exhaust both slots before the monthly limit fails alone; starting Theo from idle shows the rating failure.
 - **Under the hood:** fit check per rule (referrer's private view), staged disclosure (stage 1/2/3: shared / never
   shared / waiting), referrals left + credit, and the plain-English feed with judge lenses.
 - **Verified:** 409 tests (23 new referral tests: each rule pass/fail, the monthly limit, no identity before consent,
