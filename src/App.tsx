@@ -3,9 +3,10 @@ import { Engine, PIPELINE, TRIGGER_AGENT_ID, type HumanReply, type PhoneMessage,
 import { shortWindow } from './ui/format';
 import { Graph } from './ui/Graph';
 import { Inspector } from './ui/Inspector';
+import { JudgeLegend } from './ui/JudgeLegend';
 import { downloadIcs, generateMessage, notifyPhone, parseInvite } from './ui/integrationsStub';
 import { Phone } from './ui/Phone';
-import { deriveGraph, stateAt } from './ui/view';
+import { deriveGraph, inviteOutcome, stateAt, type Lens } from './ui/view';
 import summary from './ui/test-summary.json';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
@@ -30,6 +31,8 @@ export default function App() {
   const [error, setError] = useState('');
   const [invite, setInvite] = useState('');
   const [inviteStatus, setInviteStatus] = useState('');
+  const [inviteTone, setInviteTone] = useState<'ok' | 'info' | 'bad'>('ok');
+  const [lenses, setLenses] = useState<Lens[]>([]);
   const [invitePending, setInvitePending] = useState(false);
   const [generated, setGenerated] = useState<Record<string, string>>({});
   const phones = useRef<Record<string, PhoneMessage[]>>({});
@@ -107,7 +110,9 @@ export default function App() {
     setCursor(0);
     setInvite('');
     setInviteStatus('');
+    setInviteTone('ok');
     setInvitePending(false);
+    setLenses([]);
     act(() => {});
   };
 
@@ -118,11 +123,10 @@ export default function App() {
     const parsed = await parseInvite(invite).catch(() => null);
     if (run.current !== thisRun) return;
     setInvitePending(false);
-    const ok =
-      parsed && /interview/i.test(parsed.stage) && parsed.company === PIPELINE.company && parsed.role === PIPELINE.role;
-    if (!ok) return setInviteStatus('Not an interview invite');
-    setInviteStatus(`Interview invite: ${parsed.company} / ${parsed.role}`);
-    act(() => engine.simulateInterviewInvite());
+    const outcome = inviteOutcome(parsed, PIPELINE);
+    setInviteStatus(outcome.message);
+    setInviteTone(outcome.tone);
+    if (outcome.start) act(() => engine.simulateInterviewInvite());
   };
 
   const complete = caughtUp ? events.find((e) => e.type === 'COMPLETE') : undefined;
@@ -189,7 +193,7 @@ export default function App() {
         <span className="proof" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
           {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
         </span>
-        {inviteStatus && <span className={inviteStatus.startsWith('Not') ? 'invite-bad' : 'invite-ok'}>{inviteStatus}</span>}
+        {inviteStatus && <span className={`invite-${inviteTone}`}>{inviteStatus}</span>}
         {error && <span className="error" role="alert">{error}</span>}
       </div>
 
@@ -209,7 +213,13 @@ export default function App() {
           </header>
           <Graph ids={IDS} labels={labels} view={view} names={names} />
         </section>
-        <Inspector events={shown} state={state} labels={labels} viewer={VIEWER} />
+        <div className="right">
+          <JudgeLegend
+            active={lenses}
+            onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))}
+          />
+          <Inspector events={shown} state={state} labels={labels} viewer={VIEWER} lenses={lenses} />
+        </div>
       </main>
 
       <section className="phones">

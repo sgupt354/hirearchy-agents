@@ -12,7 +12,8 @@
     "test": "vitest run",
     "test:badge": "tsx scripts/test-summary.ts",
     "typecheck": "tsc --noEmit",
-    "demo:run": "tsx scripts/demo-run.ts"
+    "demo:run": "tsx scripts/demo-run.ts",
+    "test:sabotage": "tsx scripts/sabotage.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

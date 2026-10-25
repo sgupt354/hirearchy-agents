@@ -23,7 +23,15 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
   run only for a Microsoft / SWE Intern interview, otherwise "Not an interview invite"). Slow / Normal / Fast
   playback. Reset returns to the exact start state (verified in a browser: page identical to a fresh load,
   both mid-replay and after a completed run).
-- 31 Vitest tests, all passing.
+- **Paste-invite fix.** `parseInvite` returning null -> "Not an interview invite". A real invite for another
+  pipeline -> "Interview invite detected: <Company> / <Role>. No agents in this pipeline yet; the demo network is
+  Microsoft SWE Intern." (no run started). Microsoft / SWE Intern starts the run.
+- **Judge legend** above the Inspector: three toggle chips (⚠ Conflicting constraints, ↗ What's shared,
+  ⏸️ When humans are asked) that outline the matching events and fade the rest. Pure UI.
+- **Phase 6 — README**: one-liner, tagline, screenshots, judging-criteria mapping, privacy proof, how to run,
+  demo steps, architecture diagram, team.
+- **`npm run test:sabotage`**: plants 6 privacy bugs one at a time and checks the suite catches each (all 6 caught).
+- 36 Vitest tests, all passing.
 
 ## Team / ownership
 - **Aditya (branch `aditya/integrations`) owns voice (Claude), the .ics generator, Discord/phone notify and
@@ -45,8 +53,8 @@ route with the service key. Left as is for now, per instruction.
 - Nothing. Waiting for the next task.
 
 ## Exact next step
-Phase 6 — README with the one-liner, how to run, and the demo steps (unless the team reprioritises).
-Merge `aditya/integrations` when ready and swap the stub import.
+All six build phases are done (phases 4–5 owned by Aditya). Next: merge `aditya/integrations`, swap the stub import
+in `src/App.tsx`, and re-run `npm test`, `npm run test:sabotage` and the demo steps in the README.
 
 ## How to run
 ```
@@ -56,6 +64,7 @@ npm run demo:run   # prints the golden path and the backup branch as event lines
 npm run dev        # UI at http://localhost:5173 (runs the tests first to refresh the Privacy proof badge)
 npm run build      # typecheck + production build
 npm run test:badge # rerun tests and rewrite src/ui/test-summary.json
+npm run test:sabotage # plant privacy bugs one at a time; every one must be caught
 ```
 
 ## Decisions
@@ -129,3 +138,18 @@ Integration-stub decisions:
 - **Speed:** Slow 700 ms, Normal 260 ms, Fast 80 ms per event. It's a presenter setting, so Reset keeps it.
 - **Reset** also drops in-flight async results (message generation, invite parsing) from the previous run, clears
   the invite box and status, and remounts the phones so typed counters are cleared.
+
+Final-polish decisions:
+- **Invite outcomes** live in a pure `inviteOutcome()` in `src/ui/view.ts` (tested). Rule: null -> "Not an interview
+  invite"; any non-null result is treated as a real invite, as you specified. If Aditya's `parseInvite` can return a
+  non-interview stage (e.g. "applied"), that would still read "Interview invite detected"; a stage check is one line.
+  A Microsoft invite for a different role (e.g. "SWE") gets the "detected" message, not a run.
+- **Judge legend lenses** (`matchesLens` in `src/ui/view.ts`, tested): conflict = CONFLICT / COUNTER / REJECT (this
+  includes the ✓ "Common window found" event, since it is a CONFLICT event with `resolved: true`); shared = any
+  non-empty disclosure; humans = ESCALATE / CONSENT. Chips toggle independently; with several on, an event takes the
+  colour of the first matching lens. Turning a lens on scrolls the feed to its first match. Reset turns lenses off.
+- **⏸️ uses the emoji form** (with a variation selector) because the plain character rendered as a bar.
+- **Sabotage tests** were added so the README's privacy claim is reproducible. They edit engine files temporarily and
+  always restore them (also on Ctrl-C). If the engine code changes, a sabotage that no longer applies fails loudly.
+- **README screenshots** (`docs/`) were taken from the real app with Playwright; the Mermaid diagram was checked to
+  render.

@@ -53,3 +53,49 @@ export function stateAt(history: StateChange[], cursor: number): CoordinationSta
   for (const h of history) if (h.afterEvents <= cursor) state = h.to;
   return state;
 }
+
+/** Judge legend lenses, one per judging criterion. */
+export type Lens = 'conflict' | 'shared' | 'humans';
+
+export const LENSES: { id: Lens; label: string }[] = [
+  { id: 'conflict', label: '⚠ Conflicting constraints' },
+  { id: 'shared', label: "↗ What's shared" },
+  { id: 'humans', label: '⏸️ When humans are asked' },
+];
+
+export function matchesLens(e: AgentEvent, lens: Lens): boolean {
+  switch (lens) {
+    case 'conflict':
+      return ['CONFLICT', 'COUNTER', 'REJECT'].includes(e.type);
+    case 'shared': {
+      const d = e.disclosure;
+      return d.shared.length + d.abstracted.length + d.withheld.length > 0;
+    }
+    case 'humans':
+      return ['ESCALATE', 'CONSENT'].includes(e.type);
+  }
+}
+
+export interface InviteOutcome {
+  start: boolean;
+  tone: 'ok' | 'info' | 'bad';
+  message: string;
+}
+
+/** What the "Paste an interview invite" box does with parseInvite()'s result. */
+export function inviteOutcome(
+  parsed: { company: string; role: string; stage: string } | null,
+  network: { company: string; role: string },
+): InviteOutcome {
+  if (!parsed) return { start: false, tone: 'bad', message: 'Not an interview invite' };
+  if (parsed.company === network.company && parsed.role === network.role) {
+    return { start: true, tone: 'ok', message: `Interview invite: ${parsed.company} / ${parsed.role}` };
+  }
+  return {
+    start: false,
+    tone: 'info',
+    message:
+      `Interview invite detected: ${parsed.company} / ${parsed.role}. No agents in this pipeline yet; ` +
+      `the demo network is ${network.company} ${network.role}.`,
+  };
+}

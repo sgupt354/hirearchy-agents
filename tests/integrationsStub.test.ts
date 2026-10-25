@@ -8,6 +8,14 @@ describe('integrations stub', () => {
     expect(await parseInvite(text)).toEqual({ company: 'Microsoft', role: 'SWE Intern', stage: 'interview' });
   });
 
+  it('parseInvite recognises an interview invite for another company', async () => {
+    expect(await parseInvite('Google would like to invite you to interview for a Software Engineer role')).toEqual({
+      company: 'Google',
+      role: 'SWE',
+      stage: 'interview',
+    });
+  });
+
   it('parseInvite returns null for non-invites', async () => {
     expect(await parseInvite('Your Microsoft order has shipped')).toBeNull();
     expect(await parseInvite('Unfortunately we will not be moving forward with your Microsoft interview')).toBeNull();
