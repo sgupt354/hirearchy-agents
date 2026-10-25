@@ -623,12 +623,16 @@ function Demo() {
       <Container>
         <SectionHeader center eyebrow="Product" title="See it in action." />
         <Reveal className="mx-auto mt-14 max-w-4xl">
-          <div className="relative grid aspect-video place-items-center overflow-hidden rounded-2xl border bg-ink shadow-lift">
-            <div aria-hidden className="mesh absolute inset-0 opacity-30" />
-            <div className="relative flex flex-col items-center gap-4">
-              <span className="grid h-16 w-16 place-items-center rounded-full bg-primary-foreground text-primary shadow-lift"><CirclePlay className="h-8 w-8" /></span>
-              <span className="text-sm font-semibold text-primary-foreground">Walkthrough coming soon</span>
-            </div>
+          <div className="overflow-hidden rounded-2xl border bg-ink shadow-lift">
+            <video
+              className="aspect-video w-full bg-ink"
+              controls
+              playsInline
+              preload="metadata"
+              src="/hirearchy-ad-voice.mp4"
+            >
+              <a href="/hirearchy-ad-voice.mp4">Download the walkthrough</a>
+            </video>
           </div>
         </Reveal>
         <Reveal className="mx-auto mt-16 max-w-5xl">
