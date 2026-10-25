@@ -161,9 +161,9 @@ export function IntelTab({ speed, resetKey }: TabProps) {
           learned. New students get a {GRACE_PERIOD_HOURS}-hour grace period first.
         </p>
         <div className="hero-meta">
-          <span className="proof-pill">🔒 No names, emails, phone numbers or handles ever leave your report</span>
+          <span className="proof-pill">No names, emails, phone numbers or handles ever leave your report</span>
           <button className="hood-btn" onClick={() => setDrawer(true)}>
-            🔍 See what was shared and hidden
+            See what was shared and hidden
           </button>
         </div>
       </header>
@@ -179,7 +179,7 @@ export function IntelTab({ speed, resetKey }: TabProps) {
           {!typing && step === 'intro' && (
             <QuickReplies
               options={[
-                { label: '✍️ Write my report', tone: 'yes', onClick: () => answer('intro', '✍️ Write my report', 'round') },
+                { label: 'Write my report', tone: 'yes', onClick: () => answer('intro', 'Write my report', 'round') },
               ]}
             />
           )}
@@ -249,7 +249,7 @@ export function IntelTab({ speed, resetKey }: TabProps) {
         </PhoneFrame>
 
         <section className="card">
-          <h3>{gate.allowed ? '🔓 Intel unlocked' : '🔒 Give to get'}</h3>
+          <h3>{gate.allowed ? 'Intel unlocked' : 'Give to get'}</h3>
           <p className="sub">
             {hasContributed
               ? `Thanks for contributing. +${credits.credits} give-back credit.`

@@ -22,12 +22,12 @@ export interface TabDef {
  * Referral Bridge (Phase E). A tab with `Component: null` stays hidden; setting it makes the tab appear.
  */
 export const TABS: TabDef[] = [
-  { id: 'find', label: 'Find', icon: '🔎', Component: FindTab },
-  { id: 'pipeline', label: 'Pipeline', icon: '📊', Component: PipelineTab },
-  { id: 'prep', label: 'Prep circle', icon: '👥', Component: PrepCircleTab },
-  { id: 'mock', label: 'Mock interview', icon: '🎤', Component: MockTab },
-  { id: 'intel', label: 'Intel', icon: '💡', Component: IntelTab },
-  { id: 'referral', label: 'Referral', icon: '🤝', Component: ReferralTab },
+  { id: 'find', label: 'Find', icon: 'search', Component: FindTab },
+  { id: 'pipeline', label: 'Pipeline', icon: 'chart', Component: PipelineTab },
+  { id: 'prep', label: 'Prep circle', icon: 'users', Component: PrepCircleTab },
+  { id: 'mock', label: 'Mock interview', icon: 'mic', Component: MockTab },
+  { id: 'intel', label: 'Intel', icon: 'idea', Component: IntelTab },
+  { id: 'referral', label: 'Referral', icon: 'handshake', Component: ReferralTab },
 ];
 
 /** Tabs shown in the nav: only those with a real component, in journey order. */

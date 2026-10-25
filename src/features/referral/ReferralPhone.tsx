@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChatBubble, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
+import { ChatBubble, Icon, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
 import { RUBRIC } from '../mock/scores';
 import type { EvidenceStage1, EvidenceStage2 } from '../trust/evidence';
 import type { ReferralMsgKind } from './referralBridge';
@@ -63,7 +63,7 @@ export function ReferralPhone({ owner, caption, items, interactive, pace, onActi
       {canAct && last?.kind === 'ask-share' && (
         <QuickReplies
           options={[
-            { label: '✅ Share my stats', tone: 'yes', onClick: () => onAction({ type: 'share' }, '✅ Share my stats') },
+            { label: 'Share my stats', tone: 'yes', onClick: () => onAction({ type: 'share' }, 'Share my stats') },
             { label: 'Not now', tone: 'no', onClick: () => onAction({ type: 'not-now' }, 'Not now') },
           ]}
         />
@@ -71,19 +71,19 @@ export function ReferralPhone({ owner, caption, items, interactive, pace, onActi
       {canAct && last?.kind === 'ask-chat' && (
         <QuickReplies
           options={[
-            { label: "✅ I'm in", tone: 'yes', onClick: () => onAction({ type: 'accept' }, "✅ I'm in") },
+            { label: "I'm in", tone: 'yes', onClick: () => onAction({ type: 'accept' }, "I'm in") },
             { label: 'Not this time', tone: 'no', onClick: () => onAction({ type: 'decline' }, 'Not this time') },
           ]}
         />
       )}
       {canAct && last?.kind === 'ask-done' && (
-        <QuickReplies options={[{ label: '☕ We had the chat', tone: 'yes', onClick: () => onAction({ type: 'chat-done' }, '☕ We had the chat') }]} />
+        <QuickReplies options={[{ label: 'We had the chat', tone: 'yes', onClick: () => onAction({ type: 'chat-done' }, 'We had the chat') }]} />
       )}
       {canAct && last?.kind === 'ask-decide' && (
         <QuickReplies
           options={[
-            { label: '🤝 Refer', tone: 'yes', onClick: () => onAction({ type: 'refer' }, '🤝 Refer them') },
-            { label: '🕗 Not yet', on: coaching !== null, onClick: () => setCoaching((c) => (c === null ? DEFAULT_NOTE : null)) },
+            { label: 'Refer', tone: 'yes', onClick: () => onAction({ type: 'refer' }, 'Refer them') },
+            { label: 'Not yet', on: coaching !== null, onClick: () => setCoaching((c) => (c === null ? DEFAULT_NOTE : null)) },
             { label: 'No', tone: 'no', onClick: () => onAction({ type: 'no' }, 'No, not this time') },
           ]}
         >
@@ -92,7 +92,7 @@ export function ReferralPhone({ owner, caption, items, interactive, pace, onActi
               className="coach-form"
               onSubmit={(e) => {
                 e.preventDefault();
-                onAction({ type: 'not-yet', note: coaching }, `🕗 Not yet: “${coaching.trim() || DEFAULT_NOTE}”`);
+                onAction({ type: 'not-yet', note: coaching }, `Not yet: “${coaching.trim() || DEFAULT_NOTE}”`);
               }}
             >
               <input value={coaching} onChange={(e) => setCoaching(e.target.value)} maxLength={200} aria-label="Coaching note" placeholder="What should they do next?" />
@@ -110,21 +110,21 @@ function SummaryCard({ summary }: { summary: EvidenceStage1 | EvidenceStage2 }) 
   if (summary.stage === 2) {
     return (
       <div className="evidence-card summary-card">
-        <div className="ev-title"><span aria-hidden>📎</span><b>Stage 2 · still anonymous</b></div>
+        <div className="ev-title"><Icon name="file" /><b>Stage 2 · still anonymous</b></div>
         {summary.mockAverages && (
           <div className="ev-rubric">
             {RUBRIC.map(({ key, label }) => <span key={key}>{label} {summary.mockAverages![key].toFixed(1)}</span>)}
           </div>
         )}
         <ul className="ev-links">
-          {summary.projectLinks.map((l) => <li key={l}>🔗 {l}</li>)}
+          {summary.projectLinks.map((l) => <li key={l}><Icon name="link" size={12} /> {l}</li>)}
         </ul>
       </div>
     );
   }
   return (
     <div className="evidence-card summary-card">
-      <div className="ev-title"><span aria-hidden>🕶️</span><b>Stage 1 · anonymous stats</b></div>
+      <div className="ev-title"><Icon name="eyeOff" /><b>Stage 1 · anonymous stats</b></div>
       <dl>
         <div><dt>Prep sessions</dt><dd>{summary.sessionsAttended}</dd></div>
         <div><dt>Peer rating</dt><dd>{summary.averageRating !== null ? `★ ${summary.averageRating.toFixed(1)}` : 'Not enough ratings'}</dd></div>
@@ -150,7 +150,7 @@ function FitCard({ results }: { results: RuleResult[] }) {
           <small>{r.observed}</small>
         </li>
       ))}
-      <li className="fit-foot">🔒 Your rules stay on your phone. The student never sees them.</li>
+      <li className="fit-foot">Your rules stay on your phone. The student never sees them.</li>
     </ul>
   );
 }
@@ -159,7 +159,7 @@ function ChatCard({ when }: { when: string }) {
   return (
     <div className="cal-card chat-card">
       <div className="cal-top">
-        <span className="cal-icon"><b>TODAY</b>☕</span>
+        <span className="cal-icon"><b>TODAY</b><Icon name="coffee" /></span>
         <div>
           <b>Coffee chat · 15 min</b>
           <span>{when}</span>

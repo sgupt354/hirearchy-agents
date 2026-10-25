@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, PIPELINE, TRIGGER_AGENT_ID, type CoordinationState, type HumanReply, type PhoneMessage } from '../../engine';
 import { prettify, studentCopy, windowText } from '../../ui/copy';
 import { USE_LLM_COPY, downloadIcs, generateMessage, notifyPhone, parseInvite } from '../../ui/integrations';
+import { Icon } from '../../ui/Icon';
 import { InviteModal } from '../../ui/InviteModal';
 import { IPhone, type ChatItem } from '../../ui/IPhone';
 import { UnderTheHood } from '../../ui/UnderTheHood';
@@ -38,7 +39,7 @@ const clock = () => new Date().toLocaleTimeString('en-US', { hour: 'numeric', mi
 
 function heroStatus(state: CoordinationState, window: string): { text: string; tone: string } {
   if (['CONSENT_COMPLETE', 'IDENTITIES_REVEALED', 'COMPLETED'].includes(state)) return { text: `✓ Prep circle created · Tonight ${window}`, tone: 'good' };
-  if (['AWAITING_HUMANS', 'AWAITING_CONSENT', 'COUNTERED'].includes(state)) return { text: 'Over to the students. Check their phones 👇', tone: 'human' };
+  if (['AWAITING_HUMANS', 'AWAITING_CONSENT', 'COUNTERED'].includes(state)) return { text: 'Over to the students. Check their phones', tone: 'human' };
   if (['DECLINED', 'DISSOLVED', 'REDISCOVERING'].includes(state)) return { text: "Someone couldn't make it. Finding a new match…", tone: 'warn' };
   return { text: "Aditya's agent is finding a prep circle…", tone: 'busy' };
 }
@@ -227,13 +228,13 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     const me = personOf(id);
     const others = members.filter((x) => x !== id);
     const items: ChatItem[] = [
-      { key: 't-ask', from: 'agent', text: "Tonight's session is done 🎉 How did it go? Rate your circle privately. Nobody ever sees a single rating.", needsHuman: true },
+      { key: 't-ask', from: 'agent', text: "Tonight's session is done. How did it go? Rate your circle privately. Nobody ever sees a single rating.", needsHuman: true },
     ];
     if (!trustNet.hasRated(me, personOf(others[0]), sessionId)) {
       items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={others.map((x) => ({ id: x, name: (names[x] ?? 'Member').split(' ')[0] }))} onSubmit={(r) => rateCircle(id, r)} /> });
       return items;
     }
-    items.push({ key: 't-done', from: 'me', text: '🔒 Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-done', from: 'me', text: 'Rated privately', time: ratedAt[id] });
     items.push({ key: 't-thanks', from: 'agent', text: "Thanks! A rating only counts once someone has two or more. Here's your proof of work so far:" });
     items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
     return items;
@@ -285,7 +286,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
         <div className="cta-row">
           {idle ? (
             <>
-              <button className="cta" onClick={start}>📩 Aditya just got a Microsoft interview invite →</button>
+              <button className="cta" onClick={start}>Aditya just got a Microsoft interview invite →</button>
               <button className="ghost" onClick={() => setInviteOpen(true)}>Paste a real invite</button>
             </>
           ) : (
@@ -297,9 +298,9 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
         </div>
         <div className="hero-meta">
           <span className="proof-pill" title={`Leak-scan test: "${summary.privacyTest.name}"`}>
-            {summary.privacyTest.passed ? '🔒' : '⚠'} Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
+            <Icon name={summary.privacyTest.passed ? 'lock' : 'alert'} size={12} /> Privacy proof · <i>{summary.privacyTest.name}</i> · {summary.passed}/{summary.total} tests passing
           </span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>🔍 See what the agents are doing</button>
+          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
           {live !== 'off' && <LiveBadge status={live} />}
         </div>
       </header>

@@ -1,3 +1,5 @@
+import { Icon } from './Icon';
+import { clean } from './text';
 import { LENSES, type Lens } from './view';
 
 /** Toggle chips that map the feed onto the three judging criteria. */
@@ -12,7 +14,7 @@ export function JudgeLegend({ active, onToggle }: { active: Lens[]; onToggle: (l
           aria-pressed={active.includes(l.id)}
           onClick={() => onToggle(l.id)}
         >
-          {l.label}
+          <Icon name={l.id === 'conflict' ? 'alert' : l.id === 'humans' ? 'pause' : 'share'} size={13} /> {clean(l.label).replace(/^[↗≈]\s*/, '')}
         </button>
       ))}
     </div>

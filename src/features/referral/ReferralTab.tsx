@@ -47,11 +47,11 @@ function heroStatus(state: ReferralState, seeker: string): { text: string; tone:
     case 'NOT_A_FIT': return { text: `Not a fit. ${name} never learned the rules; Nadia never learned the name`, tone: 'warn' };
     case 'WITHDRAWN': return { text: 'Nothing shared. The student said not now', tone: 'warn' };
     case 'DECLINED': return { text: 'Chat called off. No names shared', tone: 'warn' };
-    case 'CONFIRMED': return { text: 'Names unlocked. Coffee chat booked ☕', tone: 'good' };
-    case 'CHAT_DONE': return { text: "Only Nadia can refer. Check Nadia's phone 👇", tone: 'human' };
+    case 'CONFIRMED': return { text: 'Names unlocked. Coffee chat booked', tone: 'good' };
+    case 'CHAT_DONE': return { text: "Only Nadia can refer. Check Nadia's phone", tone: 'human' };
     case 'OFFERED':
     case 'AWAITING_HUMANS':
-    case 'AWAITING_CONSENT': return { text: 'Over to the students. Check their phones 👇', tone: 'human' };
+    case 'AWAITING_CONSENT': return { text: 'Over to the students. Check their phones', tone: 'human' };
     default: return { text: "The agents are checking the fit…", tone: 'busy' };
   }
 }
@@ -175,7 +175,7 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
         <div className="cta-row">
           {idle ? (
             <>
-              <button className="cta" onClick={() => begin(SEEKER)}>🤝 Jordan applied to Stripe SWE Intern →</button>
+              <button className="cta" onClick={() => begin(SEEKER)}>Jordan applied to Stripe SWE Intern →</button>
               <button className="ghost" onClick={() => begin(DECOY)}>Not a fit? See Theo's application</button>
             </>
           ) : (
@@ -193,8 +193,8 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
           )}
         </div>
         <div className="hero-meta">
-          <span className="proof-pill">🔒 Stats first · links only if it fits · names after both say yes · only a human refers</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>🔍 See what the agents are doing</button>
+          <span className="proof-pill">Stats first · links only if it fits · names after both say yes · only a human refers</span>
+          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
         </div>
       </header>
 

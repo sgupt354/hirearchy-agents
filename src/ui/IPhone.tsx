@@ -18,7 +18,7 @@ export interface ChatItem {
 
 const TIME_CHIPS = ['7:30 PM', '8:00 PM', '8:30 PM'];
 
-/** A student's phone in the prep-circle flow: ✅ I'm in / 🕗 Suggest a time / Not this time. */
+/** A student's phone in the prep-circle flow: I'm in / Suggest a time / Not this time. */
 export function IPhone({ owner, caption, items, interactive, pace, onReply }: {
   owner: string;
   caption: string;
@@ -68,20 +68,20 @@ export function IPhone({ owner, caption, items, interactive, pace, onReply }: {
       {canReply && (
         <QuickReplies
           options={[
-            { label: "✅ I'm in", tone: 'yes', onClick: () => send({ kind: 'accept' }, "✅ I'm in") },
-            { label: '🕗 Suggest a time', on: picking, onClick: () => setPicking((v) => !v) },
+            { label: "I'm in", tone: 'yes', onClick: () => send({ kind: 'accept' }, "I'm in") },
+            { label: 'Suggest a time', on: picking, onClick: () => setPicking((v) => !v) },
             { label: 'Not this time', tone: 'no', onClick: () => send({ kind: 'decline' }, 'Not this time') },
           ]}
         >
           {picking && (
             <div className="time-picker">
               {TIME_CHIPS.map((t) => (
-                <button key={t} className="qr time" onClick={() => send({ kind: 'counter', text: t }, `🕗 How about ${t}?`)}>{t}</button>
+                <button key={t} className="qr time" onClick={() => send({ kind: 'counter', text: t }, `How about ${t}?`)}>{t}</button>
               ))}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  if (custom.trim()) send({ kind: 'counter', text: custom }, `🕗 ${custom.trim()}`);
+                  if (custom.trim()) send({ kind: 'counter', text: custom }, `${custom.trim()}`);
                 }}
               >
                 <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="or type, e.g. 8:15pm" aria-label="Suggest a time" />

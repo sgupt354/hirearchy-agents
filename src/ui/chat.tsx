@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Icon, Mark } from './Icon';
+import { clean } from './text';
 
 // Building blocks for an iMessage-style phone. IPhone (prep circle) is assembled from these; other tabs can
 // reuse them through src/ui/kit.ts.
@@ -67,13 +69,13 @@ export function useChatReveal<T extends RevealItem>(items: T[], pace: number) {
 }
 
 /** iOS notification banner that slides down from the top of the screen. */
-export function NotificationBanner({ show, text, app = 'Hirearchy Agent', icon = '🤖' }: { show: boolean; text: string; app?: string; icon?: string }) {
+export function NotificationBanner({ show, text, app = 'Hirearchy Agent' }: { show: boolean; text: string; app?: string }) {
   return (
     <div className={`ios-banner ${show ? 'show' : ''}`} role="status">
-      <span className="app-icon">{icon}</span>
+      <span className="app-icon"><Mark size={14} /></span>
       <div>
         <div className="banner-top"><b>{app}</b><span>now</span></div>
-        <p>{show ? text : ''}</p>
+        <p>{show ? clean(text) : ''}</p>
       </div>
     </div>
   );
@@ -82,7 +84,7 @@ export function NotificationBanner({ show, text, app = 'Hirearchy Agent', icon =
 export function ChatBubble({ from, text, time }: { from: 'agent' | 'me'; text: string; time?: string }) {
   return (
     <div className={`msg ${from}`}>
-      <p className="bubble">{text}</p>
+      <p className="bubble">{clean(text)}</p>
       <time>{time}</time>
     </div>
   );
@@ -109,7 +111,7 @@ export function QuickReplies({ options, children }: { options: QuickReplyOption[
   return (
     <div className="quick-replies">
       {options.map((o) => (
-        <button key={o.label} className={`qr ${o.tone ?? ''} ${o.on ? 'on' : ''}`.trim()} onClick={o.onClick}>{o.label}</button>
+        <button key={o.label} className={`qr ${o.tone ?? ''} ${o.on ? 'on' : ''}`.trim()} onClick={o.onClick}>{clean(o.label)}</button>
       ))}
       {children}
     </div>
@@ -117,7 +119,7 @@ export function QuickReplies({ options, children }: { options: QuickReplyOption[
 }
 
 /** iPhone bezel, status bar, contact header and compose bar around a scrolling chat. */
-export function PhoneFrame({ owner, caption, banner, chatRef, contact = 'Hirearchy Agent 🤖', children }: {
+export function PhoneFrame({ owner, caption, banner, chatRef, contact = 'Hirearchy Agent', children }: {
   owner: string;
   caption: string;
   banner?: { show: boolean; text: string };
@@ -144,7 +146,7 @@ export function PhoneFrame({ owner, caption, banner, chatRef, contact = 'Hirearc
             <NotificationBanner show={Boolean(banner?.show)} text={banner?.text ?? ''} />
 
             <header className="chat-head">
-              <span className="avatar bot">🤖</span>
+              <span className="avatar bot"><Mark size={18} /></span>
               <b>{contact}</b>
               <small>iMessage</small>
             </header>
@@ -184,7 +186,7 @@ export function CalendarCard({ title, when, skills, people, onAdd }: CalendarCar
   return (
     <div className="cal-card">
       <div className="cal-top">
-        <span className="cal-icon"><b>TODAY</b>📅</span>
+        <span className="cal-icon"><b>TODAY</b><Icon name="calendar" /></span>
         <div>
           <b>{title}</b>
           <span>{when}</span>
@@ -198,7 +200,7 @@ export function CalendarCard({ title, when, skills, people, onAdd }: CalendarCar
           <li key={p.name} style={{ animationDelay: `${0.25 + i * 0.25}s` }}>
             <span className="avatar person" style={{ background: `hsl(${hue(p.name)} 70% 45%)` }}>
               {initials(p.name)}
-              <span className="unlock">🔓</span>
+              <span className="unlock"><Icon name="unlock" size={10} /></span>
             </span>
             <span className="person-name">{p.you ? 'You' : p.name.split(' ')[0]}</span>
           </li>

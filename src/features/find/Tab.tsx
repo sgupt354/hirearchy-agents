@@ -89,7 +89,7 @@ export function FindTab({ speed, resetKey }: TabProps) {
   };
 
   const track = (job: JobPosting) =>
-    decide(job, trackJob(state, job.id, SEED_JOBS), '✅ Track it', describeTrack(job));
+    decide(job, trackJob(state, job.id, SEED_JOBS), 'Track it', describeTrack(job));
 
   const pass = (job: JobPosting) => decide(job, dismissJob(state, job.id), 'Not for me', describeDismiss(job));
 
@@ -106,9 +106,9 @@ export function FindTab({ speed, resetKey }: TabProps) {
           pipeline, your intel and your prep circle.
         </p>
         <div className="hero-meta">
-          <span className="proof-pill">🎯 Found by Job Sniper · Track 1</span>
+          <span className="proof-pill">Found by Job Sniper</span>
           <button className="hood-btn" onClick={() => setDrawer(true)}>
-            🔍 See why these matched
+            See why these matched
           </button>
         </div>
       </header>
@@ -124,7 +124,7 @@ export function FindTab({ speed, resetKey }: TabProps) {
               <span key={job.id}>
                 <ChatBubble from="agent" text={pitch(job)} />
                 {reply && <ChatBubble from="me" text={reply.text} time={reply.time} />}
-                {reply?.text === '✅ Track it' && (
+                {reply?.text === 'Track it' && (
                   <ChatBubble from="agent" text={`Tracked. You're now marked applied in the ${job.company} pipeline.`} />
                 )}
               </span>
@@ -137,7 +137,7 @@ export function FindTab({ speed, resetKey }: TabProps) {
           {current && !typing && (
             <QuickReplies
               options={[
-                { label: '✅ Track it', tone: 'yes', onClick: () => track(current) },
+                { label: 'Track it', tone: 'yes', onClick: () => track(current) },
                 { label: 'Not for me', tone: 'no', onClick: () => pass(current) },
               ]}
             />
