@@ -142,7 +142,7 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     act(() => {});
   }
 
-  /** Fresh start (the referrer has 1 referral left this month). */
+  /** Fresh start (the referrer has a full month: 2 of 2 left). */
   const begin = (who: string) => {
     bridge.reset();
     clearRun();
