@@ -1,11 +1,8 @@
 import { Engine, type AgentEvent, type StateChange } from '../src/engine';
+import { iconFor } from '../src/ui/format';
 
 // Prints the golden path and the backup branch as event lines, straight from the engine.
 
-const ICON: Record<string, string> = {
-  TRIGGER: '📩', DISCOVER: '🔎', FILTERED: '⨯', PROPOSE: '↔', COUNTER: '↔', ACCEPT: '✓', REJECT: '✗',
-  CONFLICT: '⚠', ESCALATE: '⏸', CONSENT: '✓', DECLINE: '✗', DISSOLVED: '∅', REVEAL: '🔓', COMPLETE: '✓',
-};
 
 function print(engine: Engine, fromEvent: number, fromState: number) {
   const labels = engine.labels();
@@ -20,7 +17,7 @@ function print(engine: Engine, fromEvent: number, fromState: number) {
       d.withheld.length && `🔒 ${d.withheld.join(', ')}`,
     ].filter(Boolean);
     const route = `${name(e.from)} -> ${e.to.map(name).join(', ')}`;
-    console.log(`${e.id} ${ICON[e.type]} ${e.type.padEnd(9)} ${route}`);
+    console.log(`${e.id} ${iconFor(e)} ${e.type.padEnd(9)} ${route}`);
     console.log(`        ${e.human_readable}`);
     if (tags.length) console.log(`        ${tags.join('  |  ')}`);
   };

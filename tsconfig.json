@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "noEmit": true,
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "types": ["node"]
   },
   "include": ["src", "tests", "scripts", "vite.config.ts"]

@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "predev": "npm run -s test:badge",
     "build": "tsc --noEmit && vite build",
+    "prebuild": "npm run -s test:badge",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:badge": "tsx scripts/test-summary.ts",
     "typecheck": "tsc --noEmit",
     "demo:run": "tsx scripts/demo-run.ts"
   },

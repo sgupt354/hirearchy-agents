@@ -114,7 +114,14 @@ export class Broker {
         payload: { kind: 'availability_check', windows: band },
         human_readable: `Broker asks ${this.#label(c.handle)} whether ${band.map(formatWindow).join(', ')} works (its availability is private)`,
       });
-      return reply.type === 'ACCEPT';
+      if (reply.type === 'ACCEPT') return true;
+      this.#send({
+        type: 'FILTERED',
+        to: [trigger],
+        payload: { handle: c.handle, reason: 'its agent rejected the evening window' },
+        human_readable: `${this.#label(c.handle)} filtered: its agent rejected ${band.map(formatWindow).join(', ')} on its own`,
+      });
+      return false;
     });
 
     this.#matchAndNegotiate();
@@ -128,7 +135,7 @@ export class Broker {
 
     let conflicted = false;
     const conflict = (members: string[], reason: string) => {
-      this.#send({ type: 'CONFLICT', to: members, payload: { reason }, human_readable: `Conflict: ${reason}` });
+      this.#send({ type: 'CONFLICT', to: members, payload: { reason }, human_readable: reason });
       if (!conflicted) this.#deps.setState('CONFLICT_FOUND');
       conflicted = true;
     };
@@ -147,7 +154,17 @@ export class Broker {
       });
       if (i === 0) this.#deps.setState('NEGOTIATING');
 
-      const shared = cycle.members.map((m) => this.#listing(m)).filter((l) => l.availability);
+      // Shared windows in label order (#1, #2, #3), so the conflict reads the same for everyone.
+      const shared = this.#deps.ports
+        .filter((p) => cycle.members.includes(p.id))
+        .map((p) => this.#listing(p.id))
+        .filter((l) => l.availability);
+      const bands = shared.map((l) => l.availability!.map(formatWindow).join(', '));
+      if (new Set(bands).size > 1) {
+        const list = shared.map((l, j) => `${l.label.replace('Applicant ', '')} ${bands[j]}`).join(', ');
+        conflict(cycle.members, `Schedules conflict: ${list} — no one's full window works for everyone`);
+      }
+
       const result = schedule(shared.map((l) => ({ availability: l.availability!, min_session_minutes: l.min_session_minutes })));
       if (!result.ok) {
         conflict(cycle.members, result.reason);
@@ -158,7 +175,7 @@ export class Broker {
         type: 'PROPOSE',
         to: cycle.members,
         payload: { kind: 'schedule', window: result.window },
-        human_readable: `Broker proposes ${formatWindow(result.window)} (intersection of shared availability)`,
+        human_readable: `Agents negotiating overlap: broker proposes ${formatWindow(result.window)}, each agent checks its private hours`,
         disclosure: { shared: ['proposed time', 'skills plan'], withheld: ['identity'] },
       });
       if (replies.some((r) => r.type === 'REJECT')) {
@@ -166,7 +183,15 @@ export class Broker {
         continue;
       }
 
-      if (conflicted) this.#deps.setState('CONFLICT_RESOLVED');
+      if (conflicted) {
+        this.#deps.setState('CONFLICT_RESOLVED');
+        this.#send({
+          type: 'CONFLICT',
+          to: cycle.members,
+          payload: { resolved: true, window: result.window },
+          human_readable: `Common window found: ${formatWindow(result.window)}`,
+        });
+      }
       this.#circle = cycle;
       this.#window = result.window;
       return this.#askHumans(false);

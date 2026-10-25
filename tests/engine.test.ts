@@ -125,6 +125,33 @@ describe('4-5. scheduler', () => {
   });
 });
 
+describe('golden-path conflict', () => {
+  it('shows the conflict, the negotiation and the resolution explicitly', () => {
+    const engine = goldenUntilHumans();
+    const lines = engine.events().map((e) => `${e.type} ${e.human_readable}`);
+    const conflict = lines.findIndex((l) =>
+      l.startsWith("CONFLICT Schedules conflict: #1 18:00-21:30, #2 19:00-21:00, #3 19:30-22:00 — no one's full window works for everyone"),
+    );
+    const negotiating = lines.findIndex((l) => l.startsWith('PROPOSE Agents negotiating overlap'));
+    const resolved = lines.findIndex((l) => l === 'CONFLICT Common window found: 19:30-21:00');
+    expect(conflict).toBeGreaterThan(-1);
+    expect(negotiating).toBeGreaterThan(conflict);
+    expect(resolved).toBeGreaterThan(negotiating);
+    const states = engine.history().map((h) => h.to);
+    expect(states.slice(states.indexOf('NEGOTIATING'))).toEqual(['NEGOTIATING', 'CONFLICT_FOUND', 'CONFLICT_RESOLVED', 'AWAITING_HUMANS']);
+  });
+
+  it('skips the conflict when every shared window is identical', () => {
+    const profiles = seed();
+    for (const p of profiles) p.availability = [{ start: '19:00', end: '21:00' }];
+    const engine = new Engine(profiles);
+    engine.simulateInterviewInvite();
+    expect(engine.events().some((e) => e.type === 'CONFLICT')).toBe(false);
+    expect(engine.history().map((h) => h.to)).not.toContain('CONFLICT_FOUND');
+    expect(engine.state).toBe('AWAITING_HUMANS');
+  });
+});
+
 describe('6. counter validation', () => {
   const members = [priv('a1'), priv('a2'), priv('a3')];
 
