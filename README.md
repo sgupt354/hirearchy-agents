@@ -26,7 +26,7 @@ Students never see a graph. They see texts from their agent and tap **✅ I'm in
 
 | Tab | What the agent does | Owner |
 |---|---|---|
-| 🔎 **Find** | Surfaces matching postings (Job Sniper, Track 1); "Track it" puts you in that company's pipeline | Aditya |
+| 🔎 **Find** | Surfaces matching postings (Job Sniper); "Track it" puts you in that company's pipeline | Aditya |
 | 📊 **Pipeline** | Anonymous stats for your pipeline, each published only once enough reports back it | Aditya |
 | 👥 **Prep circle** | You landed an interview: finds 2–3 students whose skills cover your weak spots, negotiates a time, names after everyone says yes | Sumedha |
 | 🎤 **Mock interview** | Swaps mock interviews with someone in the same company and round; scores go only to the person scored | Sumedha |

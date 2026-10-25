@@ -149,6 +149,18 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Audit + research (AUDIT.md); landing copy without hackathon / track mentions | done |
+| 1 | Real Job Sniper: live board search behind a toggle | next |
+| 2 | Resume builder + LaTeX / Overleaf / PDF | todo |
+| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | todo |
+| 4 | Apollo contact lookup (official API, demo data without key) | todo |
+| 5 | Huntr: honest export (no public API for students) | todo |
+| 6 | Agent tie-in + 2 new sabotages | todo |
+| 7 | Alignment doc, README, full checks | todo |
+
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:
   same sections, copy, Tailwind classes and timings (read from the site's own bundle), styled by its own compiled
