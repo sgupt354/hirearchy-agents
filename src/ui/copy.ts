@@ -1,6 +1,6 @@
-import type { Edge } from '../engine/cycles';
-import { to12h } from '../engine/time';
-import type { AgentEvent, Identity, Listing, PhoneMessage, TimeWindow } from '../engine/types';
+import type { Edge } from '../engine/cycles.js';
+import { to12h } from '../engine/time.js';
+import type { AgentEvent, Identity, Listing, PhoneMessage, TimeWindow } from '../engine/types.js';
 
 // Presentation copy. The engine's own strings stay as the audit record; everything a person reads goes
 // through here: 12-hour times, real arrows, labels instead of ids, short plain English.

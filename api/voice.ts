@@ -1,4 +1,4 @@
-import { MESSAGE_KINDS, sanitizeDetails, type MessageKind } from '../src/integrations';
+import { MESSAGE_KINDS, sanitizeDetails, type MessageKind } from '../src/integrations/index.js';
 
 /** Minimal structural types so this stays dependency-free while matching Vercel's Node signature. */
 interface VoiceRequest {

@@ -1,6 +1,6 @@
-import { queryParam, type LiveRequest, type LiveResponse } from '../src/live/http';
-import { isPromptId, isSessionId } from '../src/live/protocol';
-import { storeFromEnv, type ReplyStore } from '../src/live/store';
+import { queryParam, type LiveRequest, type LiveResponse } from '../src/live/http.js';
+import { isPromptId, isSessionId } from '../src/live/protocol.js';
+import { storeFromEnv, type ReplyStore } from '../src/live/store.js';
 
 /**
  * Polled by the web app every 1.5 s in live mode.

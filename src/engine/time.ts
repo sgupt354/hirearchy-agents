@@ -1,4 +1,4 @@
-import type { TimeWindow } from './types';
+import type { TimeWindow } from './types.js';
 
 export const toMinutes = (hhmm: string): number => {
   const [h, m] = hhmm.split(':').map(Number);

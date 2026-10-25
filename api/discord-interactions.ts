@@ -1,7 +1,7 @@
-import { header, readRawBody, type LiveRequest, type LiveResponse } from '../src/live/http';
-import { interactionToReply, timeSelect } from '../src/live/protocol';
-import { storeFromEnv, type ReplyStore } from '../src/live/store';
-import { verifyDiscordSignature } from '../src/live/verify';
+import { header, readRawBody, type LiveRequest, type LiveResponse } from '../src/live/http.js';
+import { interactionToReply, timeSelect } from '../src/live/protocol.js';
+import { storeFromEnv, type ReplyStore } from '../src/live/store.js';
+import { verifyDiscordSignature } from '../src/live/verify.js';
 
 /**
  * Discord Interactions Endpoint (set in the Developer Portal). Verifies Discord's Ed25519 signature,

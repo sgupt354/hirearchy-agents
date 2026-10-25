@@ -1,4 +1,4 @@
-import type { AgentProfile, Policy } from './types';
+import type { AgentProfile, Policy } from './types.js';
 
 // The single source of demo starting conditions. Outcomes are computed by the engine, not stored here.
 

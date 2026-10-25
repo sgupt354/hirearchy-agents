@@ -1,4 +1,4 @@
-import type { HumanReply, PhoneMessage } from '../engine/types';
+import type { HumanReply, PhoneMessage } from '../engine/types.js';
 
 // Shared between the browser and the Vercel functions: how a prep-circle prompt travels to Discord
 // and how Aditya's button press comes back as the same reply the simulated phone would send.
