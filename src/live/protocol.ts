@@ -88,7 +88,7 @@ export const timeSelect = (session: string, prompt: number) => [
 // ---- what the browser sends to /api/live-notify ---------------------------------------------------
 
 const DETAIL_KEYS = ['company', 'role', 'circleSize', 'gives', 'gets', 'window', 'updated', 'status', 'reason', 'text'];
-const SAFE = /^[A-Za-z0-9 :,–\-+&'.?!()/]*$/;
+const SAFE = /^[A-Za-z0-9 :,–\-+&'.?!()/_]*$/;
 
 /** Keep only known, short, plain-text detail fields, so the DM can't carry arbitrary content. */
 export function sanitizeDetails(details: unknown): Record<string, string> {
