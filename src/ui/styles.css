@@ -623,3 +623,16 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .state-pill.cm-BOOKED, .state-pill.cm-DONE { color: var(--good); background: var(--good-bg); border-color: rgba(16, 185, 129, 0.3); }
 .state-pill.cm-EXPIRED, .state-pill.cm-CANCELLED { color: var(--muted); background: var(--surface-3); border-color: var(--border); }
 .pack-q { display: flex; flex-direction: column; gap: 0.6cqw; }
+
+/* ---------- my applications ---------- */
+.apps-card { gap: 10px; }
+.app-pick { width: 100%; text-align: left; cursor: pointer; font: inherit; }
+.board-row.tone-idle b { color: var(--ink); }
+.stage-steps { list-style: none; margin: 0; padding: 0; display: flex; gap: 4px; flex-wrap: wrap; }
+.stage-steps button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); font: inherit; font-size: 12px; cursor: pointer; transition: all 200ms var(--ease); }
+.stage-steps button b { font-weight: 650; }
+.stage-steps button span { font-size: 11px; color: var(--faint); min-height: 14px; }
+.stage-steps .done button { color: var(--good); border-color: rgba(16, 185, 129, 0.4); background: #f0fdf7; }
+.stage-steps .now button { color: white; background: var(--ink); border-color: var(--ink); }
+.stage-steps .now button span { color: rgba(255, 255, 255, 0.7); }
+.next-steps { display: flex; flex-wrap: wrap; gap: 6px; }

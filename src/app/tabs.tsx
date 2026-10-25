@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { ApplyTab } from '../features/apply/ApplyTab';
 import { AskTab } from '../features/ask';
+import { ApplicationsTab } from '../features/journey/ApplicationsTab';
 import { CommunityTab } from '../features/community/CommunityTab';
 import { LiveFind } from '../features/apply/LiveFind';
 import { FindTab } from '../features/find';
@@ -11,7 +12,7 @@ import { PrepCircleTab } from '../features/prep/PrepCircleTab';
 import { ReferralTab } from '../features/referral/ReferralTab';
 import type { TabProps } from '../features/types';
 
-export type TabId = 'find' | 'ask' | 'apply' | 'pipeline' | 'prep' | 'community' | 'mock' | 'intel' | 'referral';
+export type TabId = 'find' | 'ask' | 'apply' | 'applications' | 'pipeline' | 'prep' | 'community' | 'mock' | 'intel' | 'referral';
 
 export interface TabDef {
   id: TabId;
@@ -31,6 +32,7 @@ export const TABS: TabDef[] = [
   { id: 'find', label: 'Find', icon: 'search', Component: FindTab, Live: LiveFind },
   { id: 'ask', label: 'Ask', icon: 'message', Component: AskTab },
   { id: 'apply', label: 'Apply', icon: 'file', Component: ApplyTab },
+  { id: 'applications', label: 'Applications', icon: 'clipboard', Component: ApplicationsTab },
   { id: 'pipeline', label: 'Pipeline', icon: 'chart', Component: PipelineTab },
   { id: 'prep', label: 'Prep circle', icon: 'users', Component: PrepCircleTab },
   { id: 'community', label: 'Community', icon: 'award', Component: CommunityTab },

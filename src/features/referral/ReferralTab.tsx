@@ -11,7 +11,8 @@ import { describeReferral } from './copy';
 import { ReferralBridge, type ReferralState, type StateChange } from './referralBridge';
 import { ReferralPhone, type ReferralAction, type ReferralChatItem } from './ReferralPhone';
 import type { RuleResult } from './rules';
-import { DECOY, REFERRER, SEEKER } from './seed';
+import { DECOY, OPENING, REFERRER, SEEKER } from './seed';
+import { applyStore } from '../apply/store';
 
 const PEOPLE: Record<string, string> = { p4: 'Jordan', p10: 'Theo', r1: 'Nadia' };
 const LABELS: Record<string, string> = { p4: 'Applicant #4', p10: 'Applicant #10', r1: 'Stripe alum' };
@@ -59,6 +60,14 @@ function heroStatus(state: ReferralState, seeker: string): { text: string; tone:
     default: return { text: "The agents are checking the fit…", tone: 'busy' };
   }
 }
+
+/** How each outcome reads on the seeker's application timeline. */
+const OUTCOME: Partial<Record<ReferralState, string>> = {
+  REFERRED: 'Referred by an alum',
+  NOT_YET: 'Not yet: got a coaching note from an alum',
+  NO_REFERRAL: 'An alum decided not to refer this time',
+  NOT_A_FIT: 'Asked for a referral: not a fit right now',
+};
 
 const DONE: ReferralState[] = ['REFERRED', 'NOT_YET', 'NO_REFERRAL', 'NOT_A_FIT', 'WITHDRAWN', 'DECLINED'];
 
@@ -168,6 +177,14 @@ export function ReferralTab({ speed, resetKey }: TabProps) {
     act(() => packet.prepare(JORDAN_PROFILE, DEMO_POSTINGS[0], PEOPLE[REFERRER]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [caughtUp, state, seeker, packet]);
+
+  // The outcome lands on the seeker's own application for this job (they applied, so it's at least Applied).
+  useEffect(() => {
+    const summary = OUTCOME[bridge.state];
+    if (!caughtUp || !summary || !seeker) return;
+    applyStore.linkApplication({ owner: seeker, company: OPENING.company, role: OPENING.role, stage: 'Applied' }, { kind: 'referral', ref: `referral-${run.current}-${seeker}`, summary });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [caughtUp, bridge.state, seeker]);
 
   const chatFor = (id: string): ReferralChatItem[] => {
     const items: ReferralChatItem[] = [];

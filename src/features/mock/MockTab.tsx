@@ -13,6 +13,10 @@ import { trust as sharedTrust, type TrustNetwork } from '../trust/network';
 import { personOf } from '../trust/people';
 import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
+import { applyStore } from '../apply/store';
+
+/** The job the seeker's round is for (from the mock seed's own pipeline field). */
+const SEEKER_JOB = createMockSeed().find((p) => p.agent_id === MOCK_SEEKER)!.pipeline;
 
 const PEOPLE: Record<string, string> = { m1: 'Aditya', m4: 'Jordan', m5: 'Priya', m8: 'Riya' };
 
@@ -150,6 +154,14 @@ export function MockTab({ speed, resetKey }: TabProps) {
     const taught = Object.fromEntries(pair.map((id) => [personOf(id), match?.teaches[id] ?? []]));
     trustNet.recordSession({ id: sessionId, kind: 'mock', members: pair.map(personOf), taught });
     for (const id of pair) trustNet.addMockScores(personOf(id), ownScores(id).filter((s) => !s.practice).map((s) => s.rubric));
+    // The seeker's application for this job gets the mock and the topics both sides practiced.
+    if (pair.includes(MOCK_SEEKER)) {
+      const topics = [...new Set(pair.flatMap((id) => match?.teaches[id] ?? []))];
+      applyStore.linkApplication(
+        { owner: personOf(MOCK_SEEKER), company: SEEKER_JOB.company, role: SEEKER_JOB.role, stage: 'Interview' },
+        { kind: 'mock', ref: sessionId, summary: 'Swapped with a peer, scored privately', topics },
+      );
+    }
   });
 
   const ratePartner = (id: string, ratings: Record<string, Rating>) => {

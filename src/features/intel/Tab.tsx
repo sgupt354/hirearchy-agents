@@ -24,8 +24,10 @@ import {
   type RawInterviewReport,
   type SharedInterviewReport,
 } from './logic';
+import { STUDENT, applyStore } from '../apply/store';
 
 const COMPANY = 'Microsoft';
+const ROLE = 'SWE Intern';
 const ROUNDS = ['Technical screen', 'Technical round 2', 'Behavioral', 'Final round'];
 const TOPICS = ['arrays', 'hash maps', 'graphs', 'BFS', 'system design', 'behavioral', 'STAR', 'debugging'];
 const DIFFICULTIES = [1, 2, 3, 4, 5];
@@ -138,6 +140,20 @@ export function IntelTab({ speed, resetKey }: TabProps) {
   });
   const gateEvent = describeAccess(gate);
   const intel = gate.allowed ? selectRelevantIntel(MICROSOFT_SEED_INTEL, COMPANY) : [];
+
+  // The application timeline counts these reports as read only once they've actually been on screen.
+  const firstReport = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = firstReport.current;
+    if (!el || !intel.length || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((seen) => {
+      if (!seen.some((e) => e.isIntersecting)) return;
+      applyStore.linkApplication({ owner: STUDENT, company: COMPANY, role: ROLE }, { kind: 'intel', ref: `intel-${COMPANY}`, summary: `Read ${intel.length} anonymous intel reports`, count: intel.length });
+      io.disconnect();
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [intel.length, resetKey]);
   const allEvents = [...events, gateEvent];
 
   const bubbles: Array<{ key: string; node: React.ReactNode }> = [];
@@ -276,7 +292,7 @@ export function IntelTab({ speed, resetKey }: TabProps) {
           )}
 
           {intel.map((report, i) => (
-            <article key={`${report.round}-${i}`} className="card">
+            <article key={`${report.round}-${i}`} className="card" ref={i === 0 ? firstReport : undefined}>
               <h3>
                 {report.round} · {'★'.repeat(report.difficulty)}
               </h3>

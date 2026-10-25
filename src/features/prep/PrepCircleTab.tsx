@@ -17,6 +17,8 @@ import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
 import type { Rating } from '../trust/ledger';
 import type { Skill } from '../../engine/types';
+import { TRIGGER_INVITE } from '../../engine/seed';
+import { applyStore } from '../apply/store';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
@@ -150,7 +152,12 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     return ok;
   };
 
-  const start = () => act(() => engine.simulateInterviewInvite());
+  const start = () =>
+    act(() => {
+      engine.simulateInterviewInvite();
+      // The invite is the source of truth for the stage and the date on Aditya's application record.
+      applyStore.recordApplication({ owner: personOf(VIEWER), company: PIPELINE.company, role: PIPELINE.role, stage: 'Interview', interviewDate: TRIGGER_INVITE.interview_date });
+    });
 
   const reply = (id: string, r: HumanReply, bubble: string) => {
     const after = inbox[id].at(-1)?.id ?? 0;
@@ -226,6 +233,12 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     const taught: Record<string, Skill[]> = {};
     for (const e of circle.edges) taught[personOf(e.from)] = [...(taught[personOf(e.from)] ?? []), ...e.skills];
     trustNet.recordSession({ id: sessionId, kind: 'prep', members: circle.members.map(personOf), taught });
+    // Aditya's application for this job gets the circle, with the topics he taught and was taught.
+    const topics = [...new Set(circle.edges.filter((e) => e.from === VIEWER || e.to === VIEWER).flatMap((e) => e.skills))];
+    applyStore.linkApplication(
+      { owner: personOf(VIEWER), company: PIPELINE.company, role: PIPELINE.role, stage: 'Interview' },
+      { kind: 'prep', ref: sessionId, summary: `With ${circle.members.length - 1} students in your pipeline`, topics },
+    );
   });
 
   const rateCircle = (id: string, ratings: Record<string, Rating>, via?: 'discord') => {

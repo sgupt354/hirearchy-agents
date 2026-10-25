@@ -17,6 +17,8 @@ import { PACKS, unlockedPacks } from './packs';
 import { levelOf, perksFor, type PointEntry } from './points';
 import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createCommunitySeed, MENTOR_RULES } from './seed';
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
+import { applyStore } from '../apply/store';
+import { applicationId } from '../apply/applications';
 
 const NAMES: Record<string, string> = { [NEWCOMER]: 'Priya', [MENTOR]: 'Aditya' };
 const LABELS: Record<string, string> = { a9: 'Newcomer #9', a1: 'Applicant #1', a6: 'Applicant #6', a7: 'Applicant #7' };
@@ -209,6 +211,20 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
       return 'Hidden';
     }
   }
+
+  // A confirmed session joins the newcomer's application for that job, and the mentor's if they have one.
+  useEffect(() => {
+    if (state !== 'DONE' || !caughtUp || !needId) return;
+    const n = hub.need(needId);
+    if (!n?.mentor || !n.input.role) return;
+    const job = { company: n.input.company, role: n.input.role };
+    applyStore.linkApplication({ owner: personOf(n.owner), ...job, stage: 'Interview' }, { kind: 'community', ref: needId, summary: `Got help with ${n.input.topic} from a mentor (Pay it forward)`, topics: [n.input.topic] });
+    const mentorApp = applicationId(personOf(n.mentor), job.company, job.role);
+    if (applyStore.application(mentorApp)) {
+      applyStore.linkApplication({ owner: personOf(n.mentor), ...job }, { kind: 'community', ref: needId, summary: `Mentored a newcomer in ${n.input.topic} (Pay it forward)` });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, caughtUp, needId]);
 
   // The side card follows the replay: only points whose event has been shown.
   const entries = shown.filter((e) => e.payload.kind === 'points').map((e) => e.payload.entry as PointEntry);

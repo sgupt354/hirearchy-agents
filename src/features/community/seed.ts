@@ -39,13 +39,15 @@ export const STANDING_SEED: Record<string, Standing> = {
 
 export interface NeedInput {
   company: string;
+  /** The job the round is for (links the session to the student's application). */
+  role?: string;
   round: string;
   topic: Skill;
   /** YYYY-MM-DD. Only "this week" / "next week" ever leaves the agent. */
   deadline: string;
 }
 
-export const DEMO_NEED: NeedInput = { company: 'Microsoft', round: 'Technical', topic: 'DSA', deadline: '2026-10-29' };
+export const DEMO_NEED: NeedInput = { company: 'Microsoft', role: 'SWE Intern', round: 'Technical', topic: 'DSA', deadline: '2026-10-29' };
 
 const policy: Policy = {
   share_skills: true,

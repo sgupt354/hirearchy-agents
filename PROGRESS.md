@@ -149,6 +149,36 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Connected journey (`feature/connected-journey`, not merged)
+Branched from `feature/pay-it-forward`. Also carries the merge of `origin/aditya/ask-network` (Ask tab, registered after
+Find with the `message` icon), live-mode demo links (landing CTAs open `/app/?live=1`; `/live` redirects there), and
+tab-bar spacing so ten tabs fit at 1280px.
+
+| Phase | Scope | Status |
+|---|---|---|
+| 1 | One application record per job + "Applications" tab | done |
+| 2 | Readiness score per interview | next |
+| 3 | Proactive nudges (phone + Discord, rate-limited, mutable) | |
+| 4 | Closing the loop (intel ask, points, stage; circle-complete DM; thank-you notes) | |
+
+Phase 1, as built (`src/features/apply/applications.ts`, `store.ts`, `src/features/journey/ApplicationsTab.tsx`):
+- **Record:** owner (trust person id), company, role, stage (the tracker's Saved / Applied / OA / Interview / Offer /
+  Rejected), the date each stage was reached, an interview date only from a real source (the prep invite), linked
+  steps (prep, mock, intel, referral, community; each with its source id, date, summary and topics), posting id.
+  One record per student per job (company + role, case and spacing ignored).
+- **Who links what:** Find "Track it" and live Track create it (Applied / Saved); the prep invite moves it to
+  Interview with `TRIGGER_INVITE.interview_date`; a completed circle links its topics; a finished peer mock links the
+  topics both practiced; Intel links "read" only once the reports are on screen (IntersectionObserver); Referral
+  links the outcome to the seeker's own record; Community links the help to the newcomer's record and, if they
+  already have one for that job, the mentoring to the mentor's. Agent moves only go forward; the student can set any
+  stage by hand, and the Apply tracker follows (both directions).
+- **Demo clock** (`applyStore.now()`, starts Sun Oct 25 6:00 PM) dates everything; Reset restores it.
+- The "Applications" tab shows each student's own records (Aditya by default; Jordan / Priya appear when they have
+  one), the stage steps with dates, the journey, and next steps that open the right tab.
+- The other tabs only gained one-line hooks; their logic is unchanged. `tests/app/tabs.test.ts` lists the new tabs.
+- Checks: 584 tests, 15/15 sabotages, typecheck, build; browser: Find track + full prep circle gives one Microsoft
+  record (Applied Oct 25 → Interview Oct 25, interview Nov 4, circle linked), no console errors, tabs fit at 1280.
+
 ### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
 Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains
 `feature/discord-parity` plus its SQL/typecheck fixes and Discord ratings (`feature/discord-parity` alone fails typecheck).

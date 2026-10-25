@@ -23,6 +23,7 @@ import {
   type FindState,
   type JobPosting,
 } from './logic';
+import { STUDENT, applyStore } from '../apply/store';
 
 interface Said {
   afterJobId: string;
@@ -88,8 +89,11 @@ export function FindTab({ speed, resetKey }: TabProps) {
     setEvents((e) => [...e, ...describeMatch(job, STUDENT_FILTERS), event]);
   };
 
-  const track = (job: JobPosting) =>
+  const track = (job: JobPosting) => {
     decide(job, trackJob(state, job.id, SEED_JOBS), 'Track it', describeTrack(job));
+    // One record per job across the product: Find says "marked applied", so the application starts there.
+    applyStore.recordApplication({ owner: STUDENT, company: job.company, role: job.role, stage: 'Applied' });
+  };
 
   const pass = (job: JobPosting) => decide(job, dismissJob(state, job.id), 'Not for me', describeDismiss(job));
 
