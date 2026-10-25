@@ -17,7 +17,7 @@ export const windowText = (w: TimeWindow) => range12(w.start, w.end);
 export function prettify(text: string): string {
   return text
     .replace(/\b(\d{2}:\d{2})-(\d{2}:\d{2})\b/g, (_, a, b) => range12(a, b))
-    .replace(/\b(\d{1,2}:\d{2}) (AM|PM)-(\d{1,2}:\d{2}) (AM|PM)\b/g, (_, a, p, b, q) =>
+    .replace(/\b(\d{1,2}:\d{2}) (AM|PM) ?[-–] ?(\d{1,2}:\d{2}) (AM|PM)\b/g, (_, a, p, b, q) =>
       p === q ? `${a}–${b} ${q}` : `${a} ${p}–${b} ${q}`,
     )
     .replaceAll('->', '→');

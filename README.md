@@ -56,12 +56,36 @@ appears anywhere in it.
 ```bash
 npm install
 npm run dev            # the app, at http://localhost:5173 (runs the tests first to refresh the badge)
-npm test               # unit tests (engine, view model, integration stubs)
+npm test               # all unit tests (engine, UI view model, integrations and api/ handlers)
 npm run demo:run       # prints the golden path and the backup branch as event lines, no browser needed
 npm run test:sabotage  # the privacy sabotage tests
 ```
 
-Requires Node 20.19+ (or 22.12+). Everything runs in memory; no keys or network are needed.
+Requires Node 20.19+ (or 22.12+). The engine runs fully in memory. No keys are needed locally: `npm run dev`
+doesn't serve the `api/` functions, so notifications and Claude wording quietly fall back and the demo works
+end to end.
+
+## Deployment (Vercel)
+
+Import the repo into Vercel. The defaults work as they are: framework **Vite**, build command `npm run build`,
+output `dist`. The two serverless functions in `api/` are picked up automatically; there is no `vercel.json`.
+
+| Function | Does | Needs | Without it |
+|---|---|---|---|
+| `api/voice.ts` | Words a phone message with Claude (only when `VITE_USE_LLM_COPY=true`) | `ANTHROPIC_API_KEY` | Responds 503; the browser uses a template within 3 s |
+| `api/notify.ts` | Posts Aditya's "needs you" messages to Discord | `DISCORD_WEBHOOK_URL` | Responds 503; skipped silently |
+
+### Environment variables
+
+| Variable | Where | Required | Purpose |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | Server (Vercel env) | Optional | Claude wording for phone messages via `/api/voice` |
+| `DISCORD_WEBHOOK_URL` | Server (Vercel env) | Optional | Discord notification for Aditya's "needs you" messages via `/api/notify` |
+| `VITE_USE_LLM_COPY` | Build time | Optional, default off | `true` = phone messages worded by Claude; off = the built-in student copy. Only turn on with `ANTHROPIC_API_KEY` set. Redeploy after changing it (it's baked into the build). |
+
+`VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` are listed in `.env.example` but not used yet:
+`supabase/track2.sql` is written and not connected. Never commit real values; `.env*` files are git-ignored
+except `.env.example`.
 
 ## Demo steps
 
@@ -111,14 +135,19 @@ flowchart LR
 - **Deterministic engine:** matching, scheduling, permissions, consent and every state transition are plain,
   tested TypeScript in `src/engine/`. An explicit state machine rejects invalid transitions, and runs are
   byte-identical (`resetDemo()` reproduces a run exactly).
-- **LLM only for language:** the model only words messages to humans and reads invites. It never decides a
-  match, a time, a permission or a consent. Every message has a template fallback, so the demo works offline.
+- **LLM only for language:** Claude (`api/voice.ts`, opt-in via `VITE_USE_LLM_COPY`) only words messages to
+  humans. It never decides a match, a time, a permission or a consent, and identity fields are stripped from
+  what it sees until the reveal. Invite parsing is deterministic pattern matching. Every message has a template
+  fallback, so the demo works offline.
 
 Code map: `src/engine/` (seed, agents, broker, pure modules), `src/ui/` (iMessage phones, under-the-hood drawer
-with graph and agent feed, student copy, integration stub), `scripts/` (`demo:run`, test badge, sabotage tests), `tests/`, `supabase/track2.sql` (additive
+with graph and agent feed, student copy, `integrations.ts` adapter with `integrationsStub.ts` as fallback),
+`src/integrations/` (invite parsing, .ics, message generation and notifications), `api/` (Vercel functions for
+Claude and Discord), `scripts/` (`demo:run`, test badge, sabotage tests), `tests/`, `supabase/track2.sql` (additive
 `t2_` schema with RLS on and access through functions only; written, not yet connected).
 
 ## Team
 
-- **Sumedha:** engine, UI
-- **Aditya:** integrations, deployment
+- **Sumedha:** coordination engine, privacy model and tests, UI (`src/engine/`, `src/ui/`, `scripts/`)
+- **Aditya:** integrations and deployment: invite parsing, .ics calendar files, Claude message wording and
+  Discord notifications (`src/integrations/`, `api/`, `tests/integrations/`)

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Engine, PIPELINE, TRIGGER_AGENT_ID, type CoordinationState, type HumanReply, type PhoneMessage } from './engine';
 import { prettify, studentCopy, windowText } from './ui/copy';
-import { downloadIcs, generateMessage, notifyPhone, parseInvite } from './ui/integrationsStub';
+import { USE_LLM_COPY, downloadIcs, generateMessage, notifyPhone, parseInvite } from './ui/integrations';
 import { InviteModal } from './ui/InviteModal';
 import { IPhone, type ChatItem } from './ui/IPhone';
 import { UnderTheHood } from './ui/UnderTheHood';
@@ -82,7 +82,9 @@ export default function App() {
     inbox[p.id] = all.slice(0, messagesAvailable(events, cursor, p.id, all.length));
   }
 
-  // Structured messages go through generateMessage(); Aditya's "needs you" messages also notifyPhone().
+  // Phone text is the student copy from copy.ts. With VITE_USE_LLM_COPY=true, structured messages are
+  // worded by generateMessage() instead (it falls back on its own if /api/voice is unavailable).
+  // Aditya's "needs you" messages are also pushed with notifyPhone().
   useEffect(() => {
     const thisRun = run.current;
     for (const p of PEOPLE) {
@@ -90,23 +92,26 @@ export default function App() {
         const key = `${thisRun}:${p.id}:${m.id}`;
         if (requested.current.has(key)) continue;
         requested.current.add(key);
-        const text = m.kind
-          ? generateMessage({ recipientLabel: labels[p.id], kind: m.kind, details: m.details ?? {} }).catch(() => m.text)
-          : Promise.resolve(m.text);
+        const llm = USE_LLM_COPY && Boolean(m.kind);
+        const text = llm
+          ? generateMessage({ recipientLabel: labels[p.id], kind: m.kind!, details: m.details ?? {} }).catch(() => studentCopy(m, PIPELINE.company))
+          : Promise.resolve(studentCopy(m, PIPELINE.company));
         text.then((t) => {
           if (run.current !== thisRun) return;
-          if (m.kind) setGenerated((g) => ({ ...g, [key]: t }));
+          if (llm) setGenerated((g) => ({ ...g, [key]: t }));
           if (p.id === VIEWER && m.actions.length) notifyPhone(t).catch(() => {});
         });
       }
     }
   });
 
-  // An integration that rewrites a message wins; with the stub (template text) the UI's student copy is used.
+  const keyOf = (id: string, m: PhoneMessage) => `${run.current}:${id}:${m.id}`;
   const display = (id: string, m: PhoneMessage) => {
-    const g = generated[`${run.current}:${id}:${m.id}`];
-    return g && g !== m.text ? prettify(g) : studentCopy(m, PIPELINE.company);
+    const g = USE_LLM_COPY ? generated[keyOf(id, m)] : undefined;
+    return g ? prettify(g) : studentCopy(m, PIPELINE.company);
   };
+  // In LLM mode a structured message waits for its wording (generateMessage resolves within ~3 s).
+  const ready = (id: string, m: PhoneMessage) => !USE_LLM_COPY || !m.kind || keyOf(id, m) in generated;
 
   const view = deriveGraph(shown, IDS, VIEWER);
   const namesFor = (owner: string) => {
@@ -178,6 +183,7 @@ export default function App() {
   const chatFor = (id: string): ChatItem[] => {
     const items: ChatItem[] = [];
     for (const m of inbox[id]) {
+      if (!ready(id, m)) break;
       const item: ChatItem = { key: `m${m.id}`, from: 'agent', text: display(id, m), needsHuman: m.actions.length > 0 };
       if (m.kind === 'complete' && engine.window) {
         const slot = engine.window;

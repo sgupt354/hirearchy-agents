@@ -41,15 +41,28 @@ Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
   ("Check invite"). Verified in Chromium at 1440×900 and 1280×800: no page scroll in the student view (four phones
   fit in the decline branch too), no "->", no 24-hour times and no raw ids in any visible text, no console errors,
   and Reset (mid-run, drawer open, lens on) gives a page identical to a fresh load.
-- 36 Vitest tests, all passing.
+- **Merged `aditya/integrations`** (3 commits: invite parsing + .ics, message generation with privacy fallbacks,
+  Discord notifications). No conflicts: Aditya only added files. Reviewed before merging: no secrets, API keys
+  or webhook URLs anywhere in its history (only env reads and obvious test fakes).
+- **Wired up** through `src/ui/integrations.ts`: real `parseInvite`, `notifyPhone`, `downloadIcs` and (opt-in)
+  `generateMessage` from `src/integrations`, with `integrationsStub.ts` as the fallback if a call throws. Phone
+  text defaults to the `copy.ts` student copy; `VITE_USE_LLM_COPY=true` switches structured messages to Claude.
+- 131 Vitest tests, all passing (our 36 + Aditya's 95); `api/` is now included in `npm run typecheck`.
 
 ## Team / ownership
-- **Aditya (branch `aditya/integrations`) owns voice (Claude), the .ics generator, Discord/phone notify and
-  invite parsing, server-side.** Phase 4 voice and phase 5 .ics are skipped here.
-- **Do not create or edit anything in `api/` or `src/integrations/`** on this branch.
-- After merge: replace the import in `src/App.tsx`
-  (`from './ui/integrationsStub'` -> Aditya's module) and delete the stub. Signatures are identical.
+- **Sumedha:** engine, UI (`src/engine/`, `src/ui/`, `scripts/`, `tests/*.test.ts`).
+- **Aditya:** integrations and deployment (`src/integrations/`, `api/`, `tests/integrations/`). Merged.
+- Don't edit `api/` or `src/integrations/` from the engine/UI side; the UI only uses them through
+  `src/ui/integrations.ts`.
 - `supabase/track2.sql` stays as written and is **not wired**.
+
+## For Aditya (found while reviewing the merge; not changed, since these are his files)
+- `api/voice.ts` hardcodes `MODEL = 'claude-sonnet-4-5'`. The current Sonnet is `claude-sonnet-5-5`; if the old
+  id is retired, every call errors and silently falls back to templates. Suggest updating it.
+- His tests live in `tests/integrations/`, outside the agreed `api/` + `src/integrations/` paths. Kept: they're
+  new files that only test his module.
+- His `generateMessage` fallback reads `details.start` / `details.end`; the engine sends `details.window`. The
+  UI adapter now adds `start` / `end`, so the fallback text includes the time.
 
 ## Open issue: requester id in track2.sql (must fix before wiring Supabase)
 `t2_get_identity`, `t2_record_consent`, `t2_get_events` and `t2_append_event` take the requester / agent id as a
@@ -63,13 +76,15 @@ route with the service key. Left as is for now, per instruction.
 - Nothing. Waiting for the next task.
 
 ## Exact next step
-All six build phases are done (phases 4–5 owned by Aditya). Next: merge `aditya/integrations`, swap the stub import
-in `src/App.tsx`, and re-run `npm test`, `npm run test:sabotage` and the demo steps in the README.
+Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
+`VITE_USE_LLM_COPY=true`. Then run the README demo steps on the deployed URL to confirm `/api/voice` and
+`/api/notify` work with real keys.
 
 ## How to run
 ```
 npm install
-npm test           # all engine tests
+npm run typecheck  # TypeScript over src, api, tests and scripts
+npm test           # all tests (engine, UI view model, integrations, api handlers)
 npm run demo:run   # prints the golden path and the backup branch as event lines
 npm run dev        # UI at http://localhost:5173 (runs the tests first to refresh the Privacy proof badge)
 npm run build      # typecheck + production build
@@ -184,3 +199,22 @@ Consumer-redesign decisions:
 - **Escape closes the drawer and the modal.** The drawer covers the corner controls, so close it before Reset.
 - **No new tests**, per instruction. The redesign was verified with scripted Playwright runs instead.
 - **README** demo steps and screenshots were updated to the new UI.
+
+Merge decisions:
+- **Adapter instead of a direct import.** `src/ui/integrations.ts` calls the real module and falls back to the stub
+  only if a call throws. Aditya's functions already never throw (they return their own fallbacks), so the stub is a
+  second safety net. `integrationsStub.ts` and its tests stay.
+- **Default phone copy is `copy.ts`.** `generateMessage` is not called at all unless `VITE_USE_LLM_COPY=true`. In LLM
+  mode a structured message is held until its wording arrives (at most ~3 s, his timeout) so bubbles never flicker
+  between two wordings. Plain status lines (welcome, "You're in", dissolved) always use `copy.ts`.
+- **`notifyPhone` sends the text the student actually sees** (the student copy, or Claude's wording in LLM mode).
+- **In LLM mode the reveal message includes names and contacts** (it's past consent, and his server passes reveal
+  details through by design). Default mode shows "Names are unlocked" plus the calendar card instead.
+- **Invite outcomes now use his parser.** It's stricter than the stub (it needs an invite phrase, a known company and a
+  known role) and returns "Software Engineer" rather than "SWE" for non-intern roles. Our three outcome messages
+  are unchanged.
+- **`prettify` also normalises "7:30 PM–9:00 PM"** (en dash), which his fallback produces.
+- **`.gitignore` now ignores every `.env*` file except `.env.example`**, plus `.vercel/`.
+- **Verified locally**, where `/api/*` returns 404: default mode (golden path, decline branch, three invite outcomes,
+  reset) and LLM mode with the API down, mocked-working and hanging past the 3-second timeout. All complete with
+  no console errors besides the expected 404s.
