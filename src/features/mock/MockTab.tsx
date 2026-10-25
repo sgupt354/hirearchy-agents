@@ -6,7 +6,13 @@ import type { TabProps } from '../types';
 import { describeMock } from './copy';
 import { MockPhone, type MockAction, type MockChatItem } from './MockPhone';
 import { MockSwap, type MockState, type StateChange } from './mockSwap';
-import { MOCK_SEEKER, SOLO_SEEKER } from './seed';
+import { MOCK_SEEKER, SOLO_SEEKER, createMockSeed } from './seed';
+import type { Skill } from '../../engine/types';
+import type { Rating } from '../trust/ledger';
+import { trust as sharedTrust, type TrustNetwork } from '../trust/network';
+import { personOf } from '../trust/people';
+import { EvidenceCard, RatingCard } from '../trust/TrustCards';
+import { useTrust } from '../trust/useTrust';
 
 const PEOPLE: Record<string, string> = { m1: 'Aditya', m4: 'Jordan', m5: 'Priya', m8: 'Riya' };
 
@@ -48,7 +54,10 @@ function heroStatus(state: MockState, solo: boolean): { text: string; tone: stri
 
 /** The mock-interview swap: reciprocal mocks with students in the same pipeline and round. */
 export function MockTab({ speed, resetKey }: TabProps) {
-  const mock = useMemo(() => new MockSwap(), []);
+  // Reliability (from the shared trust network) breaks ties between equally good partners.
+  const mock = useMemo(() => new MockSwap(createMockSeed(), (id) => sharedTrust.reliability(personOf(id))), []);
+  const trustNet = useTrust();
+  const [ratedAt, setRatedAt] = useState<Record<string, string>>({});
   const [, setVersion] = useState(0);
   const [cursor, setCursor] = useState(0);
   const [solo, setSolo] = useState(false);
@@ -101,6 +110,8 @@ export function MockTab({ speed, resetKey }: TabProps) {
   function reset() {
     run.current += 1;
     mock.reset();
+    trustNet.resetFor(resetKey);
+    setRatedAt({});
     setCursor(0);
     setSolo(false);
     setDrawer(false);
@@ -130,11 +141,51 @@ export function MockTab({ speed, resetKey }: TabProps) {
     if (ok) setReplies((all) => ({ ...all, [id]: [...(all[id] ?? []), { after, text: bubble, time: clock() }] }));
   };
 
+  // A finished peer mock becomes a session on both records; each side's own scores go into their own evidence file.
+  const sessionId = `mock-${run.current}`;
+  useEffect(() => {
+    const pair = mock.pair;
+    if (solo || mock.state !== 'COMPLETED' || !caughtUp || !pair || trustNet.hasSession(sessionId)) return;
+    const match = [...events].reverse().find((e) => e.type === 'DISCOVER' && e.payload.match)?.payload.match as { teaches: Record<string, Skill[]> } | undefined;
+    const taught = Object.fromEntries(pair.map((id) => [personOf(id), match?.teaches[id] ?? []]));
+    trustNet.recordSession({ id: sessionId, kind: 'mock', members: pair.map(personOf), taught });
+    for (const id of pair) trustNet.addMockScores(personOf(id), ownScores(id).filter((s) => !s.practice).map((s) => s.rubric));
+  });
+
+  const ratePartner = (id: string, ratings: Record<string, Rating>) => {
+    if (act(() => Object.entries(ratings).forEach(([other, r]) => trustNet.rate(personOf(id), personOf(other), sessionId, r)))) {
+      setRatedAt((all) => ({ ...all, [id]: clock() }));
+    }
+  };
+
+  const trustItems = (id: string): MockChatItem[] => {
+    const pair = mock.pair;
+    if (solo || !pair || !trustNet.hasSession(sessionId)) return [];
+    const other = pair.find((x) => x !== id)!;
+    const me = personOf(id);
+    let name = 'your partner';
+    try {
+      name = mock.getIdentity(id, other).name.split(' ')[0];
+    } catch {
+      // names are unlocked by now; fall back to a neutral label if not
+    }
+    const items: MockChatItem[] = [{ key: 't-ask', from: 'agent', text: `One more thing: did ${name} show up, and how helpful were they? Private, and it only counts once someone has two or more ratings.`, needsHuman: true }];
+    if (!trustNet.hasRated(me, personOf(other), sessionId)) {
+      items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={[{ id: other, name }]} onSubmit={(r) => ratePartner(id, r)} /> });
+      return items;
+    }
+    items.push({ key: 't-done', from: 'me', text: '🔒 Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-thanks', from: 'agent', text: "Thanks! Here's your proof of work so far:" });
+    items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
+    return items;
+  };
+
   const chatFor = (id: string): MockChatItem[] => {
     const items: MockChatItem[] = [];
     for (const m of inbox(id)) {
       items.push({ key: `m${m.id}`, from: 'agent', text: m.text, needsHuman: m.needsHuman, kind: m.kind, data: m.data });
       for (const [i, r] of (replies[id] ?? []).entries()) if (r.after === m.id) items.push({ key: `r${i}`, from: 'me', text: r.text, time: r.time });
+      if (m.kind === 'scores') items.push(...trustItems(id));
     }
     return items;
   };
@@ -207,7 +258,7 @@ export function MockTab({ speed, resetKey }: TabProps) {
         <div className="drawer-body">
           <section className="card">
             <h3>Match board · {solo ? "Riya's" : "Aditya's"} view</h3>
-            <MatchBoard events={shown} viewer={viewer} labels={labels} />
+            <MatchBoard events={shown} viewer={viewer} labels={labels} trust={trustNet} />
           </section>
           <section className="card feed-card">
             <h3>Agent conversation</h3>
@@ -219,16 +270,21 @@ export function MockTab({ speed, resetKey }: TabProps) {
   );
 }
 
+function Reliability({ trust, person }: { trust: TrustNetwork; person: string }) {
+  const s = trust.summary(person);
+  return <small className="rel">{s.reliability !== null ? `★ ${s.reliability.toFixed(1)} · ${s.count} ratings` : 'New'}</small>;
+}
+
 const RULES = [
   'Same company and round',
   'At least 60 minutes free together',
   'Same difficulty preference',
   'Never a 3rd mock with the same person (private)',
-  'Complementary weak spots first',
+  'Complementary weak spots first, then the more reliable partner',
 ];
 
 /** Every candidate from the seeker's side: matched, backup, skipped or filtered (with the reason). */
-function MatchBoard({ events, viewer, labels }: { events: AgentEvent[]; viewer: string; labels: Record<string, string> }) {
+function MatchBoard({ events, viewer, labels, trust }: { events: AgentEvent[]; viewer: string; labels: Record<string, string>; trust: TrustNetwork }) {
   const status: Record<string, { text: string; tone: string; title?: string }> = {};
   let current: string[] = [];
   for (const e of events.filter((x) => x.from === viewer || x.to.includes(viewer))) {
@@ -247,11 +303,15 @@ function MatchBoard({ events, viewer, labels }: { events: AgentEvent[]; viewer: 
       <ul className="board-list">
         {ids.map((id) => (
           <li key={id} className={`board-row tone-${status[id]?.tone ?? 'idle'}`} title={status[id]?.title}>
-            <b>{labels[id]}</b>
+            <b>
+              {labels[id]}
+              <Reliability trust={trust} person={personOf(id)} />
+            </b>
             <span>{status[id]?.text ?? (events.length ? 'Checking…' : 'Waiting')}</span>
           </li>
         ))}
       </ul>
+      <p className="board-note">★ = reliability from private post-session ratings, shown only after 2+ ratings. It breaks ties between equally good partners.</p>
       <h3>Rules the agents enforce</h3>
       <ul className="rules">
         {RULES.map((r) => <li key={r}>✓ {r}</li>)}

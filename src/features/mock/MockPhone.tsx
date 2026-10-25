@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChatBubble, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type RevealItem } from '../../ui/kit';
 import type { MockMsgKind } from './mockSwap';
 import type { PackQuestion } from './questions';
@@ -8,6 +8,8 @@ export interface MockChatItem extends RevealItem {
   text: string;
   kind?: MockMsgKind;
   data?: Record<string, unknown>;
+  /** A feature card (rating form, evidence file, …), shown full width. */
+  custom?: ReactNode;
   time?: string;
 }
 
@@ -45,6 +47,7 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
 
   const render = (item: MockChatItem) => {
     const time = item.from === 'agent' ? timeOf(item.key) : item.time;
+    if (item.custom) return <div key={item.key} className="custom-card">{item.custom}</div>;
     switch (item.kind) {
       case 'pack':
         return (

@@ -12,8 +12,8 @@ Key idea: "Your prep circle becomes your proof of work."
 | 0 | Journey shell, tab registry, `TabProps`, UI kit, global speed + Reset | ✅ done |
 | B | Mock interview swap (`src/features/mock/`) | ✅ done |
 | Live | Live Discord mode for Aditya (`?live=1`), before D/E per the organizers | ✅ done (needs setup, see LIVE_DISCORD.md) |
-| D | Trust ratings + evidence file (`src/features/trust/`) | next |
-| E | Referral Bridge (`src/features/referral/`) | todo |
+| D | Trust ratings + evidence file (`src/features/trust/`) | ✅ done |
+| E | Referral Bridge (`src/features/referral/`) | next |
 | F | Polish, sabotage additions, browser checks, README | todo |
 | G | Merge `aditya/journey` (only on "merge Aditya") | waiting |
 
@@ -82,6 +82,45 @@ Key idea: "Your prep circle becomes your proof of work."
   and 1280×800: full swap, decline → backup, solo fallback, drawer with lens; each phone shows only its owner's
   scores; no "->", 24-hour times, raw ids or scores in the feed; no page scroll; global Reset restores both the
   prep and mock tabs exactly (pressed from a third tab, both mid-run); no console errors. Prep circle unchanged.
+
+### Phase D — Trust ratings + evidence file: done (`src/features/trust/`, `tests/features/trust/`)
+- **Ratings:** after a prep circle or a peer mock, each member privately rates the others: showed up (yes/no) and
+  helpful (1–5). Only session members can rate each other, once per session. `TrustLedger` never returns a single
+  rating (not even to the person rated): only the count, and a reliability score once there are ≥ 2 ratings
+  (average of helpful; a no-show counts as 1). Show-up rate likewise only from 2 ratings.
+- **Matching:** the mock tab ranks by complementary skills, then reliability (more reliable first; someone without a
+  score ranks after someone with one). The Under the hood match board shows each candidate's aggregate (★ 4.8 · 5
+  ratings, or "New").
+- **Evidence file ("Your proof of work")**, private to its owner (`EvidenceLockedError` for anyone else): sessions
+  attended (a no-show doesn't count), average rating, peer mock rubric averages (practice self-scores excluded),
+  intel reports (seeded stub count; `setIntelCounter()` is the hook for Aditya's Intel feature), skills taught,
+  target roles, and project links (stage 2 only).
+- **Staged disclosure** (for Phase E): stage 1 = stats only; stage 2 adds the rubric breakdown and project links;
+  identity is never in the evidence file (stage 3 comes from the consent-gated identity vault).
+- **One trust network for the whole journey** (`trust` in `network.ts`), keyed by person (Applicant #n = `pn`), so a
+  prep circle and a mock both build the same record. Global Reset restores the seeded history.
+- **Seeded history** (raw sessions and ratings, nothing pre-aggregated): Jordan 3 sessions, 5 ratings → 4.8, one mock
+  4.25, taught DSA + System Design, 1 intel report, targeting Stripe SWE Intern; Aditya 4.5; Maya 4.7; Priya 2.0 (one
+  no-show); Sumit 1 rating (hidden until a second).
+- **UI:** after the circle meets (or the mock is scored), each phone gets "Tonight's session is done 🎉", a private
+  rating card, then "🔒 Rated privately" and the 🏅 Your proof of work card, which updates live as others rate.
+- **Verified:** 179 tests (13 new trust tests: no individual rating exposed, the 2-rating threshold, reliability
+  changing the match order, owner-only evidence, staged disclosure), test:sabotage 6/6, typecheck, build. Browser at
+  1440×900 and 1280×800: ratings in both tabs, Sumit crossing the threshold, evidence carrying over from prep to mock,
+  board stars, no page scroll, global Reset restores both tabs and the trust network exactly. Only console error is the
+  expected local 404 for `/api/notify`.
+
+Phase D decisions:
+- **Jordan's mock average is 4.25 (shown 4.3), not 4.2:** rubric scores are whole numbers, so one mock can only
+  average x.0/x.25/x.5/x.75. The referrer's rule (≥ 4.0) is unaffected. Rating 4.8 is exact (5, 5, 5, 5, 4).
+- **Reliability uses one decimal.** Known limit: with only one new rating at a time, someone could compare their score
+  before and after to infer that one rating. The 2-rating threshold (as specified) is enforced; coarser rounding or
+  batching would be the next step if that matters.
+- **Rating happens right after the session in the demo** ("Tonight's session is done 🎉"); in real use the agent would
+  ask after the scheduled time.
+- **Prep-circle matching order is unchanged** (it's engine code); reliability affects mock matching (and the referral
+  fit check in Phase E).
+- **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
 ### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
 - `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
@@ -199,7 +238,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: Live Discord mode done; Phase D (trust ratings + evidence file) next.
+- `feature/full-journey`: Phase D done; Phase E (Referral Bridge) next.
 
 ## Exact next step
 Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,

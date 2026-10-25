@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { HumanReply } from '../engine/types';
 import { CalendarCard, ChatBubble, PhoneFrame, QuickReplies, TypingIndicator, useChatReveal, type CalendarCardData } from './chat';
 
@@ -11,6 +11,8 @@ export interface ChatItem {
   /** Agent message that needs the human: banner first, quick replies after. */
   needsHuman?: boolean;
   card?: CalendarCardData;
+  /** Any other card from a feature (rating form, evidence file, …), shown full width. */
+  custom?: ReactNode;
   time?: string;
 }
 
@@ -31,6 +33,7 @@ export function IPhone({ owner, caption, items, interactive, pace, onReply }: {
   const [picking, setPicking] = useState(false);
   const [custom, setCustom] = useState('');
   const chat = useRef<HTMLDivElement>(null);
+  // Quick replies answer the engine's prompts only, never a feature card's own form.
   const canReply = interactive && awaitingHuman;
 
   useEffect(() => {
@@ -53,7 +56,9 @@ export function IPhone({ owner, caption, items, interactive, pace, onReply }: {
       {visible.length === 0 && phase === 'idle' && <p className="chat-empty">No messages yet</p>}
       {visible.length > 0 && <p className="chat-day">Today {firstTime ?? ''}</p>}
       {visible.map((item) =>
-        item.card ? (
+        item.custom ? (
+          <div key={item.key} className="custom-card">{item.custom}</div>
+        ) : item.card ? (
           <CalendarCard key={item.key} {...item.card} />
         ) : (
           <ChatBubble key={item.key} from={item.from} text={item.text} time={item.from === 'agent' ? timeOf(item.key) : item.time} />

@@ -11,6 +11,11 @@ import { SPEEDS } from '../../app/speed';
 import type { TabProps } from '../types';
 import { isLiveRequested } from '../../live/client';
 import { useLiveDiscord, type LiveStatus } from './useLiveDiscord';
+import { personOf } from '../trust/people';
+import { EvidenceCard, RatingCard } from '../trust/TrustCards';
+import { useTrust } from '../trust/useTrust';
+import type { Rating } from '../trust/ledger';
+import type { Skill } from '../../engine/types';
 
 const IDS = ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8'];
 const VIEWER = TRIGGER_AGENT_ID;
@@ -52,6 +57,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const [generated, setGenerated] = useState<Record<string, string>>({});
   const [replies, setReplies] = useState<Record<string, Reply[]>>({});
   const requested = useRef(new Set<string>());
+  const trustNet = useTrust();
+  const [ratedAt, setRatedAt] = useState<Record<string, string>>({});
   // Bumped on reset so async results and phone state from a previous run are dropped.
   const run = useRef(0);
 
@@ -154,6 +161,8 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const reset = () => {
     run.current += 1;
     engine.resetDemo();
+    trustNet.resetFor(resetKey);
+    setRatedAt({});
     requested.current.clear();
     setGenerated({});
     setReplies({});
@@ -197,6 +206,39 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     }
   };
 
+  // After the circle meets, it becomes a session on everyone's record and each member rates the others privately.
+  const sessionId = `prep-${run.current}`;
+  useEffect(() => {
+    const circle = engine.circle;
+    if (engine.state !== 'COMPLETED' || !caughtUp || !circle || trustNet.hasSession(sessionId)) return;
+    const taught: Record<string, Skill[]> = {};
+    for (const e of circle.edges) taught[personOf(e.from)] = [...(taught[personOf(e.from)] ?? []), ...e.skills];
+    trustNet.recordSession({ id: sessionId, kind: 'prep', members: circle.members.map(personOf), taught });
+  });
+
+  const rateCircle = (id: string, ratings: Record<string, Rating>) => {
+    if (act(() => Object.entries(ratings).forEach(([other, r]) => trustNet.rate(personOf(id), personOf(other), sessionId, r)))) {
+      setRatedAt((all) => ({ ...all, [id]: clock() }));
+    }
+  };
+
+  const trustItems = (id: string, members: string[], names: Record<string, string>): ChatItem[] => {
+    if (!trustNet.hasSession(sessionId)) return [];
+    const me = personOf(id);
+    const others = members.filter((x) => x !== id);
+    const items: ChatItem[] = [
+      { key: 't-ask', from: 'agent', text: "Tonight's session is done 🎉 How did it go? Rate your circle privately. Nobody ever sees a single rating.", needsHuman: true },
+    ];
+    if (!trustNet.hasRated(me, personOf(others[0]), sessionId)) {
+      items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={others.map((x) => ({ id: x, name: (names[x] ?? 'Member').split(' ')[0] }))} onSubmit={(r) => rateCircle(id, r)} /> });
+      return items;
+    }
+    items.push({ key: 't-done', from: 'me', text: '🔒 Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-thanks', from: 'agent', text: "Thanks! A rating only counts once someone has two or more. Here's your proof of work so far:" });
+    items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
+    return items;
+  };
+
   const chatFor = (id: string): ChatItem[] => {
     const items: ChatItem[] = [];
     for (const m of inbox[id]) {
@@ -225,6 +267,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
       for (const [i, r] of (replies[id] ?? []).entries()) {
         if (r.after === m.id) items.push({ key: `r${i}`, from: 'me', text: r.text, time: r.time });
       }
+      if (m.kind === 'complete') items.push(...trustItems(id, engine.circle?.members ?? [], namesFor(id)));
     }
     return items;
   };
