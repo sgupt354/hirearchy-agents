@@ -11,7 +11,8 @@ import { trust as sharedTrust, type TrustNetwork } from '../trust/network';
 import { personOf } from '../trust/people';
 import { starterPackFor, unlockedPacks, type QuestionPack } from './packs';
 import { PointsLedger, levelOf, perksFor, type PointEntry, type Standing } from './points';
-import { DEMO_WEEK, MENTOR_RULES, SESSION_MINUTES, STANDING_SEED, TODAY, createCommunitySeed, type MentorRules, type NeedInput } from './seed';
+import { ProjectBoard } from './projects';
+import { DEMO_WEEK, JUNIOR_PROFILES, MENTOR_RULES, SENIOR_RULES, SESSION_MINUTES, STANDING_SEED, TODAY, createCommunitySeed, type MentorRules, type NeedInput } from './seed';
 
 export type NeedState = 'OPEN' | 'MATCHED' | 'BOOKED' | 'DONE' | 'EXPIRED' | 'CANCELLED';
 
@@ -55,7 +56,7 @@ export interface RuleCheck {
   observed: string;
 }
 
-export type CommunityMsgKind = 'text' | 'ask-help' | 'ask-match' | 'booked' | 'ask-confirm' | 'rate' | 'points' | 'evidence' | 'capacity' | 'packs';
+export type CommunityMsgKind = 'text' | 'ask-help' | 'ask-match' | 'booked' | 'ask-confirm' | 'rate' | 'points' | 'evidence' | 'capacity' | 'packs' | 'shortlist' | 'ask-hours' | 'ask-leave';
 
 export interface CommunityMessage {
   id: number;
@@ -108,6 +109,7 @@ export class CommunityHub {
   #today = TODAY;
   /** Each newcomer's one free starter pack. */
   #starters = new Map<string, string>();
+  #projects!: ProjectBoard;
 
   constructor(
     private readonly trust: TrustNetwork = sharedTrust,
@@ -134,6 +136,13 @@ export class CommunityHub {
     this.#online = [...this.startOnline];
     this.#today = TODAY;
     this.#starters = new Map();
+    // Same points ledger and identity gate as help requests: one points system, one consent rule.
+    this.#projects = new ProjectBoard(this.#ledger, this.#vault, (id) => this.#label(id), JUNIOR_PROFILES, SENIOR_RULES);
+  }
+
+  /** Project collaboration board (Phase C). */
+  get projects(): ProjectBoard {
+    return this.#projects;
   }
 
   /** Question packs this person has unlocked: by level, with a newcomer's free starter first. */

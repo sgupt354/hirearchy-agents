@@ -10,9 +10,11 @@ import { EvidenceCard, RatingCard } from '../trust/TrustCards';
 import { useTrust } from '../trust/useTrust';
 import { CommunityHub, PointsCannotBuyReferralError, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
+import { ProjectBoardView } from './ProjectBoardView';
 import { describeCommunity } from './copy';
+import { LevelProgress, PacksCard, PointsCard, RulesCard } from './cards';
 import { PACKS, unlockedPacks } from './packs';
-import { levelOf, nextLevel, perksFor, type PointEntry } from './points';
+import { levelOf, perksFor, type PointEntry } from './points';
 import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createCommunitySeed, MENTOR_RULES } from './seed';
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
 
@@ -50,6 +52,7 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const [error, setError] = useState('');
   const [refusal, setRefusal] = useState('');
   const [needId, setNeedId] = useState<string | null>(null);
+  const [view, setView] = useState<'help' | 'projects'>('help');
   const run = useRef(0);
 
   const events = hub.events();
@@ -100,6 +103,7 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
     setRefusal('');
     setDrawer(false);
     setLenses([]);
+    setView('help');
     act(() => {});
   }
 
@@ -183,7 +187,7 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
         break;
       }
       case 'points':
-        item.custom = <PointsCard entry={m.data!.entry as PointEntry} />;
+        item.custom = <PointsCard entry={m.data!.entry as PointEntry} before={STANDING_SEED[(m.data!.entry as PointEntry).person]?.points ?? 0} />;
         break;
       case 'packs':
         item.custom = <PacksCard ids={m.data!.packs as string[]} />;
@@ -215,150 +219,164 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
   const idle = !needId;
   const status = heroStatus(state, entries.at(-1) ?? null);
 
+  const viewSwitch = (
+    <div className="segmented" role="group" aria-label="Community view">
+      {(['help', 'projects'] as const).map((v) => (
+        <button key={v} type="button" className={view === v ? 'on' : ''} aria-pressed={view === v} onClick={() => setView(v)}>
+          {v === 'help' ? 'Help requests' : 'Project board'}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
-    <div className={`app ${idle ? '' : 'started'}`}>
-      <header className="hero">
-        <h1>Pay it forward. <span className="accent">Help a newcomer, earn your way up.</span></h1>
-        <p className="sub">Newcomers post what they need. Mentor agents decide from their human's private rules. Points come only when both sides confirm, and never buy a referral.</p>
-        <div className="cta-row">
-          {idle ? (
-            <button className="cta" onClick={post}>Priya, a freshman, needs help with DSA for Microsoft →</button>
-          ) : (
-            <>
-              <span key={status.text} className={`live-status ${status.tone}`}>
-                {!caughtUp && status.tone === 'busy' && <span className="spinner" />}
-                {status.text}
-              </span>
-              {caughtUp && state === 'OPEN' && !mentorOnline && (
-                <>
-                  <button className="cta small" onClick={() => act(() => hub.mentorOnline(MENTOR))}>A mentor comes online →</button>
-                  <button className="ghost" onClick={() => act(() => hub.cancel(needId!, NEWCOMER))}>Priya cancels</button>
-                </>
-              )}
-            </>
-          )}
-        </div>
-        <div className="hero-meta">
-          <span className="proof-pill">Anonymous until both say yes · points only after both confirm · points never buy a referral</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
-          {live !== 'off' && <LiveBadge status={live} />}
-        </div>
-      </header>
+    <>
+      <ProjectBoardView hub={hub} speed={speed} resetKey={resetKey} viewSwitch={viewSwitch} hidden={view !== 'projects'} />
+      <div className={`app ${idle ? '' : 'started'}`} hidden={view !== 'help'}>
+        <header className="hero">
+          <h1>Pay it forward. <span className="accent">Help a newcomer, earn your way up.</span></h1>
+          <p className="sub">Newcomers post what they need. Mentor agents decide from their human's private rules. Points come only when both sides confirm, and never buy a referral.</p>
+          <div className="cta-row">
+            {viewSwitch}
+            {idle ? (
+              <button className="cta" onClick={post}>Priya, a freshman, needs help with DSA for Microsoft →</button>
+            ) : (
+              <>
+                <span key={status.text} className={`live-status ${status.tone}`}>
+                  {!caughtUp && status.tone === 'busy' && <span className="spinner" />}
+                  {status.text}
+                </span>
+                {caughtUp && state === 'OPEN' && !mentorOnline && (
+                  <>
+                    <button className="cta small" onClick={() => act(() => hub.mentorOnline(MENTOR))}>A mentor comes online →</button>
+                    <button className="ghost" onClick={() => act(() => hub.cancel(needId!, NEWCOMER))}>Priya cancels</button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+          <div className="hero-meta">
+            <span className="proof-pill">Anonymous until both say yes · points only after both confirm · points never buy a referral</span>
+            <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
+            {live !== 'off' && <LiveBadge status={live} />}
+          </div>
+        </header>
 
-      <main className="phones">
-        {[NEWCOMER, MENTOR].map((id) => (
-          <CommunityPhone
-            key={`${run.current}:${id}`}
-            owner={NAMES[id]}
-            caption={`others see “${LABELS[id]}”`}
-            items={chatFor(id)}
-            interactive={caughtUp}
-            pace={SPEEDS[speed].pace}
-          />
-        ))}
-        <section className="card cm-side" aria-label="Points and levels">
-          <h3>Points and levels</h3>
-          <LevelProgress name="Aditya" points={mentorPoints} />
-          {entries.length ? (
-            <ul className="board-list">
-              {entries.map((e) => (
-                <li key={e.session} className={`board-row tone-${e.capped ? 'muted' : 'good'}`}>
-                  <b>{NAMES[e.person] ?? label(e.person)} · {e.base} x {e.multiplier}</b>
-                  <span>+{e.points}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="board-note">No points yet. A session earns points only after both people confirm it happened.</p>
-          )}
-          <h3>Open requests</h3>
-          <ul className="board-list">
-            {hub.needs().length === 0 && <li className="board-row tone-muted"><b>None yet</b><span /></li>}
-            {hub.needs().map((n) => {
-              const l = hub.listing(n.id)!;
-              const s = n.id === needId ? state ?? n.state : n.state;
-              return (
-                <li key={n.id} className={`board-row tone-${s === 'DONE' || s === 'BOOKED' ? 'good' : s === 'OPEN' || s === 'MATCHED' ? 'info' : 'muted'}`}>
-                  <b>{l.handle} · {l.topic} · {l.company} {l.round.toLowerCase()}</b>
-                  <span>{NEED_TEXT[s]}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <h3>Question packs</h3>
-          <ul className="board-list">
-            {PACKS.map((p) => {
-              const who = [
-                starterShown && hub.starterOf(NEWCOMER) === p.id ? 'Priya (starter)' : '',
-                mentorPacks.includes(p.id) ? 'Aditya' : '',
-              ].filter(Boolean);
-              return (
-                <li key={p.id} className={`board-row tone-${who.length ? 'info' : 'muted'}`}>
-                  <b>{p.title} · {p.items.length}</b>
-                  <span>{who.length ? who.join(', ') : 'Locked'}</span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="board-note">Newcomers get one pack free, Contributors 3, Mentors all. Built only from anonymized interview reports and shared intel, each item labelled with its source.</p>
-          <h3>House rules</h3>
-          <ul className="cm-rules">
-            <li>Base 10 points. Helping a newcomer 3x, someone a level below 2x, a peer 1x.</li>
-            <li>One pair earns points at most twice a week.</li>
-            <li>Saying no never costs points. Newcomer status ends after 3 sessions.</li>
-            <li>Levels: Contributor 30, Mentor 100, Senior mentor 250.</li>
-          </ul>
-          <button
-            className="ghost small"
-            onClick={() => {
-              try {
-                hub.redeemForReferral(MENTOR);
-              } catch (e) {
-                if (e instanceof PointsCannotBuyReferralError) setRefusal(e.message);
-              }
-            }}
-          >
-            Trade points for a referral?
-          </button>
-          {refusal && <p className="cm-refusal" role="status">{refusal}</p>}
-        </section>
-      </main>
-
-      {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
-
-      <Drawer
-        open={drawer}
-        onClose={() => setDrawer(false)}
-        title="Under the hood"
-        subtitle="How the agents handled the help request. Students never see this."
-        badge={<span className={`state-pill cm-${state ?? 'OPEN'}`}>{state ? NEED_TEXT[state] : 'Ready'}</span>}
-      >
-        <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
-        <div className="drawer-body">
-          <section className="card">
-            <h3>Capacity checks · each mentor's private view</h3>
-            <CapacityBoard events={shown} label={label} />
-            <h3>Points</h3>
+        <main className="phones">
+          {[NEWCOMER, MENTOR].map((id) => (
+            <CommunityPhone
+              key={`${run.current}:${id}`}
+              owner={NAMES[id]}
+              caption={`others see “${LABELS[id]}”`}
+              items={chatFor(id)}
+              interactive={caughtUp}
+              pace={SPEEDS[speed].pace}
+            />
+          ))}
+          <section className="card cm-side" aria-label="Points and levels">
+            <h3>Points and levels</h3>
+            <LevelProgress name="Aditya" points={mentorPoints} />
             {entries.length ? (
               <ul className="board-list">
                 {entries.map((e) => (
-                  <li key={e.session} className="board-row tone-good">
-                    <b>{label(e.person)}: {e.base} x {e.multiplier}</b>
-                    <span>{e.reason}</span>
+                  <li key={e.session} className={`board-row tone-${e.capped ? 'muted' : 'good'}`}>
+                    <b>{NAMES[e.person] ?? label(e.person)} · {e.base} x {e.multiplier}</b>
+                    <span>+{e.points}</span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="board-note">Nothing yet. Points need both confirmations.</p>
+              <p className="board-note">No points yet. A session earns points only after both people confirm it happened.</p>
             )}
+            <h3>Open requests</h3>
+            <ul className="board-list">
+              {hub.needs().length === 0 && <li className="board-row tone-muted"><b>None yet</b><span /></li>}
+              {hub.needs().map((n) => {
+                const l = hub.listing(n.id)!;
+                const s = n.id === needId ? state ?? n.state : n.state;
+                return (
+                  <li key={n.id} className={`board-row tone-${s === 'DONE' || s === 'BOOKED' ? 'good' : s === 'OPEN' || s === 'MATCHED' ? 'info' : 'muted'}`}>
+                    <b>{l.handle} · {l.topic} · {l.company} {l.round.toLowerCase()}</b>
+                    <span>{NEED_TEXT[s]}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <h3>Question packs</h3>
+            <ul className="board-list">
+              {PACKS.map((p) => {
+                const who = [
+                  starterShown && hub.starterOf(NEWCOMER) === p.id ? 'Priya (starter)' : '',
+                  mentorPacks.includes(p.id) ? 'Aditya' : '',
+                ].filter(Boolean);
+                return (
+                  <li key={p.id} className={`board-row tone-${who.length ? 'info' : 'muted'}`}>
+                    <b>{p.title} · {p.items.length}</b>
+                    <span>{who.length ? who.join(', ') : 'Locked'}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="board-note">Newcomers get one pack free, Contributors 3, Mentors all. Built only from anonymized interview reports and shared intel, each item labelled with its source.</p>
+            <h3>House rules</h3>
+            <ul className="cm-rules">
+              <li>Base 10 points. Helping a newcomer 3x, someone a level below 2x, a peer 1x.</li>
+              <li>One pair earns points at most twice a week.</li>
+              <li>Saying no never costs points. Newcomer status ends after 3 sessions.</li>
+              <li>Levels: Contributor 30, Mentor 100, Senior mentor 250.</li>
+            </ul>
+            <button
+              className="ghost small"
+              onClick={() => {
+                try {
+                  hub.redeemForReferral(MENTOR);
+                } catch (e) {
+                  if (e instanceof PointsCannotBuyReferralError) setRefusal(e.message);
+                }
+              }}
+            >
+              Trade points for a referral?
+            </button>
+            {refusal && <p className="cm-refusal" role="status">{refusal}</p>}
           </section>
-          <section className="card feed-card">
-            <h3>Agent conversation</h3>
-            <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeCommunity} />
-          </section>
-        </div>
-      </Drawer>
-    </div>
+        </main>
+
+        {error && <div className="toast" role="alert" onClick={() => setError('')}>{error}</div>}
+
+        <Drawer
+          open={drawer}
+          onClose={() => setDrawer(false)}
+          title="Under the hood"
+          subtitle="How the agents handled the help request. Students never see this."
+          badge={<span className={`state-pill cm-${state ?? 'OPEN'}`}>{state ? NEED_TEXT[state] : 'Ready'}</span>}
+        >
+          <JudgeLegend active={lenses} onToggle={(l) => setLenses((ls) => (ls.includes(l) ? ls.filter((x) => x !== l) : [...ls, l]))} />
+          <div className="drawer-body">
+            <section className="card">
+              <h3>Capacity checks · each mentor's private view</h3>
+              <CapacityBoard events={shown} label={label} />
+              <h3>Points</h3>
+              {entries.length ? (
+                <ul className="board-list">
+                  {entries.map((e) => (
+                    <li key={e.session} className="board-row tone-good">
+                      <b>{label(e.person)}: {e.base} x {e.multiplier}</b>
+                      <span>{e.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="board-note">Nothing yet. Points need both confirmations.</p>
+              )}
+            </section>
+            <section className="card feed-card">
+              <h3>Agent conversation</h3>
+              <Inspector events={shown} label={label} lenses={lenses} describeEvent={describeCommunity} />
+            </section>
+          </div>
+        </Drawer>
+      </div>
+    </>
   );
 }
 
@@ -385,70 +403,9 @@ function helpDetails(m: CommunityMessage): Record<string, string> {
   };
 }
 
-function LevelProgress({ name, points }: { name: string; points: number }) {
-  const level = levelOf(points);
-  const next = nextLevel(points);
-  const floor = [0, 30, 100, 250].filter((m) => m <= points).at(-1) ?? 0;
-  const pct = next ? Math.round(((points - floor) / (next.min - floor)) * 100) : 100;
-  return (
-    <div className="lvl">
-      <div className="lvl-head">
-        <b>{name} · {level}</b>
-        <span>{points} pts{next ? ` · ${next.min - points} to ${next.level}` : ''}</span>
-      </div>
-      <div className="lvl-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${name}'s progress to the next level`}>
-        <i style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
 
-function PointsCard({ entry }: { entry: PointEntry }) {
-  return (
-    <div className="points-card">
-      <span className="pts">{entry.capped ? '+0' : `+${entry.points}`} points</span>
-      <small>{entry.capped ? entry.reason : `${entry.base} base x ${entry.multiplier}: ${entry.reason}. Both of you confirmed.`}</small>
-      <LevelProgress name="You" points={STANDING_SEED[MENTOR].points + entry.points} />
-      {entry.levelAfter !== entry.levelBefore && <small>New level: {entry.levelAfter}. You get matching priority, a badge and more question packs. Never a referral.</small>}
-    </div>
-  );
-}
 
-/** Unlocked question packs: a few items each, every one labelled with where it came from. */
-function PacksCard({ ids }: { ids: string[] }) {
-  const packs = ids.map((id) => PACKS.find((p) => p.id === id)!).filter(Boolean);
-  return (
-    <ol className="pack-card">
-      {packs.map((p) => (
-        <li key={p.id}>
-          <span className="q-area">{p.title} · {p.items.length} items</span>
-          {p.items.slice(0, packs.length === 1 ? 3 : 1).map((q) => (
-            <span key={q.sourceId} className="pack-q">
-              <b>{q.text}</b>
-              <small>{q.kind === 'tip' ? 'Tip · ' : ''}{q.source}</small>
-            </span>
-          ))}
-        </li>
-      ))}
-      <li className="pack-foot">Only from anonymized reports and shared intel. Nothing invented, no names.</li>
-    </ol>
-  );
-}
 
-function RulesCard({ results }: { results: RuleCheck[] }) {
-  return (
-    <ul className="fit-card">
-      {results.map((r) => (
-        <li key={r.id} className={r.pass ? 'pass' : 'fail'}>
-          <span aria-hidden>{r.pass ? '✓' : '✗'}</span>
-          <span>{r.label}</span>
-          <small>{r.observed}</small>
-        </li>
-      ))}
-      <li className="fit-foot">Your rules stay with your agent. The newcomer never sees them.</li>
-    </ul>
-  );
-}
 
 function CapacityBoard({ events, label }: { events: AgentEvent[]; label: (id: string) => string }) {
   const checks = events.filter((e) => e.payload.kind === 'capacity');

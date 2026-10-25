@@ -157,7 +157,7 @@ Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deploy
 |---|---|---|
 | A | Help requests, points ledger, levels, Community tab, live Discord ask, drawer, tests, 3 sabotages | done |
 | B | Question packs unlocked by level | done |
-| C | Project collaboration board (stretch) | next (A and B were done by 10:00 AM) |
+| C | Project collaboration board (stretch) | done (A and B were done by 10:00 AM) |
 
 Phase A, as built (`src/features/community/`, `tests/features/community/`, `tests/live/help.test.ts`):
 - **Points are deterministic** (`points.ts`): base 10 x multiplier (helped a newcomer 3x, a level below 2x, a peer 1x),
@@ -194,6 +194,21 @@ Phase B, as built (`src/features/community/packs.ts`, `tests/features/community/
   order), Mentor and Senior mentor all 4. Aditya's level-up card on his phone lists his 3.
 - Tests: verbatim sourcing, unlock rules, no identity (no author fields; no name, email or handle from any seed),
   and the hub wiring. 531 tests, 15/15 sabotages.
+
+Phase C, as built (`src/features/community/projects.ts`, `ProjectBoardView.tsx`, `tests/features/community/projects.test.ts`):
+- **Community tab has two views** ("Help requests" | "Project board"); both stay mounted, global Reset returns to
+  Help requests with everything cleared.
+- **Flow:** Sam (Mentor level) posts "Campus ride-share matcher" (TypeScript, React, Postgres; 5 h/week cap; frontend
+  and backend). Three junior agents apply with anonymous profiles. Sam's agent shortlists by his PRIVATE rules
+  (1+ stack skill, within the hours cap, an open role; team of at most 2); the decisions go only to Sam's agent.
+  Riya (Go, 8 h) is filtered; Priya and Sumit are shortlisted. Sam picks (his yes); Priya joins (hers); names unlock
+  through the same `IdentityVault` + consent gate.
+- **Hours cap is a hard limit** per junior per week (`HoursCapError`). Hours are credited, including after leaving.
+- **Points:** each week both confirm registers a session in the same `PointsLedger` as help requests (senior =
+  helper), so the multiplier, pair cap and both-confirm rule apply unchanged. Priya is a newcomer, so Sam earns 30.
+- **Leaving** never changes the junior's points; their credit stays, marked "left".
+- Tests: shortlist + hours cap, anonymity, consent (the pick alone unlocks nothing), decline costs nothing, weekly
+  cap, points only after both confirm, leaving keeps points and credit, team-size cap. 537 tests, 15/15 sabotages.
 
 ### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
 | Phase | Scope | Status |

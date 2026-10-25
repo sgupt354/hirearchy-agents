@@ -9,6 +9,8 @@ const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 export function describeCommunity(e: AgentEvent, ctx: FeedContext): EventView {
   const p = e.payload;
   const who = ctx.label(e.from);
+  const project = describeProject(e, who);
+  if (project) return project;
   switch (e.type) {
     case 'TRIGGER':
       if (p.kind === 'online') return { title: 'A mentor came online', icon: '📡', tone: 'info', body: `${who}'s agent can take help requests now. Open requests get re-matched.` };
@@ -54,4 +56,37 @@ export function describeCommunity(e: AgentEvent, ctx: FeedContext): EventView {
       break;
   }
   return { title: e.type, icon: '•', tone: 'info', body: prettify(e.human_readable) };
+}
+
+/** Project board rows (Phase C), or null for anything else. */
+function describeProject(e: AgentEvent, who: string): EventView | null {
+  const p = e.payload;
+  switch (p.kind) {
+    case 'project': {
+      const x = p.project as { title: string; stack: string[]; hoursPerWeek: number; roles: string[] };
+      return { title: 'Project posted', icon: '📋', tone: 'info', body: `${who} posted "${x.title}": ${x.stack.join(', ')}, up to ${x.hoursPerWeek} h/week, roles ${x.roles.join(' and ').toLowerCase()}. The shortlist rules stay private.` };
+    }
+    case 'application': {
+      const a = p.application as { handle: string; skills: string[]; hoursPerWeek: number; role: string };
+      return { title: 'Anonymous application', icon: '↗', tone: 'info', body: `${a.handle}: ${a.skills.join(', ')}, ${a.hoursPerWeek} h/week, ${a.role.toLowerCase()}. No name.` };
+    }
+    case 'shortlist': {
+      const checks = p.checks as { label: string; pass: boolean; observed: string }[];
+      const failed = checks.filter((c) => !c.pass).map((c) => `${lowerFirst(c.label)} (${c.observed})`);
+      return e.type === 'ACCEPT'
+        ? { title: 'Shortlisted', icon: '✓', tone: 'good', body: `${who}'s agent shortlisted ${p.handle} by its human's private rules.` }
+        : { title: 'Not shortlisted', icon: '✗', tone: 'warn', body: `${who}'s agent passed on ${p.handle}: ${failed.join('; ')}. Only the senior sees why.` };
+    }
+    case 'pick':
+      return { title: 'Senior picked an applicant', icon: '✓', tone: 'good', body: `${who} picked ${p.handle}. That is the senior's yes; names still wait for the junior's.` };
+    case 'join':
+      if (e.type === 'ESCALATE') return { title: 'Needs a human', icon: '⏸️', tone: 'human', body: `${who}'s agent can't join a project on its own.` };
+      if (e.type === 'DECLINE') return { title: 'Said no', icon: '✗', tone: 'muted', body: `${who} said no. Nothing shared, nothing lost.` };
+      return { title: 'Said yes to joining', icon: '✓', tone: 'good', body: `${who} said yes, and to sharing names with the senior.` };
+    case 'hours':
+      return { title: `Logged ${p.hours} h`, icon: '⏱', tone: 'info', body: `${who} logged ${p.hours} hours for ${p.week}. The weekly cap is a hard limit.` };
+    case 'left':
+      return { title: 'Left the project', icon: '∅', tone: 'muted', body: `${who} left. Their hours stay credited and they lose no points.` };
+  }
+  return null;
 }

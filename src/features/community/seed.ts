@@ -33,6 +33,8 @@ export const STANDING_SEED: Record<string, Standing> = {
   a6: { points: 40, completedSessions: 6 },
   a7: { points: 120, completedSessions: 9 },
   a9: { points: 0, completedSessions: 0 },
+  a2: { points: 10, completedSessions: 5 },
+  a8: { points: 0, completedSessions: 1 },
 };
 
 export interface NeedInput {
@@ -74,7 +76,53 @@ const SEED: readonly AgentProfile[] = [
   person('a1', 'Applicant #1', 'Aditya Raman', 'aditya.r@example.edu', 'adityar#0001', [{ start: '19:30', end: '21:30' }], ['DSA', 'Behavioral']),
   person('a6', 'Applicant #6', 'Leo Martins', 'leo.m@example.edu', 'leom#0606', [{ start: '17:00', end: '19:00' }], ['System Design']),
   person('a7', 'Applicant #7', 'Sam Okafor', 'sam.o@example.edu', 'samo#0707', [{ start: '20:00', end: '22:00' }], ['DSA']),
+  // Project board juniors (Phase C).
+  person('a2', 'Applicant #2', 'Sumit Kulkarni', 'sumit.k@example.edu', 'sumitk#0202', [{ start: '19:00', end: '21:00' }], ['Behavioral']),
+  person('a8', 'Applicant #8', 'Riya Kapoor', 'riya.k@example.edu', 'riyak#0808', [{ start: '18:00', end: '20:00' }], []),
 ];
+
+// ---- project board (Phase C) ---------------------------------------------------------------------
+
+export const SENIOR = 'a7';
+export const JUNIORS = ['a9', 'a2', 'a8'];
+
+export interface ProjectInput {
+  title: string;
+  stack: string[];
+  /** Hard cap on each junior's hours per week. */
+  hoursPerWeek: number;
+  scope: string;
+  roles: string[];
+}
+
+export const DEMO_PROJECT: ProjectInput = {
+  title: 'Campus ride-share matcher',
+  stack: ['TypeScript', 'React', 'Postgres'],
+  hoursPerWeek: 5,
+  scope: 'Match students heading the same way after evening classes. Four-week build, one demo at the end.',
+  roles: ['Frontend', 'Backend'],
+};
+
+/** The senior's PRIVATE shortlist rules. Only their own agent reads them. */
+export interface SeniorRules {
+  minStackOverlap: number;
+  maxJuniors: number;
+}
+
+export const SENIOR_RULES: Record<string, SeniorRules> = { a7: { minStackOverlap: 1, maxJuniors: 2 } };
+
+/** What each junior's agent knows about its human (skills, hours they can give, role). Shared only anonymously. */
+export interface JuniorProfile {
+  skills: string[];
+  hoursPerWeek: number;
+  role: string;
+}
+
+export const JUNIOR_PROFILES: Record<string, JuniorProfile> = {
+  a9: { skills: ['React', 'Python'], hoursPerWeek: 4, role: 'Frontend' },
+  a2: { skills: ['TypeScript', 'Postgres'], hoursPerWeek: 5, role: 'Backend' },
+  a8: { skills: ['Go'], hoursPerWeek: 8, role: 'Backend' },
+};
 
 export function createCommunitySeed(): AgentProfile[] {
   return structuredClone(SEED) as AgentProfile[];

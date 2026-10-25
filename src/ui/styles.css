@@ -66,6 +66,7 @@ input, textarea { font: inherit; color: var(--text); }
 .tab-panel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .tab-panel[hidden] { display: none; }
 .app { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-bottom: 18px; }
+.app[hidden] { display: none; }
 .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; flex: none; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--ink); }
 .brand { text-decoration: none; }
