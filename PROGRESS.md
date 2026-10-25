@@ -216,6 +216,13 @@ say plainly that Huntr has no public integration for students. 4 new tests.
   `tailor()`, caught by 3 tests). 6 new tests (packet gates, private by default, subset of the profile, outreach's only
   outbound call is the optional Claude rewording).
 
+**Port from jobapp: evidence-backed visa + graduation screening.** `src/features/apply/jobs/screen.ts` ports jobapp's
+`app/screen.py` classifiers: F-1 (compatible / needs verification / incompatible; an explicit "no" wins, silence is
+never assumed friendly, event or relocation "sponsor" doesn't count) and graduation window (fits / not excluded /
+excludes / unclear), each with the exact sentence as evidence. The grad year comes from the student's own Apply
+profile (the demo profile's May 2027), not from any personal file. Shown as chips plus the quoted sentence on every
+live posting and in Apply's requirements box. `match.ts` is unchanged. 11 new tests.
+
 **Phase 7 (checks + docs):** README: new tab, an "Apply suite: what's live and what's demo" table, the new functions
 and env vars, 12 sabotages, demo steps (prep circle stays the hero). `.env.example` lists `APOLLO_API_KEY`,
 `OUTREACH_MODEL`, `JOBS_SEARCH` (server-side). Emoji now stripped at display in every phone card (Mock and Referral

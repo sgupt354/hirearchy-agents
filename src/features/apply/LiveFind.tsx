@@ -5,6 +5,7 @@ import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
 import { searchLive, type LiveOutcome } from './client';
 import { ageText, type Level, type ScoredPosting } from './jobs/match';
+import { F1_LABEL, GRAD_LABEL, classifyF1, classifyGradWindow, gradYearOf } from './jobs/screen';
 import { useApplyStore } from './store';
 
 const LEVELS: [Level, string][] = [['intern', 'Internship'], ['newgrad', 'New grad'], ['both', 'Both']];
@@ -88,6 +89,7 @@ export function LiveFind({ resetKey }: TabProps) {
   };
 
   const now = Date.now();
+  const gradYear = gradYearOf(store.profile().education[0]?.dates);
 
   return (
     <div className="app started">
@@ -148,6 +150,9 @@ export function LiveFind({ resetKey }: TabProps) {
           {outcome && outcome.results.length === 0 && <p className="feed-empty">No matches. Try a broader role or level.</p>}
           {outcome?.results.map((p) => {
             const tracked = store.isTracked(p.id);
+            const f1 = classifyF1(p.description);
+            const grad = gradYear ? classifyGradWindow(p.description, gradYear, p.reasons.includes('Entry level')) : null;
+            const quote = f1.status === 'incompatible' ? f1.evidence : grad?.status === 'excluded' ? grad.evidence : f1.evidence ?? grad?.evidence;
             return (
               <article key={p.id} className="job-row">
                 <div className="job-head">
@@ -158,7 +163,12 @@ export function LiveFind({ resetKey }: TabProps) {
                   {p.reasons.slice(0, 3).map((r) => <span key={r} className="chip">{r}</span>)}
                   {outcome.source === 'demo' && <span className="chip withheld">Demo data</span>}
                 </div>
-                {p.visaFlag && <p className="job-warn"><Icon name="alert" /> Mentions citizenship, clearance or no sponsorship</p>}
+                <div className="job-chips">
+                  <span className={`chip ${f1.status === 'compatible' ? 'good' : f1.status === 'incompatible' ? 'bad' : 'withheld'}`}>{F1_LABEL[f1.status]}</span>
+                  {grad && gradYear && <span className={`chip ${grad.status === 'fits' || grad.status === 'not_excluded' ? 'good' : grad.status === 'excluded' ? 'bad' : 'withheld'}`}>{GRAD_LABEL(grad.status, gradYear)}</span>}
+                </div>
+                {quote && <p className="job-quote">“{quote}”</p>}
+                {p.visaFlag && f1.status !== 'incompatible' && <p className="job-warn"><Icon name="alert" /> Mentions citizenship, clearance or no sponsorship</p>}
                 <div className="job-actions">
                   {p.url && (
                     <a className="ghost small" href={p.url} target="_blank" rel="noreferrer noopener">

@@ -43,6 +43,7 @@ reports). The Referral tab reads that record, so what you do in the other tabs r
 | Feature | Live when | Otherwise | Notes |
 |---|---|---|---|
 | Live job search (Find → Live search) | Always on Vercel (public job-board APIs need no key) | Seeded postings, labelled "Demo data" | Official Greenhouse, Lever, Ashby and SmartRecruiters JSON endpoints only; 443 boards from Job Sniper, up to 60 per search |
+| Visa and graduation screening | Always (on each posting's text) | n/a | F-1 friendly / needs verification / not eligible and the student's graduation window, each quoting the exact sentence; silence is never assumed friendly |
 | Tailored resume (Apply) | Always (runs in the browser) | n/a | Uses only the student's own bullets and skills; lists requirements they don't meet. Starts on a labelled demo profile; paste or type your own |
 | LaTeX / Overleaf / PDF | Always | n/a | `.tex` download, Overleaf's documented "open in Overleaf" form, print to PDF; file name "Resume - <Company> - <Role>" |
 | Intro email drafts | Always (template) | n/a | `ANTHROPIC_API_KEY` adds Claude rewording that may not add facts. Copy / Gmail / email app only: **we never send email** |

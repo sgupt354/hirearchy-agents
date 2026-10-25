@@ -582,3 +582,6 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
 .step { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
 .step b { font-size: 13px; color: var(--text); }
+.chip.good { color: var(--good); border-color: color-mix(in oklab, var(--good) 35%, transparent); background: var(--good-bg); }
+.chip.bad { color: var(--warn); border-color: color-mix(in oklab, var(--warn-dot) 40%, transparent); background: var(--warn-bg); }
+.job-quote { margin: 0; font-size: 12px; font-style: italic; color: var(--body); border-left: 2px solid var(--border-strong); padding-left: 8px; }

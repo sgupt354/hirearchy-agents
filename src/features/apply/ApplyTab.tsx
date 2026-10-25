@@ -4,6 +4,7 @@ import { ChatBubble, Drawer, PhoneFrame, QuickReplies, clock } from '../../ui/ki
 import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
 import { findContacts, type ContactsOutcome } from './outreach/contacts';
+import { F1_LABEL, GRAD_LABEL, classifyF1, classifyGradWindow, gradYearOf } from './jobs/screen';
 import { DEMO_POSTINGS } from './postings';
 import { OVERLEAF_URL, overleafFields, renderLatex, resumeFileName } from './resume/latex';
 import { tailor } from './resume/tailor';
@@ -209,6 +210,18 @@ export function ApplyTab({ resetKey }: TabProps) {
               <div className="unmet">
                 <b><Icon name="alert" /> Requirements you don't meet</b>
                 {r.unmet.length ? <p>{r.unmet.join(' · ')}</p> : <p>None found in this posting.</p>}
+                {(() => {
+                  const f1 = classifyF1(posting.description);
+                  const year = gradYearOf(profile.education[0]?.dates);
+                  const grad = year ? classifyGradWindow(posting.description, year, posting.isIntern) : null;
+                  const quote = f1.evidence ?? grad?.evidence;
+                  return (
+                    <>
+                      <p>{F1_LABEL[f1.status]}{grad && year ? ` · ${GRAD_LABEL(grad.status, year)}` : ''}</p>
+                      {quote && <p className="job-quote">“{quote}”</p>}
+                    </>
+                  );
+                })()}
               </div>
             </>
           ) : (
