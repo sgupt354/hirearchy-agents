@@ -15,7 +15,7 @@ Key idea: "Your prep circle becomes your proof of work."
 | D | Trust ratings + evidence file (`src/features/trust/`) | ✅ done |
 | E | Referral Bridge (`src/features/referral/`) | next |
 | F | Polish, sabotage additions, browser checks, README | todo |
-| G | Merge `aditya/journey` (only on "merge Aditya") | waiting |
+| G | Merge `aditya/journey` (done early, at `da49902`) | ✅ done |
 
 ### Contract for Aditya (branch `aditya/journey`: Find, Pipeline, Intel)
 - Each tab is a React component taking `TabProps` from `src/features/types.ts`:
@@ -82,6 +82,33 @@ Key idea: "Your prep circle becomes your proof of work."
   and 1280×800: full swap, decline → backup, solo fallback, drawer with lens; each phone shows only its owner's
   scores; no "->", 24-hour times, raw ids or scores in the feed; no page scroll; global Reset restores both the
   prep and mock tabs exactly (pressed from a third tab, both mid-run); no console errors. Prep circle unchanged.
+
+### Phase G (early) — merged `aditya/journey` at `da49902`: done
+- **Review:** 6 commits by Aditya (one is a sync merge of our Phase 0). Net change: 16 new files, all inside
+  `src/features/{find,pipeline,intel}/` and `tests/features/{find,pipeline,intel}/`; nothing outside, no shared file
+  touched. Secret scan over every commit's patch: none (no keys, tokens, webhooks, env or network use; the `SECRETS`
+  in `tests/features/intel/sabotage.test.ts` are fake PII like `maya@example.com` / 555 numbers for the anonymizer).
+- **Registered** `FindTab`, `PipelineTab`, `IntelTab` in `src/app/tabs.tsx`. Visible tabs: Find · Pipeline · Prep
+  circle · Mock interview · Intel; Referral stays hidden until Phase E. Default tab: Prep circle.
+- **Intel → evidence file:** `getIntelContributionCount` (in `src/features/intel/logic.ts`, keyed by prep agent id
+  `a1…a8`) is now the evidence file's source for "intel reports shared" (person `p4` ↔ `a4`). The old seeded stub
+  counts were removed from `trust/seed.ts`; a new test checks every student's evidence count equals his function.
+- **Two of his contract tests updated (with your OK):** `tests/features/{find,pipeline}/contract.test.ts` asserted his
+  tabs were *not* registered and still used the old `soon(` placeholder. They now assert the registry imports and
+  registers them, and Find's still checks that his tab never imports `app/tabs`. Nothing else in his folders changed.
+- **CSS fix (ours):** his side panels use `.sub` and `.tag`, which our stylesheet styled globally for the hero subline
+  (collapsed once a demo starts) and the feed's type tag. That hid his report tips and overlapped labels. Scoped those
+  rules to `.hero .sub` and `.row-head .tag`, and added plain `.card .sub` / `.card .tag` styles.
+- **Verified:** typecheck, 386/386 tests (his 205 + ours), test:sabotage 6/6, build, demo:run. Browser at 1440×900
+  and 1280×800: every visible tab opened and driven through its first action, no page scroll, no "->" or 24-hour
+  times, no console errors; global Reset from the last tab gives a page identical to a fresh load across all five
+  tabs (clock times masked).
+
+For Aditya (not changed; his files):
+- **Jordan's intel count:** his `CONTRIBUTION_COUNTS` gives `a4: 0`, but the Phase E referral story has Jordan with
+  1 intel report. With his data as the source, Jordan's evidence now shows 0. If the story should hold, set `a4: 1`.
+- **Pipeline headline numbers** ("23", "6") sit in an `h3`, which our cards style as small labels, so they render
+  small. A dedicated class for the big number would fix it.
 
 ### Phase D — Trust ratings + evidence file: done (`src/features/trust/`, `tests/features/trust/`)
 - **Ratings:** after a prep circle or a peer mock, each member privately rates the others: showed up (yes/no) and

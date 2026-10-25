@@ -1,5 +1,8 @@
 import type { ComponentType } from 'react';
+import { FindTab } from '../features/find';
+import { IntelTab } from '../features/intel';
 import { MockTab } from '../features/mock/MockTab';
+import { PipelineTab } from '../features/pipeline';
 import { PrepCircleTab } from '../features/prep/PrepCircleTab';
 import type { TabProps } from '../features/types';
 
@@ -14,15 +17,15 @@ export interface TabDef {
 }
 
 /**
- * The journey, in order. Find, Pipeline and Intel arrive with Aditya's branch (e.g. `FindTab` from
- * '../features/find'), Referral in Phase E: set `Component` and the tab appears in the nav automatically.
+ * The journey, in order. Find, Pipeline and Intel are Aditya's (merged from aditya/journey); Referral arrives
+ * in Phase E. A tab with `Component: null` stays hidden; setting it makes the tab appear automatically.
  */
 export const TABS: TabDef[] = [
-  { id: 'find', label: 'Find', icon: '🔎', Component: null },
-  { id: 'pipeline', label: 'Pipeline', icon: '📊', Component: null },
+  { id: 'find', label: 'Find', icon: '🔎', Component: FindTab },
+  { id: 'pipeline', label: 'Pipeline', icon: '📊', Component: PipelineTab },
   { id: 'prep', label: 'Prep circle', icon: '👥', Component: PrepCircleTab },
   { id: 'mock', label: 'Mock interview', icon: '🎤', Component: MockTab },
-  { id: 'intel', label: 'Intel', icon: '💡', Component: null },
+  { id: 'intel', label: 'Intel', icon: '💡', Component: IntelTab },
   { id: 'referral', label: 'Referral', icon: '🤝', Component: null },
 ];
 

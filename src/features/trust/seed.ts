@@ -2,7 +2,7 @@ import type { Skill } from '../../engine/types';
 import type { Rubric } from '../mock/scores';
 import type { Rating } from './ledger';
 
-// History from before the demo (starting conditions). Everything is computed from these raw entries;
+// History from before the demo (starting conditions). Intel contributions come from the Intel feature. Everything is computed from these raw entries;
 // no score or rating is stored pre-aggregated.
 
 export interface PastSession {
@@ -20,22 +20,20 @@ export interface PersonSeed {
   targetRoles: string[];
   /** PRIVATE until stage 2 of a staged disclosure. */
   projectLinks: string[];
-  /** Interview-intel reports contributed. A stub count until the Intel feature merges. */
-  intelReports: number;
 }
 
 const yes = (helpful: number): Rating => ({ showedUp: true, helpful });
 const noShow: Rating = { showedUp: false, helpful: 1 };
 
 export const PEOPLE_SEED: Record<string, PersonSeed> = {
-  p1: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/aditya-r/route-planner'], intelReports: 0 },
-  p2: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [], intelReports: 0 },
-  p3: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/mayao/raft-lite'], intelReports: 2 },
-  p4: { targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'], projectLinks: ['github.example/jellis/sharded-kv', 'github.example/jellis/rate-limiter'], intelReports: 1 },
-  p5: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [], intelReports: 0 },
-  p6: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [], intelReports: 0 },
-  p7: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [], intelReports: 0 },
-  p8: { targetRoles: ['Google SWE'], projectLinks: [], intelReports: 0 },
+  p1: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/aditya-r/route-planner'] },
+  p2: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
+  p3: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/mayao/raft-lite'] },
+  p4: { targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'], projectLinks: ['github.example/jellis/sharded-kv', 'github.example/jellis/rate-limiter'] },
+  p5: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
+  p6: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
+  p7: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
+  p8: { targetRoles: ['Google SWE'], projectLinks: [] },
 };
 
 /** Past sessions. Raters q1…q9 are earlier partners who aren't in this demo's network. */

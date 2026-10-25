@@ -77,10 +77,10 @@ input, textarea { font: inherit; color: var(--text); }
   transition: font-size 300ms var(--ease);
 }
 .hero h1 .accent { background: linear-gradient(90deg, var(--accent-2), #8f7bff); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.sub { margin: 0; color: var(--muted); font-size: 15.5px; max-height: 40px; overflow: hidden; transition: all 300ms var(--ease); }
+.hero .sub { margin: 0; color: var(--muted); font-size: 15.5px; max-height: 40px; overflow: hidden; transition: all 300ms var(--ease); }
 .started .hero { gap: 9px; padding-bottom: 10px; }
 .started .hero h1 { font-size: clamp(20px, 1.8vw, 26px); }
-.started .sub { max-height: 0; opacity: 0; margin-top: -9px; }
+.started .hero .sub { max-height: 0; opacity: 0; margin-top: -9px; }
 .cta-row { display: flex; gap: 12px; align-items: center; justify-content: center; min-height: 48px; flex-wrap: wrap; }
 .cta {
   padding: 13px 24px; border-radius: 999px; font-size: 16px; font-weight: 650; color: white;
@@ -271,7 +271,7 @@ input, textarea { font: inherit; color: var(--text); }
 .row-main { min-width: 0; flex: 1; }
 .row-head { display: flex; align-items: baseline; gap: 8px; }
 .row-head b { font-size: 14px; font-weight: 650; }
-.tag { font-size: 9.5px; letter-spacing: 0.06em; color: var(--faint); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.row-head .tag { font-size: 9.5px; letter-spacing: 0.06em; color: var(--faint); border: 1px solid var(--border); border-radius: 5px; padding: 0 5px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 .route { margin-left: auto; font-size: 11.5px; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
 .row p { margin: 3px 0 0; color: #c3cad6; font-size: 13px; line-height: 1.4; }
 .disclosure { margin-top: 6px; font-size: 12px; color: var(--muted); padding: 2px 8px 2px 0; display: inline-flex; gap: 6px; align-items: center; transition: color 200ms; }
@@ -408,3 +408,7 @@ input, textarea { font: inherit; color: var(--text); }
 .board-row b { display: flex; align-items: baseline; gap: 8px; }
 .board-row .rel { font-weight: 500; font-size: 11.5px; color: var(--faint); }
 .board-note { margin: 0; font-size: 12px; color: var(--faint); line-height: 1.45; }
+
+/* Plain text inside feature side panels (cards): subtitle lines and small meta labels. */
+.card .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
+.card .tag { display: block; margin-top: 8px; font-size: 11.5px; color: var(--faint); }

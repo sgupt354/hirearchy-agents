@@ -5,6 +5,7 @@ import { TrustLedger, MIN_RATINGS } from '../../../src/features/trust/ledger';
 import { discloseEvidence, mockOverall } from '../../../src/features/trust/evidence';
 import { EvidenceLockedError, TrustNetwork } from '../../../src/features/trust/network';
 import { personOf } from '../../../src/features/trust/people';
+import { getIntelContributionCount } from '../../../src/features/intel/logic';
 
 const yes = (helpful: number) => ({ showedUp: true, helpful });
 
@@ -102,11 +103,19 @@ describe('trust: reliability affects match order', () => {
   });
 });
 
+describe('trust: intel contributions come from the Intel feature', () => {
+  it('evidence intel count = getIntelContributionCount for the same student', () => {
+    const t = new TrustNetwork();
+    for (const n of [1, 2, 3, 4, 5, 6, 7, 8]) expect(t.evidence(`p${n}`, `p${n}`).intelReports).toBe(getIntelContributionCount(`a${n}`));
+    expect(t.disclose('p3', 1).intelReports).toBe(getIntelContributionCount('a3'));
+  });
+});
+
 describe('trust: evidence file and staged disclosure', () => {
   it("Jordan's seeded proof of work", () => {
     const t = new TrustNetwork();
     const f = t.evidence('p4', 'p4');
-    expect(f).toMatchObject({ sessionsAttended: 3, averageRating: 4.8, ratingCount: 5, mockCount: 1, intelReports: 1, targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'] });
+    expect(f).toMatchObject({ sessionsAttended: 3, averageRating: 4.8, ratingCount: 5, mockCount: 1, targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'] });
     expect(new Set(f.skillsTaught)).toEqual(new Set(['System Design', 'DSA']));
     expect(mockOverall(f.mockAverages)).toBe(4.3);
   });

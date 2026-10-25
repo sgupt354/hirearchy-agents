@@ -1,0 +1,1 @@
+export { IntelTab } from './Tab';

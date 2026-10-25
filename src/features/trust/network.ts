@@ -2,7 +2,11 @@ import type { Skill } from '../../engine/types';
 import { RUBRIC, type Rubric } from '../mock/scores';
 import { discloseEvidence, type EvidenceFile, type EvidenceStage1, type EvidenceStage2 } from './evidence';
 import { TrustLedger, round1, type Rating, type TrustSummary } from './ledger';
+import { getIntelContributionCount } from '../intel/logic';
 import { PAST_SESSIONS, PEOPLE_SEED, type PersonSeed } from './seed';
+
+/** Intel reports contributed, from the Intel feature (keyed by prep agent id: person p4 ↔ a4). */
+const intelFromFeature = (person: string) => getIntelContributionCount(`a${person.replace(/^\D+/, '')}`);
 
 export class EvidenceLockedError extends Error {}
 
@@ -24,7 +28,7 @@ export class TrustNetwork {
   /** "person|session" pairs where someone marked the person as a no-show. */
   #noShows = new Set<string>();
   #people: Record<string, PersonSeed> = {};
-  #intelCount: (person: string) => number = (p) => this.#people[p]?.intelReports ?? 0;
+  #intelCount: (person: string) => number = intelFromFeature;
   #listeners = new Set<() => void>();
   #version = 0;
   #resetKey: number | null = null;
@@ -74,7 +78,7 @@ export class TrustNetwork {
     this.#changed();
   }
 
-  /** Hook for the Intel feature (Aditya's branch) to supply real contribution counts at merge. */
+  /** Override the intel source (tests); by default it's the Intel feature's getIntelContributionCount. */
   setIntelCounter(fn: (person: string) => number): void {
     this.#intelCount = fn;
     this.#changed();
@@ -124,7 +128,7 @@ export class TrustNetwork {
       for (const { key } of RUBRIC) mockAverages[key] = round1(scores.reduce((a, r) => a + r[key], 0) / scores.length);
     }
     const summary = this.#ledger.summary(person);
-    const seed = this.#people[person] ?? { targetRoles: [], projectLinks: [], intelReports: 0 };
+    const seed = this.#people[person] ?? { targetRoles: [], projectLinks: [] };
     return {
       owner: person,
       sessionsAttended: attended.length,
@@ -149,7 +153,7 @@ export class TrustNetwork {
     this.#mockScores = new Map();
     this.#noShows = new Set();
     this.#people = structuredClone(PEOPLE_SEED);
-    this.#intelCount = (p) => this.#people[p]?.intelReports ?? 0;
+    this.#intelCount = intelFromFeature;
     for (const s of PAST_SESSIONS) {
       this.#sessions.set(s.id, { id: s.id, kind: s.kind, members: [...s.members], taught: structuredClone(s.taught) });
       for (const r of s.ratings) this.#ledger.add(r.rater, r.subject, s.id, r.rating);
