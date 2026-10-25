@@ -1,8 +1,9 @@
 import { useSyncExternalStore } from 'react';
 import type { ScoredPosting } from './jobs/match';
+import { DEMO_PROFILE, type Profile } from './resume/profile';
 
-// Session-only state for the apply suite: postings the student tracked from live search. Nothing is persisted;
-// global Reset clears it. Later phases add the profile, contacts and drafts here.
+// Session-only state for the apply suite: tracked postings, the student's profile and the posting being applied to.
+// Nothing is persisted; global Reset clears it.
 
 export interface TrackedPosting extends ScoredPosting {
   /** "live" from the public boards, or "demo" when live search was unavailable. */
@@ -12,6 +13,9 @@ export interface TrackedPosting extends ScoredPosting {
 
 class ApplyStore {
   #tracked: TrackedPosting[] = [];
+  #profile: Profile = structuredClone(DEMO_PROFILE);
+  #profileIsDemo = true;
+  #selected: string | null = null;
   #version = 0;
   #listeners = new Set<() => void>();
   #resetKey = 0;
@@ -27,6 +31,31 @@ class ApplyStore {
   track(p: ScoredPosting, source: 'live' | 'demo', at: string): void {
     if (this.isTracked(p.id)) return;
     this.#tracked = [...this.#tracked, { ...p, source, trackedAt: at }];
+    this.#selected = p.id;
+    this.#emit();
+  }
+
+  /** The student's profile (starts as the labelled demo profile). */
+  profile(): Profile {
+    return this.#profile;
+  }
+
+  profileIsDemo(): boolean {
+    return this.#profileIsDemo;
+  }
+
+  setProfile(p: Profile, demo = false): void {
+    this.#profile = structuredClone(p);
+    this.#profileIsDemo = demo;
+    this.#emit();
+  }
+
+  selected(): string | null {
+    return this.#selected;
+  }
+
+  select(id: string | null): void {
+    this.#selected = id;
     this.#emit();
   }
 
@@ -40,6 +69,9 @@ class ApplyStore {
     if (resetKey === this.#resetKey) return;
     this.#resetKey = resetKey;
     this.#tracked = [];
+    this.#profile = structuredClone(DEMO_PROFILE);
+    this.#profileIsDemo = true;
+    this.#selected = null;
     this.#emit();
   }
 

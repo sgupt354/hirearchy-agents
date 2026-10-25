@@ -154,8 +154,8 @@ Phase D decisions:
 |---|---|---|
 | 0 | Audit + research (AUDIT.md); landing copy without hackathon / track mentions | done |
 | 1 | Real Job Sniper: live board search behind a toggle | done |
-| 2 | Resume builder + LaTeX / Overleaf / PDF | next |
-| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | todo |
+| 2 | Resume builder + LaTeX / Overleaf / PDF | done |
+| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | next |
 | 4 | Apollo contact lookup (official API, demo data without key) | todo |
 | 5 | Huntr: honest export (no public API for students) | todo |
 | 6 | Agent tie-in + 2 new sabotages | todo |
@@ -170,6 +170,16 @@ on, it shows real postings with Apply links and Track. Any failure falls back to
 "Demo data". Global Reset turns live search off again. 21 new tests (fixtures for every board shape, filters,
 scoring, dedupe, per-board timeout, overall budget, cache, off switch). Note: this build container can't reach the
 boards, so the live path was checked with a recorded response; it runs for real on Vercel.
+
+**Phase 2 (Apply tab, resume):** new **Apply** tab after Find (iPhone + side card). Profile = structured entries the
+student types or pastes (deterministic parser, then editable); starts as a labelled demo profile. `tailor()` picks and
+reorders the student's own bullets and skills by match to the chosen posting (tracked live postings, else three labelled
+demo postings), keeps experience in the student's order, trims least-relevant bullets to a one-page budget, and lists
+"Requirements you don't meet" (missing skills, degree level, years, clearance). Exports: `.tex` download (every special
+character escaped), Open in Overleaf (documented form POST, `encoded_snip`), Save as PDF (print view; the default file
+name is "Resume - <Company> - <Role>"). 14 new tests: escaping of `& % $ # _ { } ~ ^ \`, brace balance, one-page guard,
+output text is a subset of the profile, unmet detection, parser, file names, Overleaf fields. The tab registry test now
+expects the Apply tab (the one existing assertion changed). Optional LLM parsing was not added; parsing is deterministic.
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:

@@ -1,4 +1,5 @@
 import type { ComponentType } from 'react';
+import { ApplyTab } from '../features/apply/ApplyTab';
 import { LiveFind } from '../features/apply/LiveFind';
 import { FindTab } from '../features/find';
 import { IntelTab } from '../features/intel';
@@ -8,7 +9,7 @@ import { PrepCircleTab } from '../features/prep/PrepCircleTab';
 import { ReferralTab } from '../features/referral/ReferralTab';
 import type { TabProps } from '../features/types';
 
-export type TabId = 'find' | 'pipeline' | 'prep' | 'mock' | 'intel' | 'referral';
+export type TabId = 'find' | 'apply' | 'pipeline' | 'prep' | 'mock' | 'intel' | 'referral';
 
 export interface TabDef {
   id: TabId;
@@ -26,6 +27,7 @@ export interface TabDef {
  */
 export const TABS: TabDef[] = [
   { id: 'find', label: 'Find', icon: 'search', Component: FindTab, Live: LiveFind },
+  { id: 'apply', label: 'Apply', icon: 'file', Component: ApplyTab },
   { id: 'pipeline', label: 'Pipeline', icon: 'chart', Component: PipelineTab },
   { id: 'prep', label: 'Prep circle', icon: 'users', Component: PrepCircleTab },
   { id: 'mock', label: 'Mock interview', icon: 'mic', Component: MockTab },
