@@ -175,7 +175,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     act(() => {});
   };
 
-  // Live Discord mode (?live=1): Aditya answers his prompts in Discord; the simulated phone still works.
+  // Live Discord mode (?live=1): Aditya answers their prompts in Discord; the simulated phone still works.
   const liveRequested = useMemo(() => isLiveRequested(), []);
   const adityaLast = inbox[VIEWER].at(-1);
   const live = useLiveDiscord({

@@ -1,9 +1,9 @@
 # Live Discord mode
 
-Aditya's agent really messages him in Discord, two-way. When the prep-circle run needs him, the bot DMs him the
-same message his simulated phone shows, with **✅ I'm in · 🕗 Suggest a time · Not this time** buttons. "Suggest a
-time" turns into a 7:30 / 8:00 / 8:30 PM picker. His answer is applied to the engine exactly as if he'd tapped it
-on the simulated phone (his phone shows it as "· via Discord").
+Aditya's agent really messages them in Discord, two-way. When the prep-circle run needs them, the bot DMs them the
+same message their simulated phone shows, with **✅ I'm in · 🕗 Suggest a time · Not this time** buttons. "Suggest a
+time" turns into a 7:30 / 8:00 / 8:30 PM picker. Their answer is applied to the engine exactly as if they'd tapped it
+on the simulated phone (their phone shows it as "· via Discord").
 
 Live mode is opt-in: open the site with **`?live=1`**. Without it nothing changes. If anything is missing or
 failing, the page says **"Live mode unavailable, using simulated phone"** and the demo carries on.
@@ -18,8 +18,8 @@ browser (?live=1) ──POST /api/live-notify──▶ Discord DM with buttons �
 | Function | Does |
 |---|---|
 | `api/live-notify.ts` | Builds the DM text on the server from validated fields and sends it with the buttons |
-| `api/discord-interactions.ts` | Discord's Interactions Endpoint: verifies the Ed25519 signature (node:crypto), answers PING, accepts only Aditya's clicks, stores his answer (first answer wins) |
-| `api/live-state.ts` | `?health=1` says whether live mode is configured; `?session=…&prompt=…` returns his stored answer |
+| `api/discord-interactions.ts` | Discord's Interactions Endpoint: verifies the Ed25519 signature (node:crypto), answers PING, accepts only Aditya's clicks, stores their answer (first answer wins) |
+| `api/live-state.ts` | `?health=1` says whether live mode is configured; `?session=…&prompt=…` returns their stored answer |
 
 Storage is the existing Supabase project (`supabase/live.sql`: one `t2_live_replies` table, RLS on, two functions
 executable by `service_role` only). The functions call it with the service-role key, server-side.
@@ -44,7 +44,7 @@ Developer Portal: Discord checks it immediately with a signed PING and a deliber
    (2048 = Send Messages) → pick the server → Authorize.
    Aditya must allow DMs from that server's members: right-click the server → **Privacy Settings** → turn on
    **Direct Messages**.
-5. **Aditya's user id:** Discord → User Settings → Advanced → turn on **Developer Mode**; then right-click his own
+5. **Aditya's user id:** Discord → User Settings → Advanced → turn on **Developer Mode**; then right-click their own
    name → **Copy User ID** → `DISCORD_ADITYA_USER_ID`.
 
 ### 2. Supabase (Sumedha)
@@ -104,8 +104,8 @@ Portal → General Information → **Interactions Endpoint URL** →
 ### 6. Run it
 
 Open **<https://hirearchy-agents.vercel.app/?live=1>** → the Prep circle tab shows **"Live: Aditya is on Discord"**
-→ click **📩 Aditya just got a Microsoft interview invite →**. When the circle is found, Aditya gets the DM. His
-taps drive his side; Sumit and Maya still use their simulated phones.
+→ click **📩 Aditya just got a Microsoft interview invite →**. When the circle is found, Aditya gets the DM. Their
+taps drive their side; Sumit and Maya still use their simulated phones.
 
 ---
 
@@ -115,7 +115,7 @@ taps drive his side; Sumit and Maya still use their simulated phones.
 |---|---|
 | Portal: "interactions endpoint URL could not be verified" | Not deployed yet, `DISCORD_PUBLIC_KEY` missing or wrong, or env set after the last deploy (redeploy) |
 | Badge says "Live mode unavailable" | `?health=1` isn't `{"ok":true}`: a variable is missing, or env changed without a redeploy |
-| Badge is live but no DM arrives | Bot not in a server with Aditya, his DMs from that server are off, or wrong `DISCORD_ADITYA_USER_ID` |
+| Badge is live but no DM arrives | Bot not in a server with Aditya, their DMs from that server are off, or wrong `DISCORD_ADITYA_USER_ID` |
 | Buttons say "These buttons belong to the student this agent works for" | Someone other than `DISCORD_ADITYA_USER_ID` pressed them |
 | Buttons answer "I couldn't save that" | Supabase unreachable, `supabase/live.sql` not run, or wrong service-role key |
 

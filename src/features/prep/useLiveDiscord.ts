@@ -9,15 +9,15 @@ export type LiveStatus = 'off' | 'connecting' | 'live' | 'unavailable';
 const newSession = () => crypto.randomUUID();
 
 /**
- * Live Discord mode for Aditya: check the server is configured, DM him each prompt that needs him,
- * poll for his answer and apply it once, exactly like a tap on the simulated phone. Any failure flips
+ * Live Discord mode for Aditya: check the server is configured, DM them each prompt that needs them,
+ * poll for their answer and apply it once, exactly like a tap on the simulated phone. Any failure flips
  * to 'unavailable' and the simulated phone keeps working.
  */
 export function useLiveDiscord({ enabled, runKey, pending, onReply }: {
   enabled: boolean;
   /** Changes on every Reset: a new demo session id, nothing carried over. */
   runKey: number;
-  /** Aditya's latest message if it's waiting for him, else null. */
+  /** Aditya's latest message if it's waiting for them, else null. */
   pending: PhoneMessage | null;
   onReply: (reply: HumanReply, bubble: string) => void;
 }): LiveStatus {
@@ -62,7 +62,7 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply }: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, promptId, runKey]);
 
-  // Poll for his answer while the prompt is open.
+  // Poll for their answer while the prompt is open.
   useEffect(() => {
     if (status !== 'live' || promptId === null) return;
     const id = promptId;

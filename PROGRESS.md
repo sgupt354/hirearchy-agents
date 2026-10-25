@@ -14,7 +14,7 @@ Key idea: "Your prep circle becomes your proof of work."
 | Live | Live Discord mode for Aditya (`?live=1`), before D/E per the organizers | ✅ done (needs setup, see LIVE_DISCORD.md) |
 | D | Trust ratings + evidence file (`src/features/trust/`) | ✅ done |
 | E | Referral Bridge (`src/features/referral/`) | ✅ done |
-| F | Polish, sabotage additions, browser checks, README | next |
+| F | Polish, sabotage additions, browser checks, README | ✅ done |
 | G | Merge `aditya/journey` (done early, at `da49902`) | ✅ done |
 
 ### Contract for Aditya (branch `aditya/journey`: Find, Pipeline, Intel)
@@ -92,21 +92,21 @@ Key idea: "Your prep circle becomes your proof of work."
   circle · Mock interview · Intel; Referral stays hidden until Phase E. Default tab: Prep circle.
 - **Intel → evidence file:** `getIntelContributionCount` (in `src/features/intel/logic.ts`, keyed by prep agent id
   `a1…a8`) is now the evidence file's source for "intel reports shared" (person `p4` ↔ `a4`). The old seeded stub
-  counts were removed from `trust/seed.ts`; a new test checks every student's evidence count equals his function.
-- **Two of his contract tests updated (with your OK):** `tests/features/{find,pipeline}/contract.test.ts` asserted his
+  counts were removed from `trust/seed.ts`; a new test checks every student's evidence count equals Aditya's function.
+- **Two of Aditya's contract tests updated (with your OK):** `tests/features/{find,pipeline}/contract.test.ts` asserted Aditya's
   tabs were *not* registered and still used the old `soon(` placeholder. They now assert the registry imports and
-  registers them, and Find's still checks that his tab never imports `app/tabs`. Nothing else in his folders changed.
-- **CSS fix (ours):** his side panels use `.sub` and `.tag`, which our stylesheet styled globally for the hero subline
-  (collapsed once a demo starts) and the feed's type tag. That hid his report tips and overlapped labels. Scoped those
+  registers them, and Find's still checks that the Find tab never imports `app/tabs`. Nothing else in Aditya's folders changed.
+- **CSS fix (ours):** Aditya's side panels use `.sub` and `.tag`, which our stylesheet styled globally for the hero subline
+  (collapsed once a demo starts) and the feed's type tag. That hid the report tips and overlapped labels. Scoped those
   rules to `.hero .sub` and `.row-head .tag`, and added plain `.card .sub` / `.card .tag` styles.
-- **Verified:** typecheck, 386/386 tests (his 205 + ours), test:sabotage 6/6, build, demo:run. Browser at 1440×900
+- **Verified:** typecheck, 386/386 tests (Aditya's 205 + ours), test:sabotage 6/6, build, demo:run. Browser at 1440×900
   and 1280×800: every visible tab opened and driven through its first action, no page scroll, no "->" or 24-hour
   times, no console errors; global Reset from the last tab gives a page identical to a fresh load across all five
   tabs (clock times masked).
 
-For Aditya (not changed; his files):
-- **Jordan's intel count:** his `CONTRIBUTION_COUNTS` gives `a4: 0`, but the Phase E referral story has Jordan with
-  1 intel report. With his data as the source, Jordan's evidence now shows 0. If the story should hold, set `a4: 1`.
+For Aditya (not changed; Aditya's files):
+- **Jordan's intel count:** Aditya's `CONTRIBUTION_COUNTS` gives `a4: 0`, but the Phase E referral story has Jordan with
+  1 intel report. With that data as the source, Jordan's evidence now shows 0. If the story should hold, set `a4: 1`.
 - **Pipeline headline numbers** ("23", "6") sit in an `h3`, which our cards style as small labels, so they render
   small. A dedicated class for the big number would fix it.
 
@@ -148,6 +148,30 @@ Phase D decisions:
 - **Prep-circle matching order is unchanged** (it's engine code); reliability affects mock matching (and the referral
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
+
+### Phase F — Polish, safety, README: done
+- **Sabotage (`npm run test:sabotage`): 10/10 caught.** Four new planted bugs for the new features:
+  rating leak (trust summary carries individual ratings) → 3 tests; referral auto-approved by the agent after the
+  chat → 7 tests; evidence file (links + rubric) sent at stage 1, before the fit check → 2 tests; mock scores
+  readable without the subject's grant → 3 tests. Every planted file is restored after each run.
+- **Hero line** ("Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide.")
+  is a slim line under the tab bar on every tab, and the page title / meta description.
+- **Same look everywhere:** all six tabs use the iMessage phones, the drawer, 12-hour times and plain English
+  (checked: no "->", no 24-hour times in any tab's text). Every tab resets on `resetKey`; global ↺ restores all six
+  tabs and the trust network exactly.
+- **Real browser** (Chromium, 1440×900 and 1280×800): every tab opened and exercised (main action + first quick
+  reply), full Referral flow (refer, not-yet form, decoy, drawer), ratings → evidence across Prep and Mock; no page
+  scroll on any tab at either size; no console errors except the expected local `/api/notify` 404 (Vite dev doesn't
+  serve `api/`). New screenshot `docs/referral.png`.
+- **README rewritten:** the journey, one section per feature mapped to the three criteria (conflicting constraints /
+  what's shared / when humans are asked), the 10 sabotages, Referral demo steps, updated architecture diagram, "Your
+  prep circle becomes your proof of work.", and the Team section.
+- **Verified:** typecheck, 409 tests, test:sabotage 10/10, build, demo:run.
+
+Phase F notes:
+- **Find, Pipeline and Intel don't use the shared judge-lens chips** (their drawers explain matches and redactions
+  their own way). They're Aditya's files, so left as is; the README says which drawers have the chips. See "For
+  Aditya" below.
 
 ### Phase E — Referral Bridge: done (`src/features/referral/`, `tests/features/referral/`)
 Connection first, proof of work, the human decides. New tab **🤝 Referral** (6 tabs now visible).
@@ -194,9 +218,9 @@ Phase E decisions:
 
 ### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
 - `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
-  each prompt that needs him (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time
-  button turns into a 7:30 / 8:00 / 8:30 PM picker), polls `/api/live-state` every 1.5 s and applies his answer once,
-  through the same `reply()` as a tap on his simulated phone (bubble tagged "· via Discord").
+  each prompt that needs them (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time
+  button turns into a 7:30 / 8:00 / 8:30 PM picker), polls `/api/live-state` every 1.5 s and applies their answer once,
+  through the same `reply()` as a tap on their simulated phone (bubble tagged "· via Discord").
 - `api/discord-interactions.ts` verifies Discord's Ed25519 signature with `node:crypto` (no new package), answers
   PING, accepts only `DISCORD_ADITYA_USER_ID`, stores the answer first-wins per (session, prompt).
 - Storage: Supabase `t2_live_replies` (`supabase/live.sql`, RLS on, functions granted to `service_role` only),
@@ -291,13 +315,18 @@ Phase B decisions:
   `src/ui/integrations.ts`.
 - `supabase/track2.sql` stays as written and is **not wired**.
 
-## For Aditya (found while reviewing the merge; not changed, since these are his files)
+## For Aditya (found while reviewing the merge; not changed, since these are Aditya's files)
 - `api/voice.ts` hardcodes `MODEL = 'claude-sonnet-4-5'`. The current Sonnet is `claude-sonnet-5-5`; if the old
   id is retired, every call errors and silently falls back to templates. Suggest updating it.
-- His tests live in `tests/integrations/`, outside the agreed `api/` + `src/integrations/` paths. Kept: they're
-  new files that only test his module.
-- His `generateMessage` fallback reads `details.start` / `details.end`; the engine sends `details.window`. The
+- Aditya's tests live in `tests/integrations/`, outside the agreed `api/` + `src/integrations/` paths. Kept: they're
+  new files that only test that module.
+- Aditya's `generateMessage` fallback reads `details.start` / `details.end`; the engine sends `details.window`. The
   UI adapter now adds `start` / `end`, so the fallback text includes the time.
+- Find, Pipeline and Intel could adopt the shared `JudgeLegend` (from `src/ui/kit.ts`) so every drawer has the
+  same three judging-lens chips.
+- Intel copy uses an em dash ("…in your pipeline — and unlocks theirs."); the rest of the app avoids them.
+- `getIntelContributionCount` has a4 = 0, so Jordan's proof of work shows 0 intel reports (the referral spec
+  imagined 1). Doesn't change the fit.
 
 ## Open issue: requester id in track2.sql (must fix before wiring Supabase)
 `t2_get_identity`, `t2_record_consent`, `t2_get_events` and `t2_append_event` take the requester / agent id as a
@@ -308,12 +337,13 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: Phase E done; Phase F (polish, sabotage additions, browser checks, README) next.
+- `feature/full-journey`: all phases (0, B, Live, D, E, F, G) done. Not merged to main; waiting for Sumedha's review.
 
 ## Exact next step
-Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
-`VITE_USE_LLM_COPY=true`. Then run the README demo steps on the deployed URL to confirm `/api/voice` and
-`/api/notify` work with real keys.
+1. Sumedha reviews `feature/full-journey` (nothing is merged to main).
+2. Deploy from `feature/full-journey` on the laptop: `git checkout feature/full-journey && git pull && npx vercel --prod`
+   (env vars as in README → Deployment; live Discord setup in LIVE_DISCORD.md).
+3. Walk the README demo steps on the deployed URL, all six tabs.
 
 ## How to run
 ```
@@ -440,15 +470,15 @@ Merge decisions:
   only if a call throws. Aditya's functions already never throw (they return their own fallbacks), so the stub is a
   second safety net. `integrationsStub.ts` and its tests stay.
 - **Default phone copy is `copy.ts`.** `generateMessage` is not called at all unless `VITE_USE_LLM_COPY=true`. In LLM
-  mode a structured message is held until its wording arrives (at most ~3 s, his timeout) so bubbles never flicker
+  mode a structured message is held until its wording arrives (at most ~3 s, Aditya's timeout) so bubbles never flicker
   between two wordings. Plain status lines (welcome, "You're in", dissolved) always use `copy.ts`.
 - **`notifyPhone` sends the text the student actually sees** (the student copy, or Claude's wording in LLM mode).
-- **In LLM mode the reveal message includes names and contacts** (it's past consent, and his server passes reveal
+- **In LLM mode the reveal message includes names and contacts** (it's past consent, and Aditya's server passes reveal
   details through by design). Default mode shows "Names are unlocked" plus the calendar card instead.
-- **Invite outcomes now use his parser.** It's stricter than the stub (it needs an invite phrase, a known company and a
+- **Invite outcomes now use Aditya's parser.** It's stricter than the stub (it needs an invite phrase, a known company and a
   known role) and returns "Software Engineer" rather than "SWE" for non-intern roles. Our three outcome messages
   are unchanged.
-- **`prettify` also normalises "7:30 PM–9:00 PM"** (en dash), which his fallback produces.
+- **`prettify` also normalises "7:30 PM–9:00 PM"** (en dash), which Aditya's fallback produces.
 - **`.gitignore` now ignores every `.env*` file except `.env.example`**, plus `.vercel/`.
 - **Verified locally**, where `/api/*` returns 404: default mode (golden path, decline branch, three invite outcomes,
   reset) and LLM mode with the API down, mocked-working and hanging past the 3-second timeout. All complete with

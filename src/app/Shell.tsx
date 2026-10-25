@@ -36,6 +36,9 @@ export function Shell() {
           <button className="icon-btn reset" onClick={() => setResetKey((k) => k + 1)} title="Reset demo" aria-label="Reset demo">↺</button>
         </div>
       </nav>
+      <p className="journey-line">
+        Find the job. Prep with your pipeline. Earn the referral. <b>Your agent negotiates; you decide.</b>
+      </p>
       {VISIBLE_TABS.map(({ id, Component }) => (
         <section key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} className="tab-panel" hidden={id !== active}>
           <Component speed={speed} resetKey={resetKey} />

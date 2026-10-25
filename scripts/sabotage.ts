@@ -48,6 +48,30 @@ const SABOTAGES: Sabotage[] = [
     find: "if (!canShare(agent, 'offers')) {",
     replace: "if (false && !canShare(agent, 'offers')) {",
   },
+  {
+    name: 'Rating leak: trust summary carries the individual ratings',
+    file: 'src/features/trust/ledger.ts',
+    find: '      showUpRate: round1(list.filter((e) => e.showedUp).length / list.length),\n    };',
+    replace: '      showUpRate: round1(list.filter((e) => e.showedUp).length / list.length),\n      ...({ ratings: list } as object),\n    };',
+  },
+  {
+    name: 'Referral auto-approved by the agent after the chat',
+    file: 'src/features/referral/referralBridge.ts',
+    find: "    this.#set('CHAT_DONE');",
+    replace: "    this.#set('CHAT_DONE');\n    return this.decide(REFERRER, 'refer');",
+  },
+  {
+    name: 'Evidence file (links + rubric) sent at stage 1, before the fit check',
+    file: 'src/features/referral/referralBridge.ts',
+    find: 'const stage1 = this.trust.disclose(seeker, 1);',
+    replace: 'const stage1 = this.trust.disclose(seeker, 2) as never;',
+  },
+  {
+    name: 'Mock scores readable by anyone, without the subject\'s grant',
+    file: 'src/features/mock/scores.ts',
+    find: 'if (requester !== subject && !this.#grants.has(`${subject}→${requester}`)) {',
+    replace: 'if (false && requester !== subject && !this.#grants.has(`${subject}→${requester}`)) {',
+  },
 ];
 
 const RAW = 'node_modules/.cache/sabotage-results.json';
