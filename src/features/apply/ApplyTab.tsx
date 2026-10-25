@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ChatBubble, PhoneFrame, QuickReplies, clock } from '../../ui/kit';
 import { Icon } from '../../ui/Icon';
 import type { TabProps } from '../types';
+import { findContacts, type ContactsOutcome } from './outreach/contacts';
 import { DEMO_POSTINGS } from './postings';
 import { OVERLEAF_URL, overleafFields, renderLatex, resumeFileName } from './resume/latex';
 import { tailor } from './resume/tailor';
@@ -25,6 +26,8 @@ export function ApplyTab({ resetKey }: TabProps) {
   const [view, setView] = useState<'resume' | 'outreach' | 'profile'>('resume');
   const [lines, setLines] = useState<Line[]>([]);
   const [printing, setPrinting] = useState(false);
+  const [found, setFound] = useState<(ContactsOutcome & { postingId: string }) | null>(null);
+  const [looking, setLooking] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
 
   const firstReset = useRef(resetKey);
@@ -33,6 +36,7 @@ export function ApplyTab({ resetKey }: TabProps) {
     store.resetFor(resetKey);
     setView('resume');
     setLines([]);
+    setFound(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetKey]);
 
@@ -82,6 +86,20 @@ export function ApplyTab({ resetKey }: TabProps) {
   };
 
   const demoPosting = posting.source === 'demo';
+  const contacts = found?.postingId === posting.id ? found : null;
+
+  const lookUp = async () => {
+    setLooking(true);
+    const out = await findContacts(posting.company, posting.title);
+    setLooking(false);
+    setFound({ ...out, postingId: posting.id });
+    did(
+      `Find contacts at ${posting.company}`,
+      out.source === 'apollo'
+        ? `Found ${out.contacts.length} people at ${posting.company} through Apollo. Pick one and I'll draft an intro; you send it.`
+        : `Here are 3 sample contacts, clearly marked as demo data${out.note === 'rate_limited' ? ' (Apollo is rate limited right now)' : ''}. Real ones need an Apollo key on the server.`,
+    );
+  };
 
   return (
     <div className="app started">
@@ -128,6 +146,10 @@ export function ApplyTab({ resetKey }: TabProps) {
           {view === 'outreach' ? (
             <>
               <h3>Intro email · {posting.company}</h3>
+              <div className="find-contacts">
+                <button className="ghost small" disabled={looking} onClick={lookUp}><Icon name="users" /> {looking ? 'Looking' : `Find contacts at ${posting.company}`}</button>
+                {contacts && <span className={`chip ${contacts.source === 'apollo' ? 'shared' : 'withheld'}`}>{contacts.source === 'apollo' ? 'From Apollo' : 'Demo data'}</span>}
+              </div>
               <OutreachPanel
                 key={posting.id}
                 company={posting.company}
@@ -135,7 +157,7 @@ export function ApplyTab({ resetKey }: TabProps) {
                 studentName={profile.name}
                 school={profile.education[0]?.org ?? ''}
                 highlight={r.experience[0]?.bullets[0] ?? r.projects[0]?.bullets[0] ?? ''}
-                contacts={[]}
+                contacts={(contacts?.contacts ?? []).map((c) => ({ name: c.name, title: c.title, email: c.email, linkedin: c.linkedin, source: contacts!.source }))}
                 onDrafted={(who, words, source) =>
                   source === 'limited'
                     ? did('Write draft', "That's a lot of drafts in a few minutes, so I paused. Try again shortly.")

@@ -156,8 +156,8 @@ Phase D decisions:
 | 1 | Real Job Sniper: live board search behind a toggle | done |
 | 2 | Resume builder + LaTeX / Overleaf / PDF | done |
 | 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | done |
-| 4 | Apollo contact lookup (official API, demo data without key) | next |
-| 5 | Huntr: honest export (no public API for students) | todo |
+| 4 | Apollo contact lookup (official API, demo data without key) | done |
+| 5 | Huntr: honest export (no public API for students) | next |
 | 6 | Agent tie-in + 2 new sabotages | todo |
 | 7 | Alignment doc, README, full checks | todo |
 
@@ -187,6 +187,14 @@ line). Actions: Copy, Open in Gmail (compose URL), Email app (`mailto:`). Nothin
 returns the template, or, with `ANTHROPIC_API_KEY`, Claude's rewording (3 s timeout) only if it keeps the cap, leaves
 no placeholder, names the company and adds no number that wasn't in the facts. Rate limits: 10 drafts / 10 min per
 session, 20 / 10 min per IP on the server. 17 new tests.
+
+**Phase 4 (Apollo contacts):** Outreach → **Find contacts at <company>**. `api/apollo-search.ts` calls only Apollo's
+documented People API Search (`POST /api/v1/mixed_people/api_search`, `x-api-key`, 0 credits, no emails returned) with
+recruiting titles plus the target role and the company domain (or keyword). Name, title, company, LinkedIn; an email only
+if a plan ever returns a real one. No key, 401/403, 429, 5xx or network failure → three contacts labelled "Demo data"
+with a note. 10-minute in-memory cache to spare Apollo's rate limits; nothing persisted, contacts live in the tab's
+session state. Picking a contact fills the draft (recruiter template for recruiting titles, alum otherwise).
+7 new tests (request shape, keyword fallback, missing key, 429 / 403 / 500 / network, cache, no fake emails).
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:

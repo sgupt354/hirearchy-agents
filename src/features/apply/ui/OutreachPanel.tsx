@@ -63,11 +63,17 @@ export function OutreachPanel({ company, role, studentName, school, highlight, c
       {contacts.length > 0 && (
         <div className="contact-list" role="list" aria-label="Contacts">
           {contacts.map((c) => (
-            <button key={`${c.name}-${c.title}`} role="listitem" className={`contact ${contact.name === c.name ? 'on' : ''}`} onClick={() => setContact(c)}>
-              <b>{c.name}</b>
-              <span>{c.title}</span>
+            <div key={`${c.name}-${c.title}`} role="listitem" className={`contact ${contact.name === c.name ? 'on' : ''}`}>
+              <button className="contact-pick" aria-pressed={contact.name === c.name} onClick={() => {
+                setContact(c);
+                setKind(/recruit|talent/i.test(c.title) ? 'recruiter' : 'alum');
+              }}>
+                <b>{c.name}</b>
+                <span>{c.title}</span>
+              </button>
+              {c.linkedin && <a className="contact-link" href={c.linkedin} target="_blank" rel="noreferrer noopener">LinkedIn</a>}
               {c.source === 'demo' && <span className="chip withheld">Demo data</span>}
-            </button>
+            </div>
           ))}
         </div>
       )}

@@ -52,6 +52,8 @@ configured.
   work email. Per-endpoint rate limits (per minute / hour / day) are shown in the account's API usage page; we
   handle 429 by backing off and serving the cached / demo result.
 - Key sent as the `x-api-key` header, server-side only (`APOLLO_API_KEY`, never `VITE_`).
+- People API Search has no school / alumni filter, so "alumni" can't be found through it; we search recruiting titles
+  plus the student's target role at the company, and the student picks who to write to.
 - **Decision:** `api/apollo-search.ts` calls only this endpoint; results are names, titles, company and LinkedIn
   URL. Without a key: three contacts clearly labelled "Demo data".
 
