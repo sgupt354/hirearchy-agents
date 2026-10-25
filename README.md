@@ -1,80 +1,81 @@
 # Hirearchy
 
-**The networking ladder for students: climb by helping others, earn referrals alumni trust.**
+Personal AI agents for students on the job hunt — they find peers in the same pipeline, negotiate prep and mocks, trade intel, mentor across years, and turn that into proof of work an alum can trust before a referral.
 
-[Live app](https://hirearchy-agents.vercel.app) · [Open product](https://hirearchy-agents.vercel.app/app/) · Optional Discord live mode: `/app/?live=1`
+**Live:** [hirearchy-agents.vercel.app](https://hirearchy-agents.vercel.app) · **App:** [/app/](https://hirearchy-agents.vercel.app/app/) · **Discord live:** `/app/?live=1`
 
-![Prep circle calendar invite on three phones](docs/screenshot.png)
+![Three students’ phones after a prep circle agrees](docs/screenshot.png)
 
-## Pitch
+## Why students need this
 
-Networking is how students get jobs — not another keyword score or autofill button. Hirearchy is **hierarchical networking**: find roles early, prep every day with your pipeline, mentor and get mentored for points and reach, share intel, and turn that into **proof of work** an alum can trust. Agents match and negotiate in the background; **humans keep every decision that matters** (join, share a name, refer). Points raise visibility and trust — they never buy a referral.
+Getting a job as a student is mostly networking: who will prep with you, who will share what the interview was like, who will vouch for you. Today that means cold LinkedIn messages, scattered Discord servers, and tools that only solve one slice (autofill, mock practice, or an alumni directory).
 
-## What you get
+Hirearchy is the **networking ladder** students can use every day: early roles from company boards, prep with people in your pipeline, help juniors and climb levels, share intel, and earn referrals from alumni who already see your proof of work. Agents do the awkward matching and scheduling; students keep the decisions.
 
-| Surface | Why it matters daily |
+## How this fits Track 2
+
+Track 2 asks for personal AI agents on campus that **work with each other**, exchange what matters, and reach a shared outcome — while showing **conflicting constraints**, **what is shared**, and **when humans confirm**.
+
+| Track ask | Hirearchy |
 |---|---|
-| **Find** | Live roles from Greenhouse, Lever, Ashby, SmartRecruiters (443 boards) — often minutes after post, before LinkedIn floods |
-| **Apply · Applications** | Tailored resume, outreach drafts, tracker; one hub per job with readiness and next-step nudges |
-| **Prep circle · Mock · Intel** | Same-pipeline practice, give-to-get intel, private ratings → proof of work |
-| **Community** | Help requests + project board; points/levels for helping (beginners earn mentors more); packs and mentor profile |
-| **Referral** | Staged anonymous proof → coffee chat → **only the alum** taps Refer |
+| Real campus scenario | Interview prep and peer networking around intern / new-grad recruiting (study-group energy, hiring stakes) |
+| Agents work with each other | One agent per student; a broker relays anonymized listings; agents negotiate times, fit, and capacity |
+| Conflicting constraints | Different evening windows, pipelines, capacity rules, monthly referral limits, “must meet first” |
+| What they share | Anonymized skills / stage / intel only; names stay locked until mutual consent; ratings never leak as singles |
+| When students confirm | Join a circle or mock, share stats with an alum, reveal identity, confirm a session happened, **Refer** |
+| Messaging surface | iMessage-style UI in the app; optional real Discord DMs (`?live=1`) |
+| Framework | Open source stack (React, TypeScript, Vite); deterministic engine in-repo — not Cubbie |
 
-Students see iMessage-style phones, not graphs. **How it works** (Prep + Referral) shows the agent feed for demos and review.
+In the app, **How it works** on Prep circle and Referral highlights those three lenses on the live agent feed: conflicting constraints, what’s shared, when humans are asked.
 
-## Competitive research — what exists, what doesn’t
+## What the product does
 
-We mapped the student career stack:
-
-| Cluster | Examples | What they do | Gap |
-|---|---|---|---|
-| Job boards / campus | Handshake | Jobs + light alumni connect | No earned proof → referral loop |
-| Autofill / trackers | Simplify, Teal, Huntr | Apply faster, CRM the hunt | No privacy-gated peer agents or trust ladder |
-| Peer / expert mocks | Aced (ex-Pramp), interviewing.io | Practice only | Not wired to referrals or community standing |
-| Review dumps | Glassdoor, Blind, Levels.fyi | Static intel / pay | No give-to-get cohort intel |
-| Uni mentoring | PeopleGrove, Mentor Spaces, UniBuzz, Aphinity | Match + intros | Institutional directories, not agent consent + proof of work |
-| Paid intros | PartnerHQ, intro.market | **Buy** warm intros | Opposite of earned, human-decided referrals |
-
-**Nobody** connects: early board jobs → daily prep → mentoring ladder → portable proof of work → human referral. That end-to-end ladder is Hirearchy.
-
-## Why it’s unique
-
-1. **Hierarchical networking** — climb by helping (3× for newcomers); levels unlock reach, packs, mentor profile alumni can trust.
-2. **Proof of work, not cold DMs** — prep sessions, mocks, intel, mentoring ratings feed one evidence file Referral can fit-check anonymously.
-3. **Privacy in the data layer** — names stay in an identity vault until mutual consent; ratings and mock scores never leak as singles; agents never auto-refer.
-4. **Deterministic agents** — matching, fit, limits, and consent are tested TypeScript; the LLM only words messages (optional).
-5. **Early jobs** — official public board APIs so students hit the stack while it’s still short.
-
-## Tech stack
-
-| Layer | Choice |
+| Area | Shared outcome |
 |---|---|
-| App | React 19, TypeScript, Vite |
-| Hosting | Vercel (static `/` + `/app/`, serverless `api/`) |
-| Agent engine | In-repo deterministic broker (`src/engine/`) — discovery, schedule, consent, `IdentityVault` |
-| Product surfaces | `src/features/` — find, apply, journey, prep, community, mock, intel, trust, referral, ask |
-| Live jobs | `api/jobs-search.ts` → Greenhouse / Lever / Ashby / SmartRecruiters JSON |
-| Optional AI | Anthropic Claude via `api/voice` / outreach (wording only) |
-| Optional Discord | Bot + Supabase (`supabase/live.sql`) — [LIVE_DISCORD.md](LIVE_DISCORD.md) |
-| Quality | Vitest; `npm run test:sabotage` plants 12 privacy bugs and requires the suite to catch each |
+| **Find · Apply · Applications** | Surface fresh Greenhouse / Lever / Ashby / SmartRecruiters postings; tailor a resume; one record per job with readiness nudges |
+| **Prep circle** | After an invite, agents form a 2–3 person prep group that covers weak spots, negotiate a time, unlock names only when everyone says yes |
+| **Mock interview** | Swap interviewer / interviewee with someone in the same company and round; scores stay private to the person scored |
+| **Intel** | Give-to-get anonymized interview reports for your pipeline |
+| **Community** | Newcomers ask for help; mentors’ agents check private capacity; confirmed help earns points and levels (reach, packs, mentor profile — not a purchasable referral) |
+| **Referral** | Alum’s agent fit-checks anonymous proof of work in stages; coffee chat; only the human taps Refer |
+| **Trust** | Prep, mocks, intel, and mentoring feed one private proof-of-work file the referral bridge can read |
+
+## What’s already out there — and the gap
+
+| Space | Examples | Missing for this track |
+|---|---|---|
+| Job boards | Handshake | No multi-agent prep or earned referral loop |
+| Apply tools | Simplify, Teal, Huntr | Faster applications, not agent-to-agent campus coordination |
+| Mocks | Aced, interviewing.io | Practice alone; no shared outcome with peers’ agents |
+| Reviews | Glassdoor, Blind | Static dumps; no consent-gated peer agents |
+| Mentoring platforms | PeopleGrove, UniBuzz, Aphinity | Directory matching; not private capacity rules + proof of work |
+| Paid intros | PartnerHQ, intro.market | Buy warm intros — not student agents earning trust |
+
+Hirearchy connects the ladder those tools leave separate: **early jobs → daily prep with peers → community standing → human referral**.
+
+## Multi-agent design (short)
+
+- Each student has an agent with **private** profile, policy, and rules.
+- The **broker** only sees anonymized listings and relays structured events.
+- **Deterministic code** decides match, schedule, fit, limits, and consent. An optional LLM only words messages.
+- **IdentityVault**, rating ledger, and mock score vault enforce privacy in data, not only in the UI. `npm run test:sabotage` plants twelve leaks and requires the suite to catch each.
 
 ```mermaid
 flowchart LR
   Phones["Phones / Discord"] --> Agents["Per-student agents"]
-  Agents --> Broker["Broker · anonymized events"]
+  Agents --> Broker["Broker"]
   Broker --> Engine["Deterministic engine"]
-  Engine --> Trust["Trust · proof of work"]
-  Trust --> Referral["Referral · human decides"]
-  LLM["LLM · wording only"] -.-> Agents
+  Engine --> Trust["Proof of work"]
+  Trust --> Referral["Human decides refer"]
 ```
 
-Integration research and API notes: [AUDIT.md](AUDIT.md). Build journal: [PROGRESS.md](PROGRESS.md).
+## Tech stack
 
-## Privacy (judge-ready)
+React 19 · TypeScript · Vite · Vitest · Vercel (`api/` serverless) · optional Anthropic (wording) · optional Discord + Supabase for live DMs.
 
-Identity, ratings, and mock scores are gated in code — not just hidden in CSS. Sabotage suite must catch leaks (decliner named, early reveal, auto-refer, score vault bypass, …). Badge in-app reflects a real test run.
+Notable paths: `src/engine/`, `src/features/`, `api/jobs-search.ts`, `src/live/` + [LIVE_DISCORD.md](LIVE_DISCORD.md). Integration notes: [AUDIT.md](AUDIT.md).
 
-## Try it
+## Run locally
 
 ```bash
 npm install
@@ -82,7 +83,7 @@ npm run dev    # http://localhost:5173/  →  /app/
 npm test
 ```
 
-No keys required locally. Production: [hirearchy-agents.vercel.app](https://hirearchy-agents.vercel.app). Optional env (Claude, Apollo, Discord, Supabase) is documented in `.env.example` and [LIVE_DISCORD.md](LIVE_DISCORD.md).
+No API keys required for the core demo. Optional env: `.env.example`.
 
 ## Team
 
