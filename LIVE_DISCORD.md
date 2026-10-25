@@ -5,7 +5,7 @@ same message their simulated phone shows, with **✅ I'm in · 🕗 Suggest a ti
 time" turns into a 7:30 / 8:00 / 8:30 PM picker. Their answer is applied to the engine exactly as if they'd tapped it
 on the simulated phone (their phone shows it as "· via Discord").
 
-Live mode is opt-in: open the site with **`?live=1`**. Without it nothing changes. If anything is missing or
+Live mode is opt-in: open the demo app with **`/app/?live=1`** (`/?live=1` redirects there). Without it nothing changes. If anything is missing or
 failing, the page says **"Live mode unavailable, using simulated phone"** and the demo carries on.
 
 ```
@@ -103,7 +103,7 @@ Portal → General Information → **Interactions Endpoint URL** →
 
 ### 6. Run it
 
-Open **<https://hirearchy-agents.vercel.app/?live=1>** → the Prep circle tab shows **"Live: Aditya is on Discord"**
+Open **<https://hirearchy-agents.vercel.app/app/?live=1>** → the Prep circle tab shows **"Live: Aditya is on Discord"**
 → click **📩 Aditya just got a Microsoft interview invite →**. When the circle is found, Aditya gets the DM. Their
 taps drive their side; Sumit and Maya still use their simulated phones.
 

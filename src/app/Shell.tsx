@@ -12,7 +12,7 @@ export function Shell() {
   return (
     <div className="shell">
       <nav className="topbar">
-        <span className="brand"><span className="logo"><Mark size={18} /></span>Hirearchy</span>
+        <a className="brand" href="/" aria-label="Hirearchy home"><Mark size={24} />Hirearchy</a>
         <div className="tabs" role="tablist" aria-label="Your job hunt">
           {VISIBLE_TABS.map((t) => (
             <button
