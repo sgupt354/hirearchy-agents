@@ -553,3 +553,16 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
   .print-root { display: block !important; }
   .print-root .resume-doc { font-size: 10.5pt; }
 }
+.outreach { display: flex; flex-direction: column; gap: 10px; }
+.outreach .segmented { align-self: flex-start; }
+.contact-list { display: flex; flex-direction: column; gap: 6px; }
+.contact { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); text-align: left; transition: border-color 150ms var(--ease); }
+.contact b { font-size: 13px; color: var(--text); }
+.contact span { font-size: 12px; color: var(--body); }
+.contact .chip { margin-left: auto; }
+.contact.on { border-color: var(--accent); background: var(--accent-soft); }
+.draft { display: flex; flex-direction: column; gap: 6px; }
+.draft .field.wide { min-width: 0; width: 100%; }
+.draft-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.draft-foot .over { color: var(--warn); font-weight: 600; }
+.draft-note { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }

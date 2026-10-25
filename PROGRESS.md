@@ -155,8 +155,8 @@ Phase D decisions:
 | 0 | Audit + research (AUDIT.md); landing copy without hackathon / track mentions | done |
 | 1 | Real Job Sniper: live board search behind a toggle | done |
 | 2 | Resume builder + LaTeX / Overleaf / PDF | done |
-| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | next |
-| 4 | Apollo contact lookup (official API, demo data without key) | todo |
+| 3 | Outreach drafts (copy / Gmail / mailto, never sent by us) | done |
+| 4 | Apollo contact lookup (official API, demo data without key) | next |
 | 5 | Huntr: honest export (no public API for students) | todo |
 | 6 | Agent tie-in + 2 new sabotages | todo |
 | 7 | Alignment doc, README, full checks | todo |
@@ -180,6 +180,13 @@ character escaped), Open in Overleaf (documented form POST, `encoded_snip`), Sav
 name is "Resume - <Company> - <Role>"). 14 new tests: escaping of `& % $ # _ { } ~ ^ \`, brace balance, one-page guard,
 output text is a subset of the profile, unmet detection, parser, file names, Overleaf fields. The tab registry test now
 expects the Apply tab (the one existing assertion changed). Optional LLM parsing was not added; parsing is deterministic.
+
+**Phase 3 (outreach drafts):** Apply tab → **Outreach**. Recruiter / alum / referrer templates (under 120 words, filled from
+the posting, the contact and one of the student's own resume bullets; cold contacts get a "won't follow up again"
+line). Actions: Copy, Open in Gmail (compose URL), Email app (`mailto:`). Nothing is ever sent by us. `api/outreach-draft.ts`
+returns the template, or, with `ANTHROPIC_API_KEY`, Claude's rewording (3 s timeout) only if it keeps the cap, leaves
+no placeholder, names the company and adds no number that wasn't in the facts. Rate limits: 10 drafts / 10 min per
+session, 20 / 10 min per IP on the server. 17 new tests.
 
 ### Landing page integrated (`/`), demo app moved to `/app/`
 - **Landing page:** the Lovable marketing site (hirearchy-prep-circle.lovable.app), ported into `src/landing/` as React:

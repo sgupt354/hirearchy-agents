@@ -7,6 +7,7 @@ import { DEMO_POSTINGS } from './postings';
 import { OVERLEAF_URL, overleafFields, renderLatex, resumeFileName } from './resume/latex';
 import { tailor } from './resume/tailor';
 import { useApplyStore } from './store';
+import { OutreachPanel } from './ui/OutreachPanel';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { ResumeDoc } from './ui/ResumeDoc';
 
@@ -21,7 +22,7 @@ const list = (xs: string[]) => (xs.length <= 2 ? xs.join(' and ') : `${xs.slice(
 /** Apply: a resume tailored to one posting, built only from the student's own profile, exported as .tex / Overleaf / PDF. */
 export function ApplyTab({ resetKey }: TabProps) {
   const store = useApplyStore();
-  const [view, setView] = useState<'resume' | 'profile'>('resume');
+  const [view, setView] = useState<'resume' | 'outreach' | 'profile'>('resume');
   const [lines, setLines] = useState<Line[]>([]);
   const [printing, setPrinting] = useState(false);
   const chat = useRef<HTMLDivElement>(null);
@@ -95,8 +96,9 @@ export function ApplyTab({ resetKey }: TabProps) {
             ))}
           </select>
           <div className="segmented" role="group" aria-label="View">
-            <button className={view === 'resume' ? 'on' : ''} aria-pressed={view === 'resume'} onClick={() => setView('resume')}>Resume</button>
-            <button className={view === 'profile' ? 'on' : ''} aria-pressed={view === 'profile'} onClick={() => setView('profile')}>Profile</button>
+            {(['resume', 'outreach', 'profile'] as const).map((v) => (
+              <button key={v} className={view === v ? 'on' : ''} aria-pressed={view === v} onClick={() => setView(v)}>{v[0].toUpperCase() + v.slice(1)}</button>
+            ))}
           </div>
         </div>
         <div className="hero-meta">
@@ -122,8 +124,26 @@ export function ApplyTab({ resetKey }: TabProps) {
           />
         </PhoneFrame>
 
-        <section className="card resume-card" aria-label={view === 'resume' ? 'Tailored resume' : 'Your profile'}>
-          {view === 'resume' ? (
+        <section className="card resume-card" aria-label={view === 'resume' ? 'Tailored resume' : view === 'outreach' ? 'Outreach draft' : 'Your profile'}>
+          {view === 'outreach' ? (
+            <>
+              <h3>Intro email · {posting.company}</h3>
+              <OutreachPanel
+                key={posting.id}
+                company={posting.company}
+                role={posting.title}
+                studentName={profile.name}
+                school={profile.education[0]?.org ?? ''}
+                highlight={r.experience[0]?.bullets[0] ?? r.projects[0]?.bullets[0] ?? ''}
+                contacts={[]}
+                onDrafted={(who, words, source) =>
+                  source === 'limited'
+                    ? did('Write draft', "That's a lot of drafts in a few minutes, so I paused. Try again shortly.")
+                    : did(`Draft an email to ${who}`, `Draft for ${who} is ready (${words} words${source === 'llm' ? ', reworded by Claude from your facts only' : ''}). Review it and send it yourself; I never send anything.`)
+                }
+              />
+            </>
+          ) : view === 'resume' ? (
             <>
               <h3>{fileName}</h3>
               <div className="resume-scale"><ResumeDoc r={r} /></div>
