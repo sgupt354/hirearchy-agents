@@ -1,6 +1,49 @@
 # Progress — Track 2 (hirearchy-agents)
 
-Full spec: [SPEC.md](SPEC.md). Branch: `claude/focused-archimedes-i453fr`.
+Full spec: [SPEC.md](SPEC.md). `main` = the shipped prep-circle demo. Active branch: **`feature/full-journey`**
+(branched from `main` at `a3ce531`; not merged to `main` until reviewed).
+
+## Full journey ("Hirearchy: your agent for the whole job hunt")
+Hero line: "Find the job. Prep with your pipeline. Earn the referral. Your agent negotiates; you decide."
+Key idea: "Your prep circle becomes your proof of work."
+
+| Phase | Scope | Status |
+|---|---|---|
+| 0 | Journey shell, tab registry, `TabProps`, UI kit, global speed + Reset | ✅ done |
+| B | Mock interview swap (`src/features/mock/`) | next |
+| D | Trust ratings + evidence file (`src/features/trust/`) | todo |
+| E | Referral Bridge (`src/features/referral/`) | todo |
+| F | Polish, sabotage additions, browser checks, README | todo |
+| G | Merge `aditya/journey` (only on "merge Aditya") | waiting |
+
+### Contract for Aditya (branch `aditya/journey`: Find, Pipeline, Intel)
+- Each tab is a React component taking `TabProps` from `src/features/types.ts`:
+  `export type TabProps = { speed: "slow" | "normal" | "fast"; resetKey: number };`
+  Reset your tab's state whenever `resetKey` changes; read pacing from `SPEEDS[speed]` (`src/app/speed.ts`).
+- Suggested exports: `FindTab` from `src/features/find/index.tsx`, `PipelineTab` from `src/features/pipeline/`,
+  `IntelTab` from `src/features/intel/`. At merge they replace the `soon(...)` placeholders in `src/app/tabs.tsx`.
+- Reusable UI: import from `src/ui/kit.ts` (PhoneFrame, IPhone, ChatBubble, TypingIndicator, QuickReplies,
+  NotificationBanner, CalendarCard, useChatReveal, Drawer, UnderTheHood, Inspector, JudgeLegend, Graph, lenses,
+  12-hour time helpers, SPEEDS). Styles are global in `src/ui/styles.css`.
+- For the evidence file: please export a function or count for "intel reports contributed" per student;
+  it gets wired in at merge (Phase G).
+- Off-limits for Sumedha's side: `src/features/{find,pipeline,intel}/`, `tests/features/{find,pipeline,intel}/`.
+
+### Phase 0 — done
+- `src/app/Shell.tsx`: top nav tabs in order Find · Pipeline · Prep circle · Mock interview · Intel · Referral; opens
+  on Prep circle. Global speed control and global Reset (bumps `resetKey` for every tab). Tab panels stay mounted
+  and are only hidden, so switching tabs never interrupts a run.
+- `src/app/tabs.tsx`: the registry. Find, Pipeline, Intel (Aditya) and Mock interview, Referral (later phases)
+  show a "Coming soon" card.
+- Prep circle moved into `src/features/prep/PrepCircleTab.tsx`, behavior unchanged; its "See what the agents are
+  doing" button moved from the top bar into the tab's hero.
+- `src/ui/chat.tsx` splits the phone into reusable pieces (same markup and classes); `src/ui/Drawer.tsx` is a
+  generic drawer; `src/ui/kit.ts` re-exports the kit.
+- Verified: 133 tests (131 + 2 registry tests), test:sabotage 6/6, typecheck, build, demo:run. Browser at
+  1440×900 and 1280×800: prep golden path and decline branch inside the tab (no page scroll), tab switch mid-run
+  keeps the run going, every placeholder renders, global Reset from another tab gives a page identical to a fresh
+  load, no console errors.
+
 
 ## Done
 - **Phase 1 — seed + engine + tests + demo:run.** `src/engine/`: seed, policy, discovery, cycles,
@@ -73,7 +116,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- Nothing. Waiting for the next task.
+- `feature/full-journey`: Phase B (mock interview swap) next.
 
 ## Exact next step
 Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
