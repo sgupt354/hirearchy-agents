@@ -12,9 +12,11 @@ export class EvidenceLockedError extends Error {}
 
 interface Session {
   id: string;
-  kind: 'prep' | 'mock';
+  kind: 'prep' | 'mock' | 'mentor';
   members: string[];
   taught: Record<string, Skill[]>;
+  /** Mentor sessions (Pay it forward): members who were newcomers at the time. */
+  newcomers?: string[];
 }
 
 /**
@@ -129,6 +131,17 @@ export class TrustNetwork {
     }
     const summary = this.#ledger.summary(person);
     const seed = this.#people[person] ?? { targetRoles: [], projectLinks: [] };
+    // Mentoring (Pay it forward): sessions where this person taught. Points are not part of the file.
+    const mentored = attended.filter((s) => s.kind === 'mentor' && (s.taught[person] ?? []).length);
+    const mentorRatings = this.#ledger.summary(person, new Set(mentored.map((s) => s.id)));
+    const mentoring = mentored.length
+      ? {
+          sessions: mentored.length,
+          newcomersHelped: new Set(mentored.flatMap((s) => (s.newcomers ?? []).filter((n) => n !== person))).size,
+          averageRating: mentorRatings.reliability,
+          ratingCount: mentorRatings.count,
+        }
+      : null;
     return {
       owner: person,
       sessionsAttended: attended.length,
@@ -140,6 +153,7 @@ export class TrustNetwork {
       skillsTaught: taught,
       targetRoles: [...seed.targetRoles],
       projectLinks: [...seed.projectLinks],
+      mentoring,
     };
   }
 

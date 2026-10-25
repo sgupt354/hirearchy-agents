@@ -1,7 +1,7 @@
 import { PIPELINE } from '../src/engine/seed.js';
 import { sendDm, sendDmResult } from '../src/live/discord.js';
 import type { LiveRequest, LiveResponse } from '../src/live/http.js';
-import { ACK, RATING_COPY, RATING_PROMPT, asPhoneMessage, parseNotifyBody, parseRatingNotify, promptButtons, ratingSelects } from '../src/live/protocol.js';
+import { ACK, RATING_COPY, RATING_PROMPT, asPhoneMessage, helpButtons, helpCopy, parseNotifyBody, parseRatingNotify, promptButtons, ratingSelects } from '../src/live/protocol.js';
 import { discordUsersFromEnv } from '../src/live/students.js';
 import { MAX_DMS_PER_SESSION, storeFromEnv, type ReplyStore } from '../src/live/store.js';
 import { studentCopy } from '../src/ui/copy.js';
@@ -72,11 +72,14 @@ export function createNotifyHandler(deps: NotifyDeps) {
       return res.status(429).json({ error: 'rate_limited' });
     }
     try {
-      const copy = clean(studentCopy(asPhoneMessage(n), n.details.company || PIPELINE.company));
-      const content = `Hirearchy Agent\n${copy}\n${ACK.help}`;
-      const components = n.kind === 'proposal' || (n.kind === 'counter' && n.details.status !== 'proposing')
-        ? promptButtons(n.session, n.prompt, student)
-        : [];
+      const content = n.kind === 'help'
+        ? `Hirearchy Agent\n${helpCopy(n.details)}`
+        : `Hirearchy Agent\n${clean(studentCopy(asPhoneMessage(n), n.details.company || PIPELINE.company))}\n${ACK.help}`;
+      const components = n.kind === 'help'
+        ? helpButtons(n.session, n.prompt, student)
+        : n.kind === 'proposal' || (n.kind === 'counter' && n.details.status !== 'proposing')
+          ? promptButtons(n.session, n.prompt, student)
+          : [];
       if (deps.send) {
         const ok = await deps.send({ token: deps.token, userId, content, components });
         return ok ? res.status(200).json({ ok: true }) : res.status(502).json({ error: 'discord_unavailable' });

@@ -149,6 +149,41 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Pay it forward (`feature/pay-it-forward`, not merged; deadline 3:30 PM Phoenix)
+Branched from `claude/focused-archimedes-i453fr` (`8d92bfc`): that is the deployed branch, and it already contains
+`feature/discord-parity` plus its SQL/typecheck fixes and Discord ratings (`feature/discord-parity` alone fails typecheck).
+
+| Phase | Scope | Status |
+|---|---|---|
+| A | Help requests, points ledger, levels, Community tab, live Discord ask, drawer, tests, 3 sabotages | done |
+| B | Question packs unlocked by level | next |
+| C | Project collaboration board (stretch) | only if A and B are done by 11:45 AM |
+
+Phase A, as built (`src/features/community/`, `tests/features/community/`, `tests/live/help.test.ts`):
+- **Points are deterministic** (`points.ts`): base 10 x multiplier (helped a newcomer 3x, a level below 2x, a peer 1x),
+  computed from both sides' standing before the session. Only the helper earns. Settled only when BOTH confirm;
+  confirming twice is a no-op. A pair (either direction) earns points at most twice per ISO week; later sessions still
+  count as completed sessions, with 0 points. Newcomer status = fewer than 3 completed sessions.
+- **There is no spend API.** `CommunityHub.redeemForReferral()` exists only to refuse (the side card's "Trade points
+  for a referral?" button shows the rule). Perks are by level: matching priority, a badge on the proof-of-work card,
+  question packs (1 / 3 / all). A referral is never a perk.
+- **Standing needs** (`community.ts`): the listing has the handle, company, round, topic and "this week / next week";
+  never the name or exact date. Mentor agents check their human's private rules (topics, newcomers per week, evenings
+  only) on their own; the capacity-check event goes only to that mentor's own agent. A mentor gets one ask at a time;
+  the next open need goes to them once they answer. Higher-level askers are matched first. Saying no costs nothing
+  and keeps the need open. Needs expire the day after the deadline; the owner can cancel before booking.
+- **Names** come from the engine's `IdentityVault` + consent map, only after both said yes.
+- **Trust tie-in:** a confirmed session is recorded in the shared trust network as kind `mentor`. The evidence file
+  gains `mentoring` (sessions, newcomers helped, average rating after 2+ ratings), present only for people who have
+  mentored, so stage-1 disclosure is unchanged for everyone else. Points never appear in the evidence file.
+  `TrustLedger.summary()` takes an optional session filter (no new public method; a test pins the method list).
+- **Live mode** (`?live=1`): Aditya's ask goes out as a real DM through `/api/live-notify` with a new `help` kind
+  (`helpCopy` + two buttons, built from the anonymous listing). Typed yes / no work through the existing live-state
+  ingestion; a typed time counts as yes (the slot his agent found is kept). No new SQL.
+- **One existing test changed:** `tests/app/tabs.test.ts` pins the tab list, which now includes Community.
+- Checks at the end of Phase A: 527 tests, typecheck, build, 15/15 sabotages; real-browser run of the golden path
+  offline and in mocked live mode (no console errors).
+
 ### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
 | Phase | Scope | Status |
 |---|---|---|

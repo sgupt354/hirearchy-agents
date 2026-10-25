@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { ApplyTab } from '../features/apply/ApplyTab';
+import { CommunityTab } from '../features/community/CommunityTab';
 import { LiveFind } from '../features/apply/LiveFind';
 import { FindTab } from '../features/find';
 import { IntelTab } from '../features/intel';
@@ -9,7 +10,7 @@ import { PrepCircleTab } from '../features/prep/PrepCircleTab';
 import { ReferralTab } from '../features/referral/ReferralTab';
 import type { TabProps } from '../features/types';
 
-export type TabId = 'find' | 'apply' | 'pipeline' | 'prep' | 'mock' | 'intel' | 'referral';
+export type TabId = 'find' | 'apply' | 'pipeline' | 'prep' | 'community' | 'mock' | 'intel' | 'referral';
 
 export interface TabDef {
   id: TabId;
@@ -30,6 +31,7 @@ export const TABS: TabDef[] = [
   { id: 'apply', label: 'Apply', icon: 'file', Component: ApplyTab },
   { id: 'pipeline', label: 'Pipeline', icon: 'chart', Component: PipelineTab },
   { id: 'prep', label: 'Prep circle', icon: 'users', Component: PrepCircleTab },
+  { id: 'community', label: 'Community', icon: 'award', Component: CommunityTab },
   { id: 'mock', label: 'Mock interview', icon: 'mic', Component: MockTab },
   { id: 'intel', label: 'Intel', icon: 'idea', Component: IntelTab },
   { id: 'referral', label: 'Referral', icon: 'handshake', Component: ReferralTab },
