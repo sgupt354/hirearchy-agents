@@ -616,6 +616,9 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .points-card .lvl-head b { font-size: 4.2cqw; }
 .points-card .lvl-head span { font-size: 3cqw; }
 .cm-rules { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--body); line-height: 1.55; }
+.perks-block { display: flex; flex-direction: column; gap: 8px; }
+.perks-block .board-list { margin: 0; }
+.cm-side { max-height: calc(100cqh - 20px); overflow: auto; }
 .cm-refusal { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 12.5px; line-height: 1.45; color: var(--warn); background: var(--warn-bg); border: 1px solid rgba(245, 158, 11, 0.35); }
 .state-pill.cm-OPEN, .state-pill.cm-MATCHED { color: var(--human); background: var(--human-bg); border-color: rgba(139, 92, 246, 0.3); }
 .state-pill.cm-BOOKED, .state-pill.cm-DONE { color: var(--good); background: var(--good-bg); border-color: rgba(16, 185, 129, 0.3); }

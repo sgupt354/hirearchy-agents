@@ -1,9 +1,35 @@
 import type { ReactNode } from 'react';
 import type { RuleCheck } from './community';
 import { PACKS } from './packs';
-import { levelOf, nextLevel, LEVELS, type PointEntry } from './points';
+import { levelOf, nextLevel, LEVELS, perksFor, type PointEntry } from './points';
 
 // Cards shared by the Community tab's two views (help requests and the project board).
+
+/** Always-visible ladder: what each level unlocks. A referral is never on this list. */
+export function PerksTable() {
+  return (
+    <div className="perks-block" aria-label="Levels and perks">
+      <ul className="board-list">
+        {LEVELS.map(({ level, min }) => {
+          const p = perksFor(level);
+          const packs = p.packs === 'all' ? 'All question packs' : `${p.packs} question pack${p.packs === 1 ? '' : 's'}`;
+          const bits = [
+            packs,
+            p.badge ? `${p.badge} badge` : null,
+            p.matchingPriority > 0 ? `match priority ${p.matchingPriority}` : 'standard matching',
+          ].filter(Boolean);
+          return (
+            <li key={level} className="board-row tone-info">
+              <b>{level} · {min}+ pts</b>
+              <span>{bits.join(' · ')}</span>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="board-note">Points unlock matching priority, a badge and question packs. They never unlock a referral.</p>
+    </div>
+  );
+}
 
 export function LevelProgress({ name, points }: { name: string; points: number }) {
   const level = levelOf(points);

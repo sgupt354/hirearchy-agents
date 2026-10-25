@@ -35,6 +35,8 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
   onRatedRef.current = onRated;
   const ratingSent = useRef(false);
   const ratingApplied = useRef(false);
+  /** Calendar DM goes out before the rating survey. */
+  const [calendarSent, setCalendarSent] = useState(false);
   const api = useRef(liveApi()).current;
   const poller = useRef<LivePoller | null>(null);
 
@@ -45,6 +47,7 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
     notified.current = new Set();
     ratingSent.current = false;
     ratingApplied.current = false;
+    setCalendarSent(false);
     poller.current = new LivePoller({
       fetchReply: api.reply,
       apply: (r) => {
@@ -61,14 +64,14 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
     };
   }, [enabled, runKey, api]);
 
-  // DM each new prompt once. Reveal (everyone said yes + calendar) needs no reply; proposal/counter do.
+  // DM each new prompt once. Calendar (complete → reveal kind) first; skip bare reveal so we don't double-DM.
   const promptId = pending?.id ?? null;
   useEffect(() => {
     if (status !== 'live' || !pending || !pending.kind || notified.current.has(pending.id)) return;
-    if (pending.kind !== 'proposal' && pending.kind !== 'counter' && pending.kind !== 'complete' && pending.kind !== 'reveal') return;
+    if (pending.kind !== 'proposal' && pending.kind !== 'counter' && pending.kind !== 'complete') return;
     notified.current.add(pending.id);
-    const kind = pending.kind === 'complete' || pending.kind === 'reveal' ? 'reveal' : pending.kind;
-    // Reveal never carries member identities: only company/role/window/date for the calendar link.
+    const kind = pending.kind === 'complete' ? 'reveal' : pending.kind;
+    // Calendar DM: company/role/window/date only — never member identities.
     const details =
       kind === 'reveal'
         ? {
@@ -80,11 +83,14 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
         : (pending.details ?? {});
     api
       .notify({ session: session.current, prompt: pending.id, student: 'a1', kind, details })
-      .then((ok) => !ok && setStatus('unavailable'));
+      .then((ok) => {
+        if (!ok) setStatus('unavailable');
+        else if (kind === 'reveal') setCalendarSent(true);
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, promptId, runKey]);
 
-  // Poll for their answer while a proposal/counter is open (reveal/complete need no reply).
+  // Poll for their answer while a proposal/counter is open (calendar needs no reply).
   useEffect(() => {
     if (status !== 'live' || promptId === null) return;
     if (pending?.kind === 'reveal' || pending?.kind === 'complete') return;
@@ -94,14 +100,14 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply, rating = nul
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, promptId, runKey, pending?.kind]);
 
-  // After the session: DM the rating selects once, then poll until every member is rated.
+  // After the calendar DM: rating selects once, then poll until every member is rated.
   const ratingKey = rating ? rating.people.map((p) => p.id).join(',') : '';
   useEffect(() => {
-    if (status !== 'live' || !rating || ratingSent.current) return;
+    if (status !== 'live' || !rating || !calendarSent || ratingSent.current) return;
     ratingSent.current = true;
     void api.notify({ session: session.current, student: 'a1', kind: 'rating', people: rating.people });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, ratingKey, runKey]);
+  }, [status, ratingKey, runKey, calendarSent]);
 
   useEffect(() => {
     if (status !== 'live' || !rating) return;

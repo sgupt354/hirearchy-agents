@@ -10,9 +10,9 @@ import { useTrust } from '../trust/useTrust';
 import { CommunityHub, PointsCannotBuyReferralError, type CommunityMessage, type NeedChange, type NeedState, type RuleCheck } from './community';
 import { CommunityPhone, type CommunityChatItem } from './CommunityPhone';
 import { ProjectBoardView } from './ProjectBoardView';
-import { LevelProgress, PacksCard, PointsCard, RulesCard } from './cards';
+import { LevelProgress, PacksCard, PerksTable, PointsCard, RulesCard } from './cards';
 import { PACKS, unlockedPacks } from './packs';
-import { levelOf, perksFor, type PointEntry } from './points';
+import { BASE_POINTS, levelOf, perksFor, type PointEntry } from './points';
 import { DEMO_NEED, MENTOR, NEWCOMER, ONLINE_AT_START, STANDING_SEED, createCommunitySeed, MENTOR_RULES } from './seed';
 import { useLiveHelp, type LiveHelpStatus } from './useLiveHelp';
 import { applyStore } from '../apply/store';
@@ -325,8 +325,9 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
               pace={SPEEDS[speed].pace}
             />
           ))}
-          <section className="card cm-side" aria-label="Points and levels">
+          <section className="card cm-side" aria-label="Points, levels and perks">
             <h3>Points and levels</h3>
+            <p className="board-note">Help a newcomer, both confirm, earn {BASE_POINTS} base points (3x for newcomers). Levels unlock perks below — never a referral.</p>
             <LevelProgress name="Aditya" points={mentorPoints} />
             {entries.length ? (
               <ul className="board-list">
@@ -338,22 +339,10 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
                 ))}
               </ul>
             ) : (
-              <p className="board-note">No points yet. A session earns points only after both people confirm it happened.</p>
+              <p className="board-note">No points yet this run. Confirm a session on both phones to earn them.</p>
             )}
-            <h3>Open requests</h3>
-            <ul className="board-list">
-              {hub.needs().length === 0 && <li className="board-row tone-muted"><b>None yet</b><span /></li>}
-              {hub.needs().map((n) => {
-                const l = hub.listing(n.id)!;
-                const s = n.id === needId ? state ?? n.state : n.state;
-                return (
-                  <li key={n.id} className={`board-row tone-${s === 'DONE' || s === 'BOOKED' ? 'good' : s === 'OPEN' || s === 'MATCHED' ? 'info' : 'muted'}`}>
-                    <b>{l.handle} · {l.topic} · {l.company} {l.round.toLowerCase()}</b>
-                    <span>{NEED_TEXT[s]}</span>
-                  </li>
-                );
-              })}
-            </ul>
+            <h3>What you unlock</h3>
+            <PerksTable />
             <h3>Question packs</h3>
             <ul className="board-list">
               {PACKS.map((p) => {
@@ -369,13 +358,19 @@ export function CommunityTab({ speed, resetKey }: TabProps) {
                 );
               })}
             </ul>
-            <p className="board-note">Newcomers get one pack free, Contributors 3, Mentors all. Built only from anonymized interview reports and shared intel, each item labelled with its source.</p>
-            <h3>House rules</h3>
-            <ul className="cm-rules">
-              <li>Base 10 points. Helping a newcomer 3x, someone a level below 2x, a peer 1x.</li>
-              <li>One pair earns points at most twice a week.</li>
-              <li>Saying no never costs points. Newcomer status ends after 3 sessions.</li>
-              <li>Levels: Contributor 30, Mentor 100, Senior mentor 250.</li>
+            <h3>Open requests</h3>
+            <ul className="board-list">
+              {hub.needs().length === 0 && <li className="board-row tone-muted"><b>None yet</b><span /></li>}
+              {hub.needs().map((n) => {
+                const l = hub.listing(n.id)!;
+                const s = n.id === needId ? state ?? n.state : n.state;
+                return (
+                  <li key={n.id} className={`board-row tone-${s === 'DONE' || s === 'BOOKED' ? 'good' : s === 'OPEN' || s === 'MATCHED' ? 'info' : 'muted'}`}>
+                    <b>{l.handle} · {l.topic} · {l.company} {l.round.toLowerCase()}</b>
+                    <span>{NEED_TEXT[s]}</span>
+                  </li>
+                );
+              })}
             </ul>
             <button
               className="ghost small"

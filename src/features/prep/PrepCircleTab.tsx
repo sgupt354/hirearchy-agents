@@ -179,9 +179,9 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     trustNet.hasSession(sessionId) && adityaOthers.length > 0 && !trustNet.hasRated(personOf(VIEWER), personOf(adityaOthers[0]), sessionId)
       ? { people: adityaOthers.map((x) => ({ id: x, name: (namesFor(VIEWER)[x] ?? 'Member').split(' ')[0] })) }
       : null;
-  // Proposal/counter need a reply; complete/reveal also go to Discord ("Everyone said yes" + calendar) with no buttons.
+  // Proposal/counter need a reply; complete goes to Discord as calendar first (rating waits until that lands).
   const livePending =
-    adityaLast && (adityaLast.actions.length || adityaLast.kind === 'complete' || adityaLast.kind === 'reveal')
+    adityaLast && (adityaLast.actions.length || adityaLast.kind === 'complete')
       ? {
           ...adityaLast,
           details: {
@@ -194,12 +194,14 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
           },
         }
       : null;
+  // Rating survey only after the complete (calendar) message exists, so Discord order is calendar → rate.
+  const liveRating = adityaRates && inbox[VIEWER].some((m) => m.kind === 'complete') ? adityaRates : null;
   const live = useLiveDiscord({
     enabled: liveRequested,
     runKey: run.current,
     pending: livePending,
     onReply: (r, bubble) => reply(VIEWER, r, bubble),
-    rating: adityaRates,
+    rating: liveRating,
     onRated: (ratings) => rateCircle(VIEWER, ratings, 'discord'),
   });
 
