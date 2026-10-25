@@ -1,5 +1,5 @@
 import { header, readRawBody, type LiveRequest, type LiveResponse } from '../src/live/http.js';
-import { ACK, interactionToReply, parseTypedReply, timeModal, timeSelect } from '../src/live/protocol.js';
+import { ACK, RATING_COPY, decodeRatingId, interactionToReply, parseTypedReply, ratingFromValue, timeModal, timeSelect } from '../src/live/protocol.js';
 import { discordUsersFromEnv, studentForDiscordUser } from '../src/live/students.js';
 import { storeFromEnv, type ReplyStore } from '../src/live/store.js';
 import { verifyDiscordSignature } from '../src/live/verify.js';
@@ -43,7 +43,7 @@ export function createInteractionsHandler(deps: InteractionDeps) {
         options?: { name?: string; value?: unknown }[];
         components?: { components?: { custom_id?: string; value?: string }[] }[];
       };
-      message?: { content?: string };
+      message?: { content?: string; components?: MessageRow[] };
     };
     try {
       body = JSON.parse(raw);
@@ -96,6 +96,24 @@ export function createInteractionsHandler(deps: InteractionDeps) {
 
     if (body.type !== 3) return res.status(200).json(ephemeral("I can only handle the buttons on my messages, typed yes/no/8pm, or /reply."));
 
+    // Private post-session rating: one select per member; each one is removed once answered.
+    const rated = decodeRatingId(body.data?.custom_id);
+    if (rated) {
+      if (userId !== users[rated.rater]) return res.status(200).json(ephemeral('These ratings belong to the student this agent works for.'));
+      const rating = ratingFromValue(body.data?.values?.[0]);
+      if (!rating || !deps.store.putRating) return res.status(200).json(ephemeral('That rating has expired.'));
+      try {
+        // First rating per member wins; a repeat pick is ignored but its select still goes away.
+        await deps.store.putRating(rated.session, rated.rater, rated.subject, rating);
+      } catch {
+        return res.status(200).json(ephemeral("I couldn't save that just now. Please rate in the app."));
+      }
+      const rest = remainingRows(body.message?.components, body.data?.custom_id as string);
+      const content = body.message?.content ?? '';
+      if (!rest.length) return res.status(200).json(update(`${content}\n\n${RATING_COPY.done}`.trim()));
+      return res.status(200).json({ type: 7, data: { content, components: rest } });
+    }
+
     const outcome = interactionToReply(body.data?.custom_id, body.data?.values);
     if (!outcome) return res.status(200).json(ephemeral('That button has expired.'));
     if (userId !== users[outcome.student]) return res.status(200).json(ephemeral('These buttons belong to the student this agent works for.'));
@@ -111,6 +129,23 @@ export function createInteractionsHandler(deps: InteractionDeps) {
     const note = stored ? (outcome.action === 'counter' ? ACK.counter(outcome.text ?? '') : ACK[outcome.action]) : 'You already answered this one.';
     return res.status(200).json(update(`${body.message?.content ?? ''}\n\n${note}`.trim()));
   };
+}
+
+interface MessageRow {
+  type?: number;
+  components?: { type?: number; custom_id?: string; placeholder?: string; options?: { label?: string; value?: string }[] }[];
+}
+
+/** The rating selects still on the message, minus the one just answered (rebuilt from known fields only). */
+function remainingRows(rows: MessageRow[] | undefined, answered: string) {
+  return (rows ?? [])
+    .map((row) => ({
+      type: 1,
+      components: (row.components ?? [])
+        .filter((c) => c.type === 3 && c.custom_id !== answered && decodeRatingId(c.custom_id))
+        .map((c) => ({ type: 3, custom_id: c.custom_id, placeholder: c.placeholder, options: (c.options ?? []).map((o) => ({ label: o.label, value: o.value })) })),
+    }))
+    .filter((row) => row.components.length);
 }
 
 function windowOf(raw?: string): TimeWindow {

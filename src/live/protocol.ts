@@ -197,3 +197,86 @@ export function parseTypedReply(
   if (!parseCounter(t, window)) return 'unreadable';
   return { action: 'counter', text: t.slice(0, 40) };
 }
+
+// ---- private post-session ratings ---------------------------------------------------------------
+
+/** The rating DM is recorded as this prompt id, so each session sends it at most once. */
+export const RATING_PROMPT = 9999;
+/** One action row per member, and Discord allows five rows. */
+export const MAX_RATED = 4;
+
+const SUBJECT_RE = /^a[1-8]$/;
+const NAME_RE = /^[A-Za-z .'-]{1,40}$/;
+
+export interface RatingPerson {
+  id: string;
+  name: string;
+}
+
+/** What the browser sends to /api/live-notify when a session is over and the student should rate it. */
+export interface RatingNotifyBody {
+  session: string;
+  student: LiveStudent;
+  kind: 'rating';
+  people: RatingPerson[];
+}
+
+export function parseRatingNotify(body: unknown): RatingNotifyBody | null {
+  if (!body || typeof body !== 'object') return null;
+  const b = body as Record<string, unknown>;
+  const student = b.student === undefined ? 'a1' : b.student;
+  if (b.kind !== 'rating' || !isSessionId(b.session) || !isLiveStudent(student) || !Array.isArray(b.people)) return null;
+  if (!b.people.length || b.people.length > MAX_RATED) return null;
+  const people: RatingPerson[] = [];
+  for (const p of b.people as unknown[]) {
+    const { id, name } = (p ?? {}) as Record<string, unknown>;
+    if (typeof id !== 'string' || !SUBJECT_RE.test(id) || id === student || people.some((x) => x.id === id)) return null;
+    if (typeof name !== 'string' || !NAME_RE.test(name)) return null;
+    people.push({ id, name });
+  }
+  return { session: b.session, student, kind: 'rating', people };
+}
+
+/** helpful is null for a no-show (the web card counts a no-show as 1). */
+export interface LiveRating {
+  showedUp: boolean;
+  helpful: number | null;
+}
+
+/** Discord custom_id for one member's rating select: "hr|<session>|<rater>|<subject>". */
+export const encodeRatingId = (session: string, rater: LiveStudent, subject: string) => `hr|${session}|${rater}|${subject}`;
+
+export function decodeRatingId(id: unknown): { session: string; rater: LiveStudent; subject: string } | null {
+  if (typeof id !== 'string') return null;
+  const [tag, session, rater, subject, ...rest] = id.split('|');
+  if (tag !== 'hr' || rest.length || !isSessionId(session) || !isLiveStudent(rater) || !SUBJECT_RE.test(subject ?? '') || subject === rater) return null;
+  return { session, rater, subject };
+}
+
+/** A picked option: "1"…"5", or "noshow". */
+export function ratingFromValue(v: unknown): LiveRating | null {
+  if (v === 'noshow') return { showedUp: false, helpful: null };
+  const n = Number(v);
+  return typeof v === 'string' && Number.isInteger(n) && n >= 1 && n <= 5 ? { showedUp: true, helpful: n } : null;
+}
+
+const RATING_OPTIONS = [
+  { label: '5 · Very helpful', value: '5' },
+  { label: '4 · Helpful', value: '4' },
+  { label: '3 · OK', value: '3' },
+  { label: '2 · Not very helpful', value: '2' },
+  { label: '1 · Not helpful', value: '1' },
+  { label: "Didn't show up", value: 'noshow' },
+];
+
+/** One select per member. Each one disappears from the message once it's answered. */
+export const ratingSelects = (session: string, rater: LiveStudent, people: RatingPerson[]) =>
+  people.slice(0, MAX_RATED).map((p) => ({
+    type: 1,
+    components: [{ type: 3, custom_id: encodeRatingId(session, rater, p.id), placeholder: `Rate ${p.name}`, options: RATING_OPTIONS }],
+  }));
+
+export const RATING_COPY = {
+  ask: "Tonight's session is done. How did it go? Rate each member privately. Nobody ever sees a single rating.",
+  done: 'Thanks! Rated privately. A rating only counts once someone has two or more.',
+} as const;

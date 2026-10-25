@@ -1,4 +1,4 @@
-import type { LiveReply, NotifyBody } from './protocol';
+import type { LiveRating, LiveReply, NotifyBody, RatingNotifyBody } from './protocol';
 
 export const LIVE_POLL_MS = 800;
 
@@ -19,7 +19,7 @@ export function liveApi(fetchImpl: typeof fetch = (...a) => fetch(...a)) {
         return false;
       }
     },
-    async notify(body: NotifyBody): Promise<boolean> {
+    async notify(body: NotifyBody | RatingNotifyBody): Promise<boolean> {
       try {
         const r = await fetchImpl('/api/live-notify', {
           method: 'POST',
@@ -37,6 +37,13 @@ export function liveApi(fetchImpl: typeof fetch = (...a) => fetch(...a)) {
       if (!r.ok) throw new Error(`live_state_${r.status}`);
       const b = (await r.json()) as { reply?: LiveReply | null };
       return b.reply ?? null;
+    },
+    /** The student's private ratings from Discord for this session, by member. */
+    async ratings(session: string, student = 'a1'): Promise<Record<string, LiveRating>> {
+      const r = await fetchImpl(`/api/live-state?session=${encodeURIComponent(session)}&ratings=1&student=${encodeURIComponent(student)}`, { signal: AbortSignal.timeout(3000) });
+      if (!r.ok) throw new Error(`live_state_${r.status}`);
+      const b = (await r.json()) as { ratings?: Record<string, LiveRating> };
+      return b.ratings ?? {};
     },
   };
 }

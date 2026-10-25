@@ -1,7 +1,7 @@
 import { PIPELINE } from '../src/engine/seed.js';
 import { sendDm, sendDmResult } from '../src/live/discord.js';
 import type { LiveRequest, LiveResponse } from '../src/live/http.js';
-import { ACK, asPhoneMessage, parseNotifyBody, promptButtons } from '../src/live/protocol.js';
+import { ACK, RATING_COPY, RATING_PROMPT, asPhoneMessage, parseNotifyBody, parseRatingNotify, promptButtons, ratingSelects } from '../src/live/protocol.js';
 import { discordUsersFromEnv } from '../src/live/students.js';
 import { MAX_DMS_PER_SESSION, storeFromEnv, type ReplyStore } from '../src/live/store.js';
 import { studentCopy } from '../src/ui/copy.js';
@@ -24,6 +24,33 @@ export function createNotifyHandler(deps: NotifyDeps) {
   const users = { ...deps.users };
   if (!users.a1 && deps.adityaId) users.a1 = deps.adityaId;
 
+  /** After the circle meets: one DM per session asking the student to rate each member privately. */
+  async function rating(body: unknown, res: LiveResponse) {
+    const r = parseRatingNotify(body);
+    if (!r) return res.status(400).json({ error: 'bad_request' });
+    const userId = users[r.student];
+    if (!userId) return res.status(200).json({ ok: true, skipped: true });
+    try {
+      if (await deps.store?.getPrompt?.(r.session, RATING_PROMPT, r.student)) return res.status(200).json({ ok: true, duplicate: true });
+      if (deps.store?.countPrompts && (await deps.store.countPrompts(r.session)) >= MAX_DMS_PER_SESSION) {
+        return res.status(429).json({ error: 'rate_limited' });
+      }
+      const content = `Hirearchy Agent\n${RATING_COPY.ask}`;
+      const components = ratingSelects(r.session, r.student, r.people);
+      if (deps.send) {
+        const ok = await deps.send({ token: deps.token, userId, content, components });
+        if (ok) await deps.store?.recordPrompt?.({ session: r.session, prompt: RATING_PROMPT, student: r.student, discordUser: userId });
+        return ok ? res.status(200).json({ ok: true }) : res.status(502).json({ error: 'discord_unavailable' });
+      }
+      const sent = await sendDmResult({ token: deps.token, userId, content, components, typing: true });
+      if (!sent.ok) return res.status(502).json({ error: 'discord_unavailable' });
+      await deps.store?.recordPrompt?.({ session: r.session, prompt: RATING_PROMPT, student: r.student, discordUser: userId, channelId: sent.channelId, lastMessageId: sent.messageId });
+      return res.status(200).json({ ok: true });
+    } catch {
+      return res.status(502).json({ error: 'discord_unavailable' });
+    }
+  }
+
   return async function handle(req: LiveRequest, res: LiveResponse) {
     res.setHeader?.('Cache-Control', 'no-store');
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -35,6 +62,7 @@ export function createNotifyHandler(deps: NotifyDeps) {
         body = null;
       }
     }
+    if ((body as { kind?: unknown } | null)?.kind === 'rating') return rating(body, res);
     const n = parseNotifyBody(body);
     if (!n) return res.status(400).json({ error: 'bad_request' });
     const student = n.student ?? 'a1';
@@ -69,6 +97,7 @@ export function createNotifyHandler(deps: NotifyDeps) {
       return res.status(502).json({ error: 'discord_unavailable' });
     }
   };
+
 }
 
 export default async function handler(req: LiveRequest, res: LiveResponse) {

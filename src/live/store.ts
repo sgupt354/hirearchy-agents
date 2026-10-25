@@ -1,4 +1,4 @@
-import type { LiveReply } from './protocol.js';
+import type { LiveRating, LiveReply } from './protocol.js';
 import type { LiveStudent } from './students.js';
 
 export interface PromptRecord {
@@ -19,6 +19,10 @@ export interface ReplyStore {
   getPrompt?(session: string, prompt: number, student?: LiveStudent): Promise<PromptRecord | null>;
   latestFor?(student: LiveStudent): Promise<PromptRecord | null>;
   countPrompts?(session: string): Promise<number>;
+  /** Private post-session rating, first one per (session, rater, subject) wins. */
+  putRating?(session: string, rater: LiveStudent, subject: string, rating: LiveRating): Promise<boolean>;
+  /** The rater's own ratings for a session, by subject. */
+  getRatings?(session: string, rater: LiveStudent): Promise<Record<string, LiveRating>>;
 }
 
 const keyOf = (session: string, prompt: number, student: string) => `${session}|${prompt}|${student}`;
@@ -60,6 +64,24 @@ export class MemoryReplyStore implements ReplyStore {
 
   async getPrompt(session: string, prompt: number, student: LiveStudent = 'a1') {
     return this.#prompts.get(keyOf(session, prompt, student)) ?? null;
+  }
+
+  #ratings = new Map<string, LiveRating>();
+
+  async putRating(session: string, rater: LiveStudent, subject: string, rating: LiveRating) {
+    const key = `${session}|${rater}|${subject}`;
+    if (this.#ratings.has(key)) return false;
+    this.#ratings.set(key, { ...rating });
+    return true;
+  }
+
+  async getRatings(session: string, rater: LiveStudent) {
+    const out: Record<string, LiveRating> = {};
+    for (const [key, r] of this.#ratings) {
+      const [s, who, subject] = key.split('|');
+      if (s === session && who === rater) out[subject] = { ...r };
+    }
+    return out;
   }
 
   async countPrompts(session: string) {
@@ -166,6 +188,27 @@ export class SupabaseReplyStore implements ReplyStore {
     } catch {
       return null;
     }
+  }
+
+  async putRating(session: string, rater: LiveStudent, subject: string, rating: LiveRating) {
+    return (
+      (await this.#rpc('t2_live_put_rating', {
+        p_session: session,
+        p_rater: rater,
+        p_subject: subject,
+        p_helpful: rating.helpful,
+        p_showed_up: rating.showedUp,
+      })) === true
+    );
+  }
+
+  async getRatings(session: string, rater: LiveStudent) {
+    const rows = (await this.#rpc('t2_live_get_ratings', { p_session: session, p_rater: rater })) as
+      | { subject_id: string; helpful: number | null; showed_up: boolean | null }[]
+      | null;
+    const out: Record<string, LiveRating> = {};
+    for (const r of rows ?? []) out[r.subject_id] = { showedUp: r.showed_up !== false, helpful: r.helpful };
+    return out;
   }
 
   async countPrompts(session: string) {

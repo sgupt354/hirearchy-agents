@@ -1,6 +1,6 @@
 {
-  "passed": 503,
-  "total": 503,
+  "passed": 510,
+  "total": 510,
   "privacyTest": {
     "name": "identity is unreadable before full consent and never leaks into events",
     "passed": true

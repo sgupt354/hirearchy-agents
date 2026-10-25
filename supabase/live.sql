@@ -140,3 +140,31 @@ grant execute on function public.t2_live_get_student_reply(text, integer, text) 
 grant execute on function public.t2_live_record_prompt(text, integer, text, text, text, text, text) to service_role;
 grant execute on function public.t2_live_get_prompt(text, integer, text) to service_role;
 grant execute on function public.t2_live_count_prompts(text) to service_role;
+
+-- Additive: private post-session ratings from Discord (written and read by the server only).
+create or replace function public.t2_live_put_rating(p_session text, p_rater text, p_subject text, p_helpful integer, p_showed_up boolean)
+returns boolean
+language plpgsql security definer set search_path = public as $$
+declare inserted integer;
+begin
+  if p_subject !~ '^a[1-8]$' or p_subject = p_rater then return false; end if;
+  insert into t2_live_ratings (session_id, rater_id, subject_id, helpful, showed_up)
+  values (p_session, p_rater, p_subject, p_helpful, p_showed_up)
+  on conflict (session_id, rater_id, subject_id) do nothing;
+  get diagnostics inserted = row_count;
+  delete from t2_live_ratings where created_at < now() - interval '1 day';
+  return inserted = 1;
+end;
+$$;
+
+create or replace function public.t2_live_get_ratings(p_session text, p_rater text)
+returns table (subject_id text, helpful integer, showed_up boolean)
+language sql stable security definer set search_path = public as $$
+  select r.subject_id, r.helpful, r.showed_up from t2_live_ratings r
+  where r.session_id = p_session and r.rater_id = p_rater;
+$$;
+
+revoke all on function public.t2_live_put_rating(text, text, text, integer, boolean) from public, anon, authenticated;
+revoke all on function public.t2_live_get_ratings(text, text) from public, anon, authenticated;
+grant execute on function public.t2_live_put_rating(text, text, text, integer, boolean) to service_role;
+grant execute on function public.t2_live_get_ratings(text, text) to service_role;

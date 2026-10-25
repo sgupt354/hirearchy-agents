@@ -12,6 +12,7 @@ import type { TimeWindow } from '../src/engine/types.js';
  * Polled by the web app every 1.5 s in live mode.
  *   GET ?health=1                            → { ok, students }
  *   GET ?session=<id>&prompt=<n>&student=a1  → { reply } (also ingests typed DMs)
+ *   GET ?session=<id>&ratings=1&student=a1   → { ratings } (private post-session ratings)
  */
 export interface StateDeps {
   store: ReplyStore | null;
@@ -38,6 +39,16 @@ export function createStateHandler(deps: StateDeps) {
     if (!deps.configured || !deps.store) return res.status(503).json({ error: 'live_unavailable' });
 
     const session = queryParam(req, 'session');
+    // GET ?session=<id>&ratings=1&student=a1 → { ratings } (the student's own private ratings from Discord)
+    if (queryParam(req, 'ratings')) {
+      const rater = queryParam(req, 'student') || 'a1';
+      if (!isSessionId(session) || !isLiveStudent(rater)) return res.status(400).json({ error: 'bad_request' });
+      try {
+        return res.status(200).json({ ratings: (await deps.store.getRatings?.(session, rater)) ?? {} });
+      } catch {
+        return res.status(502).json({ error: 'store_unavailable' });
+      }
+    }
     const prompt = Number(queryParam(req, 'prompt'));
     const studentRaw = queryParam(req, 'student');
     const student = studentRaw ? (isLiveStudent(studentRaw) ? studentRaw : null) : 'a1';

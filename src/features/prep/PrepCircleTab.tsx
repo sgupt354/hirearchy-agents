@@ -60,6 +60,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   const requested = useRef(new Set<string>());
   const trustNet = useTrust();
   const [ratedAt, setRatedAt] = useState<Record<string, string>>({});
+  const [ratedVia, setRatedVia] = useState<Record<string, 'discord'>>({});
   // Bumped on reset so async results and phone state from a previous run are dropped.
   const run = useRef(0);
 
@@ -164,6 +165,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     engine.resetDemo();
     trustNet.resetFor(resetKey);
     setRatedAt({});
+    setRatedVia({});
     requested.current.clear();
     setGenerated({});
     setReplies({});
@@ -176,14 +178,24 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     act(() => {});
   };
 
+  const sessionId = `prep-${run.current}`;
+
   // Live Discord mode (?live=1): Aditya answers their prompts in Discord; the simulated phone still works.
+  // Once the circle has met, Aditya can also rate it privately from Discord.
   const liveRequested = useMemo(() => isLiveRequested(), []);
   const adityaLast = inbox[VIEWER].at(-1);
+  const adityaOthers = (engine.circle?.members ?? []).filter((x) => x !== VIEWER);
+  const adityaRates =
+    trustNet.hasSession(sessionId) && adityaOthers.length > 0 && !trustNet.hasRated(personOf(VIEWER), personOf(adityaOthers[0]), sessionId)
+      ? { people: adityaOthers.map((x) => ({ id: x, name: (namesFor(VIEWER)[x] ?? 'Member').split(' ')[0] })) }
+      : null;
   const live = useLiveDiscord({
     enabled: liveRequested,
     runKey: run.current,
     pending: adityaLast?.actions.length ? adityaLast : null,
     onReply: (r, bubble) => reply(VIEWER, r, bubble),
+    rating: adityaRates,
+    onRated: (ratings) => rateCircle(VIEWER, ratings, 'discord'),
   });
 
   const firstReset = useRef(resetKey);
@@ -208,7 +220,6 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
   };
 
   // After the circle meets, it becomes a session on everyone's record and each member rates the others privately.
-  const sessionId = `prep-${run.current}`;
   useEffect(() => {
     const circle = engine.circle;
     if (engine.state !== 'COMPLETED' || !caughtUp || !circle || trustNet.hasSession(sessionId)) return;
@@ -217,9 +228,12 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
     trustNet.recordSession({ id: sessionId, kind: 'prep', members: circle.members.map(personOf), taught });
   });
 
-  const rateCircle = (id: string, ratings: Record<string, Rating>) => {
+  const rateCircle = (id: string, ratings: Record<string, Rating>, via?: 'discord') => {
+    const others = Object.keys(ratings);
+    if (others.length && trustNet.hasRated(personOf(id), personOf(others[0]), sessionId)) return; // already rated on the phone
     if (act(() => Object.entries(ratings).forEach(([other, r]) => trustNet.rate(personOf(id), personOf(other), sessionId, r)))) {
       setRatedAt((all) => ({ ...all, [id]: clock() }));
+      if (via) setRatedVia((all) => ({ ...all, [id]: via }));
     }
   };
 
@@ -234,7 +248,7 @@ export function PrepCircleTab({ speed, resetKey }: TabProps) {
       items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={others.map((x) => ({ id: x, name: (names[x] ?? 'Member').split(' ')[0] }))} onSubmit={(r) => rateCircle(id, r)} /> });
       return items;
     }
-    items.push({ key: 't-done', from: 'me', text: 'Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-done', from: 'me', text: ratedVia[id] ? 'Rated privately · via Discord' : 'Rated privately', time: ratedAt[id] });
     items.push({ key: 't-thanks', from: 'agent', text: "Thanks! A rating only counts once someone has two or more. Here's your proof of work so far:" });
     items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
     return items;
