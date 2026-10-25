@@ -2,6 +2,8 @@
  * One-time: register the /reply slash command on the Hirearchy Discord application.
  * Usage (never print tokens): DISCORD_BOT_TOKEN=… DISCORD_APP_ID=… npx tsx scripts/register-commands.ts
  */
+export {};
+
 const token = process.env.DISCORD_BOT_TOKEN;
 const appId = process.env.DISCORD_APP_ID;
 if (!token || !appId) {

@@ -61,7 +61,7 @@ create table if not exists public.t2_live_prompts (
   student_id      text        not null check (student_id in ('a1', 'a2', 'a3')),
   discord_user    text        not null,
   channel_id      text,
-  window          text,
+  prompt_window   text,
   last_message_id text,
   created_at      timestamptz not null default now(),
   primary key (session_id, prompt_id, student_id)
@@ -107,20 +107,20 @@ create or replace function public.t2_live_record_prompt(p_session text, p_prompt
 returns void
 language plpgsql security definer set search_path = public as $$
 begin
-  insert into t2_live_prompts (session_id, prompt_id, student_id, discord_user, channel_id, window, last_message_id)
+  insert into t2_live_prompts (session_id, prompt_id, student_id, discord_user, channel_id, prompt_window, last_message_id)
   values (p_session, p_prompt, p_student, p_discord_user, p_channel, p_window, p_last_message)
   on conflict (session_id, prompt_id, student_id) do update set
     discord_user = excluded.discord_user,
     channel_id = coalesce(excluded.channel_id, t2_live_prompts.channel_id),
-    window = coalesce(excluded.window, t2_live_prompts.window),
+    prompt_window = coalesce(excluded.prompt_window, t2_live_prompts.prompt_window),
     last_message_id = coalesce(excluded.last_message_id, t2_live_prompts.last_message_id);
 end;
 $$;
 
 create or replace function public.t2_live_get_prompt(p_session text, p_prompt integer, p_student text)
-returns table (discord_user text, channel_id text, window text, last_message_id text)
+returns table (discord_user text, channel_id text, prompt_window text, last_message_id text)
 language sql stable security definer set search_path = public as $$
-  select p.discord_user, p.channel_id, p.window, p.last_message_id from t2_live_prompts p
+  select p.discord_user, p.channel_id, p.prompt_window, p.last_message_id from t2_live_prompts p
   where p.session_id = p_session and p.prompt_id = p_prompt and p.student_id = p_student;
 $$;
 

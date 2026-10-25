@@ -149,7 +149,7 @@ export class SupabaseReplyStore implements ReplyStore {
   async getPrompt(session: string, prompt: number, student: LiveStudent = 'a1') {
     try {
       const rows = (await this.#rpc('t2_live_get_prompt', { p_session: session, p_prompt: prompt, p_student: student })) as
-        | { discord_user: string; channel_id: string | null; window: string | null; last_message_id: string | null }[]
+        | { discord_user: string; channel_id: string | null; prompt_window: string | null; last_message_id: string | null }[]
         | null;
       const row = rows?.[0];
       return row
@@ -159,7 +159,7 @@ export class SupabaseReplyStore implements ReplyStore {
             student,
             discordUser: row.discord_user,
             channelId: row.channel_id ?? undefined,
-            window: row.window ?? undefined,
+            window: row.prompt_window ?? undefined,
             lastMessageId: row.last_message_id ?? undefined,
           }
         : null;
