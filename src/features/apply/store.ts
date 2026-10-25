@@ -5,10 +5,16 @@ import { DEMO_PROFILE, type Profile } from './resume/profile';
 // Session-only state for the apply suite: tracked postings, the student's profile and the posting being applied to.
 // Nothing is persisted; global Reset clears it.
 
+/** Where an application stands (jobapp's pipeline): Saved → Applied → OA → Interview → Offer, or Rejected. */
+export const TRACKER_STATUSES = ['Saved', 'Applied', 'OA', 'Interview', 'Offer', 'Rejected'] as const;
+export type TrackerStatus = (typeof TRACKER_STATUSES)[number];
+
 export interface TrackedPosting extends ScoredPosting {
   /** "live" from the public boards, or "demo" when live search was unavailable. */
   source: 'live' | 'demo';
   trackedAt: string;
+  /** Defaults to "Saved" when absent. */
+  status?: TrackerStatus;
 }
 
 class ApplyStore {
@@ -56,6 +62,11 @@ class ApplyStore {
 
   select(id: string | null): void {
     this.#selected = id;
+    this.#emit();
+  }
+
+  setStatus(id: string, status: TrackerStatus): void {
+    this.#tracked = this.#tracked.map((p) => (p.id === id ? { ...p, status } : p));
     this.#emit();
   }
 

@@ -223,6 +223,12 @@ excludes / unclear), each with the exact sentence as evidence. The grad year com
 profile (the demo profile's May 2027), not from any personal file. Shown as chips plus the quoted sentence on every
 live posting and in Apply's requirements box. `match.ts` is unchanged. 11 new tests.
 
+**Port from jobapp: application status pipeline.** Apply → Tracker: each tracked job has a status (Saved, Applied,
+OA, Interview, Offer, Rejected; default Saved), a summary strip (tracked, applied, OA, interviews, offers, interview
+rate = (Interview + Offer) / applied, as in jobapp's tracker) and the agent's next-step note when a status changes
+(for an interview it points to the prep circle and mock partner). CSV / JSON exports carry the status. Session-only;
+global Reset clears it. 4 new tests; the existing tracker test is unchanged.
+
 **Phase 7 (checks + docs):** README: new tab, an "Apply suite: what's live and what's demo" table, the new functions
 and env vars, 12 sabotages, demo steps (prep circle stays the hero). `.env.example` lists `APOLLO_API_KEY`,
 `OUTREACH_MODEL`, `JOBS_SEARCH` (server-side). Emoji now stripped at display in every phone card (Mock and Referral

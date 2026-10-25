@@ -48,7 +48,7 @@ reports). The Referral tab reads that record, so what you do in the other tabs r
 | LaTeX / Overleaf / PDF | Always | n/a | `.tex` download, Overleaf's documented "open in Overleaf" form, print to PDF; file name "Resume - <Company> - <Role>" |
 | Intro email drafts | Always (template) | n/a | `ANTHROPIC_API_KEY` adds Claude rewording that may not add facts. Copy / Gmail / email app only: **we never send email** |
 | Contacts | `APOLLO_API_KEY` set | Three contacts labelled "Demo data" | Name, title, company, LinkedIn. No emails from search |
-| Huntr | n/a | n/a | **Huntr has no public integration for individual students** (its API is for career centres). Apply → Tracker exports CSV / JSON and links to Huntr |
+| Huntr | n/a | n/a | **Huntr has no public integration for individual students** (its API is for career centres). Apply → Tracker keeps a status per job (Saved → Applied → OA → Interview → Offer / Rejected) with a summary and interview rate, exports CSV / JSON and links to Huntr |
 | Referral packet | Always (demo network) | n/a | After the coffee chat is booked, the referrer can request Jordan's tailored resume + intro; shared only on Jordan's yes |
 
 Research and sources for every integration: [AUDIT.md](AUDIT.md).

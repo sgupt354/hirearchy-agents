@@ -1,4 +1,4 @@
-import type { TrackedPosting } from '../store';
+import type { TrackedPosting, TrackerStatus } from '../store';
 
 // Tracker export. Huntr has no public API or documented import format for individual job seekers (its API is for
 // organizations: https://docs.huntr.co/), so we export a generic tracker the student can keep or bring into any tool
@@ -10,7 +10,7 @@ export const TRACKER_COLUMNS = ['Company', 'Job Title', 'Status', 'Location', 'U
 export interface TrackerRow {
   company: string;
   title: string;
-  status: 'Saved';
+  status: TrackerStatus;
   location: string;
   url: string;
   dateSaved: string;
@@ -21,7 +21,7 @@ export function trackerRows(tracked: TrackedPosting[], savedOn: string): Tracker
   return tracked.map((p) => ({
     company: p.company,
     title: p.title,
-    status: 'Saved',
+    status: p.status ?? 'Saved',
     location: p.location,
     url: p.url,
     dateSaved: savedOn,
@@ -44,6 +44,26 @@ export function toCsv(rows: TrackerRow[]): string {
 
 export function toJson(rows: TrackerRow[], exportedAt: string): string {
   return JSON.stringify({ format: 'hirearchy-tracker', version: 1, exportedAt, jobs: rows }, null, 2);
+}
+
+export interface TrackerSummary {
+  tracked: number;
+  /** Everything past "Saved": Applied, OA, Interview, Offer or Rejected. */
+  applied: number;
+  oa: number;
+  interviews: number;
+  offers: number;
+  rejected: number;
+  /** (Interview + Offer) / applied, 0 when nothing is applied yet (jobapp's definition). */
+  interviewRate: number;
+}
+
+export function summarize(rows: Pick<TrackerRow, 'status'>[]): TrackerSummary {
+  const n = (s: TrackerStatus) => rows.filter((r) => r.status === s).length;
+  const applied = rows.filter((r) => r.status !== 'Saved').length;
+  const interviews = n('Interview');
+  const offers = n('Offer');
+  return { tracked: rows.length, applied, oa: n('OA'), interviews, offers, rejected: n('Rejected'), interviewRate: applied ? (interviews + offers) / applied : 0 };
 }
 
 export const trackerFileName = (ext: 'csv' | 'json', date: string) => `Hirearchy tracker ${date}.${ext}`;

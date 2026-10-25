@@ -585,3 +585,9 @@ select.field { appearance: none; padding-right: 32px; background: var(--surface)
 .chip.good { color: var(--good); border-color: color-mix(in oklab, var(--good) 35%, transparent); background: var(--good-bg); }
 .chip.bad { color: var(--warn); border-color: color-mix(in oklab, var(--warn-dot) 40%, transparent); background: var(--warn-bg); }
 .job-quote { margin: 0; font-size: 12px; font-style: italic; color: var(--body); border-left: 2px solid var(--border-strong); padding-left: 8px; }
+.tracker-summary { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; flex: none; }
+.tracker-summary div { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 4px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); }
+.tracker-summary b { font-family: var(--display); font-size: 18px; color: var(--text); }
+.tracker-summary span { font-size: 11px; color: var(--muted); }
+.tracker-row-actions { align-items: center; }
+.field.status { min-width: 0; height: 32px; width: 132px; font-size: 12.5px; }

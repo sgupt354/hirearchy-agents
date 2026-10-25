@@ -8,8 +8,8 @@ import { F1_LABEL, GRAD_LABEL, classifyF1, classifyGradWindow, gradYearOf } from
 import { DEMO_POSTINGS } from './postings';
 import { OVERLEAF_URL, overleafFields, renderLatex, resumeFileName } from './resume/latex';
 import { tailor } from './resume/tailor';
-import { useApplyStore } from './store';
-import { HUNTR_URL, toCsv, toJson, trackerFileName, trackerRows } from './tracker/export';
+import { TRACKER_STATUSES, useApplyStore, type TrackerStatus } from './store';
+import { HUNTR_URL, summarize, toCsv, toJson, trackerFileName, trackerRows } from './tracker/export';
 import { OutreachPanel } from './ui/OutreachPanel';
 import { ProfileEditor } from './ui/ProfileEditor';
 import { ResumeDoc } from './ui/ResumeDoc';
@@ -64,6 +64,18 @@ export function ApplyTab({ resetKey }: TabProps) {
   };
 
   const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+  const NEXT_STEP: Partial<Record<TrackerStatus, string>> = {
+    Applied: 'Nice. If you hear back, update it here.',
+    OA: 'Good luck on the assessment. Intel has reports from students who took it.',
+    Interview: 'Congrats. Your agent can find a prep circle or a mock partner for this interview.',
+    Offer: 'Congrats on the offer. Consider leaving a tip in Intel for students still waiting.',
+    Rejected: "Sorry. It still counts as practice; I'll keep looking.",
+  };
+  const changeStatus = (id: string, company: string, status: TrackerStatus) => {
+    store.setStatus(id, status);
+    did(`Mark ${company}: ${status}`, `Updated your tracker. ${NEXT_STEP[status] ?? ''}`.trim());
+  };
+
   const exportTracker = (ext: 'csv' | 'json') => {
     const rows = trackerRows(store.tracked(), today);
     save(ext === 'csv' ? toCsv(rows) : toJson(rows, new Date().toISOString()), ext === 'csv' ? 'text/csv' : 'application/json', trackerFileName(ext, today));
@@ -161,6 +173,17 @@ export function ApplyTab({ resetKey }: TabProps) {
           {view === 'tracker' ? (
             <>
               <h3>Your tracker</h3>
+              {(() => {
+                const sum = summarize(trackerRows(store.tracked(), today));
+                return (
+                  <div className="tracker-summary" aria-label="Tracker summary">
+                    {[['Tracked', sum.tracked], ['Applied', sum.applied], ['OA', sum.oa], ['Interviews', sum.interviews], ['Offers', sum.offers]].map(([k, v]) => (
+                      <div key={k}><b>{v}</b><span>{k}</span></div>
+                    ))}
+                    <div><b>{Math.round(sum.interviewRate * 100)}%</b><span>Interview rate</span></div>
+                  </div>
+                );
+              })()}
               {store.tracked().length === 0 ? (
                 <p className="feed-empty">Nothing tracked yet. Turn on Live search in Find and track a posting.</p>
               ) : (
@@ -170,7 +193,12 @@ export function ApplyTab({ resetKey }: TabProps) {
                       <b>{t.title}</b>
                       <span>{t.company} · {t.location || 'Location not listed'} · saved {t.trackedAt}</span>
                     </div>
-                    {t.source === 'demo' && <div className="job-chips"><span className="chip withheld">Demo data</span></div>}
+                    <div className="job-actions tracker-row-actions">
+                      {t.source === 'demo' && <span className="chip withheld">Demo data</span>}
+                      <select className="field status" aria-label={`Status for ${t.company}`} value={t.status ?? 'Saved'} onChange={(e) => changeStatus(t.id, t.company, e.target.value as TrackerStatus)}>
+                        {TRACKER_STATUSES.map((st) => <option key={st} value={st}>{st}</option>)}
+                      </select>
+                    </div>
                   </article>
                 ))
               )}
