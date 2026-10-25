@@ -1,0 +1,133 @@
+export type Skill = 'DSA' | 'Behavioral' | 'System Design';
+
+export interface TimeWindow {
+  start: string; // "HH:MM"
+  end: string; // "HH:MM"
+}
+
+export type StagePublic = 'interview' | 'applied';
+
+export interface Policy {
+  share_skills: boolean;
+  share_approx_availability: boolean;
+  share_exact_stage: boolean;
+  abstract_interview_date: boolean;
+  negotiate_schedule: boolean;
+  join_session: 'ask';
+  reveal_identity: 'ask';
+  share_contact: 'ask';
+  min_session_minutes: number;
+}
+
+export interface PrivateInfo {
+  name: string;
+  email: string;
+  discord_id: string;
+  interview_date: string | null;
+  stage: string;
+  notes: string;
+}
+
+export interface AgentProfile {
+  agent_id: string;
+  label: string;
+  private: PrivateInfo;
+  pipeline: { company: string; role: string };
+  stage_public: StagePublic;
+  offers: Skill[];
+  needs: Skill[];
+  availability: TimeWindow[];
+  policy: Policy;
+}
+
+export interface Identity {
+  agent_id: string;
+  name: string;
+  email: string;
+  discord_id: string;
+}
+
+/** What an agent publishes to the broker. Built from its policy; never contains PRIVATE fields. */
+export interface Listing {
+  handle: string;
+  label: string;
+  pipeline: { company: string; role: string };
+  stage: StagePublic;
+  stage_detail?: string;
+  offers: Skill[];
+  needs: Skill[];
+  availability?: TimeWindow[];
+  urgency?: string;
+  min_session_minutes: number;
+}
+
+export type EventType =
+  | 'TRIGGER'
+  | 'DISCOVER'
+  | 'FILTERED'
+  | 'PROPOSE'
+  | 'COUNTER'
+  | 'ACCEPT'
+  | 'REJECT'
+  | 'CONFLICT'
+  | 'ESCALATE'
+  | 'CONSENT'
+  | 'DECLINE'
+  | 'DISSOLVED'
+  | 'REVEAL'
+  | 'COMPLETE';
+
+export interface Disclosure {
+  shared: string[];
+  abstracted: string[];
+  withheld: string[];
+}
+
+export interface AgentEvent {
+  id: string;
+  coordination_id: string;
+  from: string;
+  to: string[];
+  type: EventType;
+  payload: Record<string, unknown>;
+  disclosure: Disclosure;
+  human_readable: string;
+  created_at: string;
+}
+
+/** An event before the relay stamps id / from / time on it. */
+export interface Draft {
+  type: EventType;
+  to: string[];
+  payload: Record<string, unknown>;
+  human_readable: string;
+  disclosure?: Partial<Disclosure>;
+}
+
+export type CoordinationState =
+  | 'IDLE'
+  | 'TRIGGERED'
+  | 'DISCOVERING'
+  | 'MATCH_FOUND'
+  | 'NEGOTIATING'
+  | 'CONFLICT_FOUND'
+  | 'CONFLICT_RESOLVED'
+  | 'AWAITING_HUMANS'
+  | 'COUNTERED'
+  | 'AWAITING_CONSENT'
+  | 'CONSENT_COMPLETE'
+  | 'IDENTITIES_REVEALED'
+  | 'COMPLETED'
+  | 'DECLINED'
+  | 'DISSOLVED'
+  | 'REDISCOVERING';
+
+export type HumanAction = 'accept' | 'counter' | 'decline';
+
+export interface PhoneMessage {
+  id: number;
+  text: string;
+  actions: HumanAction[];
+}
+
+export type HumanReply = { kind: 'accept' } | { kind: 'decline' } | { kind: 'counter'; text: string };
