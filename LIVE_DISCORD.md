@@ -1,9 +1,11 @@
 # Live Discord mode
 
 Aditya's agent really messages them in Discord, two-way. When the prep-circle run needs them, the bot DMs them the
-same message their simulated phone shows, with **✅ I'm in · 🕗 Suggest a time · Not this time** buttons. "Suggest a
-time" turns into a 7:30 / 8:00 / 8:30 PM picker. Their answer is applied to the engine exactly as if they'd tapped it
-on the simulated phone (their phone shows it as "· via Discord").
+same message their simulated phone shows, with **I'm in · Suggest a time · Not this time** buttons. "Suggest a
+time" turns into a 7:30 / 8:00 / 8:30 PM picker plus **Other** (a short text modal). You can also **type in the DM**:
+`yes`, `no`, or a time like `8pm`. The bot answers in Discord within about a second while `/app/?live=1` is open
+(the page polls `/api/live-state`, which reads the DM and stores the first valid answer). Unrecognized text
+(`hey`) gets a short help line, not a fake yes. `/reply` works the same way once registered.
 
 Live mode is opt-in: open the demo app with **`/app/?live=1`** (`/?live=1` redirects there). Without it nothing changes. If anything is missing or
 failing, the page says **"Live mode unavailable, using simulated phone"** and the demo carries on.
@@ -49,8 +51,8 @@ Developer Portal: Discord checks it immediately with a signed PING and a deliber
 
 ### 2. Supabase (Sumedha)
 
-1. Supabase dashboard → SQL editor → run **`supabase/live.sql`** once (additive; touches only `t2_live_replies`
-   and two `t2_live_*` functions).
+1. Supabase dashboard → SQL editor → run **`supabase/live.sql`** (additive; original `t2_live_replies` plus
+   `t2_live_student_replies`, `t2_live_prompts`, `t2_live_ratings` and their `t2_live_*` functions). Safe to re-run.
 2. Project Settings → API: copy **Project URL** → `SUPABASE_URL` and the **service_role** key →
    `SUPABASE_SERVICE_ROLE_KEY`. Server-side only: never prefix it with `VITE_`.
 
@@ -61,7 +63,10 @@ Developer Portal: Discord checks it immediately with a signed PING and a deliber
 | `DISCORD_APP_ID` | no | Portal → General Information |
 | `DISCORD_PUBLIC_KEY` | no (but required) | Portal → General Information |
 | `DISCORD_BOT_TOKEN` | **yes** | Portal → Bot → Reset Token |
-| `DISCORD_ADITYA_USER_ID` | no | Discord → Copy User ID |
+| `DISCORD_ADITYA_USER_ID` | no | Discord → Copy User ID (alias for Aditya) |
+| `DISCORD_USER_ADITYA` | no | Preferred Aditya id; falls back to `DISCORD_ADITYA_USER_ID` |
+| `DISCORD_USER_SUMIT` | no | Sumit's Discord user id (optional; otherwise simulated phone) |
+| `DISCORD_USER_MAYA` | no | Maya's Discord user id (optional; otherwise simulated phone) |
 | `SUPABASE_URL` | no | Supabase → Project Settings → API (`VITE_SUPABASE_URL` also works) |
 | `SUPABASE_SERVICE_ROLE_KEY` | **yes** | Supabase → Project Settings → API |
 

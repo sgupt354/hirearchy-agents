@@ -1,6 +1,6 @@
 import type { LiveReply, NotifyBody } from './protocol';
 
-export const LIVE_POLL_MS = 1500;
+export const LIVE_POLL_MS = 800;
 
 /** Live mode is opt-in per page load: ?live=1 */
 export const isLiveRequested = (search = typeof window === 'undefined' ? '' : window.location.search) =>
@@ -32,8 +32,8 @@ export function liveApi(fetchImpl: typeof fetch = (...a) => fetch(...a)) {
         return false;
       }
     },
-    async reply(session: string, prompt: number): Promise<LiveReply | null> {
-      const r = await fetchImpl(`/api/live-state?session=${encodeURIComponent(session)}&prompt=${prompt}`, { signal: AbortSignal.timeout(3000) });
+    async reply(session: string, prompt: number, student = 'a1'): Promise<LiveReply | null> {
+      const r = await fetchImpl(`/api/live-state?session=${encodeURIComponent(session)}&prompt=${prompt}&student=${encodeURIComponent(student)}`, { signal: AbortSignal.timeout(3000) });
       if (!r.ok) throw new Error(`live_state_${r.status}`);
       const b = (await r.json()) as { reply?: LiveReply | null };
       return b.reply ?? null;

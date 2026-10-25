@@ -13,7 +13,8 @@
     "test:badge": "tsx scripts/test-summary.ts",
     "typecheck": "tsc --noEmit",
     "demo:run": "tsx scripts/demo-run.ts",
-    "test:sabotage": "tsx scripts/sabotage.ts"
+    "test:sabotage": "tsx scripts/sabotage.ts",
+    "discord:register": "tsx scripts/register-commands.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

@@ -333,6 +333,12 @@ Phase E decisions:
 - **Nadia's name** is shown on their own phone and, after consent, to Jordan. Before consent Jordan sees only "a
   student who interned at Stripe".
 
+### Live Discord parity (`feature/discord-parity`, not merged to main)
+- Typed DMs (`yes` / `no` / `8pm`) are ingested on the live-state poll and ACK'd in Discord; junk text gets help, not an answer.
+- Routing is per `(session, prompt, student)` with `DISCORD_USER_ADITYA` (alias `DISCORD_ADITYA_USER_ID`), `DISCORD_USER_SUMIT`, `DISCORD_USER_MAYA`. Students without an id stay on the simulated phone.
+- Additive SQL: `t2_live_student_replies`, `t2_live_prompts`, `t2_live_ratings` in `supabase/live.sql` (RLS on, service_role only). Re-run the file in the SQL editor.
+- Buttons still work; Suggest a time includes Other → modal. Poll interval 800ms. 502 tests.
+
 ### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
 - `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
   each prompt that needs them (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time

@@ -57,7 +57,7 @@ export function useLiveDiscord({ enabled, runKey, pending, onReply }: {
     if (pending.kind !== 'proposal' && pending.kind !== 'counter') return;
     notified.current.add(pending.id);
     api
-      .notify({ session: session.current, prompt: pending.id, kind: pending.kind, details: pending.details ?? {} })
+      .notify({ session: session.current, prompt: pending.id, student: 'a1', kind: pending.kind, details: pending.details ?? {} })
       .then((ok) => !ok && setStatus('unavailable'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, promptId, runKey]);
