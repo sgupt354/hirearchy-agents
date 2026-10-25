@@ -18,7 +18,7 @@ export interface PastSession {
 
 export interface PersonSeed {
   targetRoles: string[];
-  /** PRIVATE until stage 2 of a staged disclosure. */
+  /** PRIVATE until stage 2 of a staged disclosure. Anonymized project pages: stage 2 is still nameless, so no handle in the URL. */
   projectLinks: string[];
 }
 
@@ -26,14 +26,16 @@ const yes = (helpful: number): Rating => ({ showedUp: true, helpful });
 const noShow: Rating = { showedUp: false, helpful: 1 };
 
 export const PEOPLE_SEED: Record<string, PersonSeed> = {
-  p1: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/aditya-r/route-planner'] },
+  p1: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['projects.example/a7k2/route-planner'] },
   p2: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
-  p3: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['github.example/mayao/raft-lite'] },
-  p4: { targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'], projectLinks: ['github.example/jellis/sharded-kv', 'github.example/jellis/rate-limiter'] },
+  p3: { targetRoles: ['Microsoft SWE Intern'], projectLinks: ['projects.example/m3q9/raft-lite'] },
+  p4: { targetRoles: ['Stripe SWE Intern', 'Microsoft SWE Intern'], projectLinks: ['projects.example/j8f4/sharded-kv', 'projects.example/j8f4/rate-limiter'] },
   p5: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
   p6: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
   p7: { targetRoles: ['Microsoft SWE Intern'], projectLinks: [] },
   p8: { targetRoles: ['Google SWE'], projectLinks: [] },
+  // Theo (Applicant #10) only appears in the referral demo: a solid record, but a rating under 4.5.
+  p10: { targetRoles: ['Stripe SWE Intern'], projectLinks: ['projects.example/t5w1/queue-service'] },
 };
 
 /** Past sessions. Raters q1…q9 are earlier partners who aren't in this demo's network. */
@@ -74,5 +76,14 @@ export const PAST_SESSIONS: PastSession[] = [
   {
     id: 'past-8', kind: 'mock', members: ['p3', 'q9'], taught: { p3: ['System Design'], q9: ['DSA'] },
     ratings: [{ rater: 'q9', subject: 'p3', rating: yes(5) }],
+  },
+  {
+    id: 'past-9', kind: 'prep', members: ['p10', 'q1', 'q2'], taught: { p10: ['System Design'], q1: ['DSA'], q2: ['Behavioral'] },
+    ratings: [{ rater: 'q1', subject: 'p10', rating: yes(4) }, { rater: 'q2', subject: 'p10', rating: yes(4) }],
+  },
+  {
+    id: 'past-10', kind: 'mock', members: ['p10', 'q3'], taught: { p10: ['System Design'], q3: ['DSA'] },
+    ratings: [{ rater: 'q3', subject: 'p10', rating: yes(5) }],
+    mockScores: [{ subject: 'p10', rubric: { communication: 4, problem_solving: 4, code_quality: 4, behavioral_structure: 5 } }],
   },
 ];

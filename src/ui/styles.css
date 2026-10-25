@@ -412,3 +412,16 @@ input, textarea { font: inherit; color: var(--text); }
 /* Plain text inside feature side panels (cards): subtitle lines and small meta labels. */
 .card .sub { margin: 4px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .card .tag { display: block; margin-top: 8px; font-size: 11.5px; color: var(--faint); }
+
+/* Referral Bridge */
+.summary-card { margin-top: 1.4cqw; max-width: 92%; }
+.ev-links { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.8cqw; font-size: 3.5cqw; color: var(--accent-2); word-break: break-all; }
+.fit-card { list-style: none; margin: 1.4cqw 0 0; padding: 3cqw; max-width: 92%; border-radius: 4.4cqw; background: #141416; border: 1px solid rgba(255, 255, 255, 0.1); display: flex; flex-direction: column; gap: 1.2cqw; animation: pop 260ms var(--ease) both; }
+.fit-card li { display: grid; grid-template-columns: 4cqw 1fr auto; gap: 1.6cqw; align-items: baseline; font-size: 3.6cqw; }
+.fit-card li small { color: var(--muted); font-size: 3.2cqw; text-align: right; }
+.fit-card li.pass > span:first-child { color: var(--good); font-weight: 700; }
+.fit-card li.fail > span:first-child, .fit-card li.fail small { color: var(--warn); font-weight: 650; }
+.fit-card li.fit-foot { display: block; color: var(--faint); font-size: 3.2cqw; margin-top: 0.6cqw; }
+.chat-card { margin-top: 1.4cqw; max-width: 92%; }
+.coach-form { display: flex; gap: 1.6cqw; width: 100%; }
+.coach-form input { flex: 1; min-width: 0; padding: 2cqw 3cqw; border-radius: 99px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.06); color: inherit; font-size: 3.8cqw; }

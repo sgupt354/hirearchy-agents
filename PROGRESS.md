@@ -13,8 +13,8 @@ Key idea: "Your prep circle becomes your proof of work."
 | B | Mock interview swap (`src/features/mock/`) | ✅ done |
 | Live | Live Discord mode for Aditya (`?live=1`), before D/E per the organizers | ✅ done (needs setup, see LIVE_DISCORD.md) |
 | D | Trust ratings + evidence file (`src/features/trust/`) | ✅ done |
-| E | Referral Bridge (`src/features/referral/`) | next |
-| F | Polish, sabotage additions, browser checks, README | todo |
+| E | Referral Bridge (`src/features/referral/`) | ✅ done |
+| F | Polish, sabotage additions, browser checks, README | next |
 | G | Merge `aditya/journey` (done early, at `da49902`) | ✅ done |
 
 ### Contract for Aditya (branch `aditya/journey`: Find, Pipeline, Intel)
@@ -149,6 +149,49 @@ Phase D decisions:
   fit check in Phase E).
 - **Rating cards list the other members in circle order** (e.g. Aditya rates Maya, then Sumit).
 
+### Phase E — Referral Bridge: done (`src/features/referral/`, `tests/features/referral/`)
+Connection first, proof of work, the human decides. New tab **🤝 Referral** (6 tabs now visible).
+- **Cast:** Jordan (Applicant #4) applied to Stripe SWE Intern; Nadia ("Stripe alum", `r1`) interned at Stripe and
+  refers from the network; Theo (Applicant #10) is the decoy. Jordan's and Theo's records come from the shared trust
+  network, so prep circles and mocks in the other tabs really change their referral outcome.
+- **Nadia's PRIVATE rules** (`REFERRER_RULES`, only inside their agent): SWE / Software Engineer / Backend roles;
+  ≥ 2 sessions; peer rating ≥ 4.5; mock average ≥ 4.0; must meet first; max 2 referrals/month (1 left).
+- **Flow** (`ReferralBridge`, own state machine on the shared `machine()` helper; engine scheduler, negotiation,
+  consent and identity vault reused unchanged):
+  1. Jordan's agent asks Jordan first ("✅ Share my stats / Not now"). "Not now" shares nothing.
+  2. Stage 1 (stats only) goes to the referrer's agent, which runs `fitCheck()`: deterministic, one pass/fail per
+     rule. The result event is addressed to the referrer's agent only; their phone shows ✓/✗ per rule.
+  3. Fit → stage 2 (project links + rubric breakdown, still anonymous) → a 15-minute coffee chat negotiated with the
+     engine scheduler (7:00–7:15 PM) → both humans "✅ I'm in" → names unlock (stage 3, from the identity vault).
+  4. Nadia taps "☕ We had the chat", then decides: **🤝 Refer / 🕗 Not yet (+ coaching note, default "Do one more
+     system design mock first.") / No**. `decide()` is the only path to REFERRED and throws
+     `HumanDecisionRequiredError` unless it's the referrer, after the chat. Refer uses one of the month's referrals
+     and earns +1 give-back credit; Not yet and No use none.
+- **Decoy:** Theo (2 sessions, ★ 4.3) fails the rating rule only. Theo hears just "This referrer isn't taking you on
+  right now"; no rule, threshold, referrer name or stage 2 ever reaches Theo, and Nadia never learns Theo's name.
+- **Limit in the demo:** after Jordan is referred, "Next applicant: Theo →" keeps Nadia's month (0 of 2 left), so the
+  fit card shows ✗ rating and ✗ limit. Starting Theo from the idle screen shows the rating failure alone.
+- **Under the hood:** fit check per rule (referrer's private view), staged disclosure (stage 1/2/3: shared / never
+  shared / waiting), referrals left + credit, and the plain-English feed with judge lenses.
+- **Verified:** 409 tests (23 new referral tests: each rule pass/fail, the monthly limit, no identity before consent,
+  stage order, no referral without the referrer's human, decide() as the only path to REFERRED, give-back credit, the
+  decoy learning nothing), test:sabotage 6/6, typecheck, build. Browser at 1440×900 and 1280×800: full Jordan flow to
+  Refer, the Not yet note form, the drawer, the Theo follow-up, no page scroll, no console errors; global Reset
+  restores all six tabs exactly.
+
+Phase E decisions:
+- **Found by the new tests: project links named the student.** The seeded links were `github.example/jellis/…`,
+  which gives away Jordan's handle at stage 2 (before consent). Links are now anonymized project pages
+  (`projects.example/j8f4/sharded-kv`); stage 2 must stay nameless.
+- **Jordan's numbers:** mock average 4.3 (4.25, see Phase D), intel reports 0 (Aditya's `getIntelContributionCount`
+  has a4 = 0; the spec said 1). Neither changes the fit.
+- **"Must meet first" is enforced by the flow, not as a stat:** it always shows ✓ "chat will be scheduled", and no
+  decision is possible before the chat.
+- **The seeker doesn't learn why.** "Not a fit right now" is the only reason sent, so failing rules can't be probed
+  one at a time.
+- **Nadia's name** is shown on their own phone and, after consent, to Jordan. Before consent Jordan sees only "a
+  student who interned at Stripe".
+
 ### Live Discord mode: done (code) · needs one-time setup (LIVE_DISCORD.md)
 - `?live=1`: the Prep circle tab checks `/api/live-state?health=1`, shows "Live: Aditya is on Discord", DMs Aditya
   each prompt that needs him (`/api/live-notify`, buttons ✅ I'm in / 🕗 Suggest a time / Not this time; the time
@@ -265,7 +308,7 @@ events, or append events as them. Fix before connecting: derive the caller's age
 route with the service key. Left as is for now, per instruction.
 
 ## In progress
-- `feature/full-journey`: Phase D done; Phase E (Referral Bridge) next.
+- `feature/full-journey`: Phase E done; Phase F (polish, sabotage additions, browser checks, README) next.
 
 ## Exact next step
 Deploy to Vercel (see README → Deployment) with `ANTHROPIC_API_KEY`, `DISCORD_WEBHOOK_URL` and, optionally,
