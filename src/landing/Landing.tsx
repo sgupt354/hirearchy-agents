@@ -516,7 +516,39 @@ function ProofOfWork() {
   );
 }
 
-const TERMINAL = ['$ npm run test:sabotage', 'Planting 12 privacy bugs...', '12 of 12 caught', '482 tests passing'];
+/** Pay it forward: newcomers ask, mentors' agents decide from private rules, confirmed help earns points. */
+function PayItForward() {
+  const stats: [string, string, string][] = [
+    ['3x', 'points for helping a newcomer', 'Only after both sides confirm the session happened'],
+    ['2', 'times a week one pair can earn points', "So two friends can't farm each other"],
+    ['0', 'referrals points can buy', 'Referrers see who you helped, never your points'],
+  ];
+  return (
+    <section id="pay-it-forward" className="scroll-mt-16 bg-muted py-20 md:py-[120px]">
+      <Container>
+        <SectionHeader
+          eyebrow="Pay it forward"
+          title="Nothing to trade yet? Ask anyway."
+          body="A freshman can't join a prep circle without something to offer, so their agent posts an anonymous request and keeps it open. A mentor's agent says yes only if it fits their private rules. Helping earns points, levels and question packs."
+        />
+        <div className="mt-14 grid gap-10 md:grid-cols-3">
+          {stats.map(([n, label, source], i) => (
+            <Reveal key={label} delay={i * 0.08} className="border-t pt-6">
+              <p className="font-display text-6xl font-bold tracking-tight text-foreground md:text-7xl">{n}</p>
+              <p className="mt-3 text-lg text-foreground">{label}</p>
+              <p className="mt-2 text-xs">{source}</p>
+            </Reveal>
+          ))}
+        </div>
+        <Reveal>
+          <p className="mt-14 max-w-2xl text-lg leading-relaxed">Seniors post projects too: juniors apply anonymously, hours are capped, and anyone can leave without losing a point.</p>
+        </Reveal>
+      </Container>
+    </section>
+  );
+}
+
+const TERMINAL = ['$ npm run test:sabotage', 'Planting 15 privacy bugs...', '15 of 15 caught', '537 tests passing'];
 
 function SabotageTerminal() {
   const ref = useRef<HTMLDivElement>(null);
@@ -765,6 +797,7 @@ export function Landing() {
         <HowItWorks />
         <Product />
         <ProofOfWork />
+        <PayItForward />
         <Privacy />
         <Demo />
         <ArchitectureAndTeam />

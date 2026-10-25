@@ -30,6 +30,7 @@ Students never see a graph. They see texts from their agent and tap **✅ I'm in
 | 📄 **Apply** | A resume tailored to one posting from your own bullets (LaTeX, Overleaf, PDF), intro email drafts you send yourself, contacts, tracker export | Sumedha |
 | 📊 **Pipeline** | Anonymous stats for your pipeline, each published only once enough reports back it | Aditya |
 | 👥 **Prep circle** | You landed an interview: finds 2–3 students whose skills cover your weak spots, negotiates a time, names after everyone says yes | Sumedha |
+| 🌱 **Community** | Pay it forward: a newcomer with nothing to trade asks for help; a mentor's agent decides from private capacity rules; confirmed help earns points and levels (never a referral); question packs; a project board | Sumedha |
 | 🎤 **Mock interview** | Swaps mock interviews with someone in the same company and round; scores go only to the person scored | Sumedha |
 | 💡 **Intel** | Give-to-get interview reports, scrubbed of anything identifying | Aditya |
 | 🤝 **Referral** | Your prep record, shared step by step, earns a coffee chat with an alum, who decides on the referral | Sumedha |
@@ -85,6 +86,13 @@ what was shared, abstracted and withheld) and **⏸️ When humans are asked** (
 | **What's shared** | Staged: **stage 1** anonymous stats → **stage 2** project links + mock rubric breakdown, only if the fit passes → **stage 3** names, only after both say yes to the chat. A declined seeker hears only "not right now": no rule, threshold or referrer name, and the referrer never learns theirs. |
 | **When humans are asked** | The seeker OKs sharing at all; both OK the chat; after the chat **only the referrer's human** can choose 🤝 Refer / 🕗 Not yet (with a coaching note, e.g. "Do one more system design mock first.") / No. Agents never refer on their own (`decide()` is the only path and throws for anyone else). Referrers earn give-back credit. |
 
+### 🌱 Pay it forward (Community)
+| Criterion | What you see |
+|---|---|
+| **Conflicting constraints** | Priya has nothing to trade, so no circle forms; her need stays open. Each mentor's agent checks its human's **private capacity rules** (topics, newcomers per week, evenings only): Leo doesn't teach DSA, Sam already has 2 of 2 newcomers this week, Aditya fits at 7:30–8:15 PM. A mentor gets one ask at a time; higher-level askers are matched first. On the project board, the senior's private shortlist rules and a hard weekly hours cap decide who fits. |
+| **What's shared** | The listing has a handle, company, round, topic and "this week": no name, no exact date. Capacity checks and shortlist decisions go only to the mentor's own agent. Names unlock through the engine's consent-gated identity vault after both say yes. Points never appear in the evidence file; referrers see "helped N newcomers" instead. |
+| **When humans are asked** | Both humans say yes before anyone meets; both confirm the session happened before points count; both rate privately. Seniors pick, juniors choose to join and can leave anytime. |
+
 ### 🏅 Trust and proof of work (Prep circle + Mock interview)
 | Criterion | What you see |
 |---|---|
@@ -98,6 +106,31 @@ what was shared, abstracted and withheld) and **⏸️ When humans are asked** (
 | **Conflicting constraints** | Find: postings against your role and level filters. Pipeline: you want numbers, but each stat stays hidden until it has ≥ 3 reports. Intel: give-to-get access versus a 48-hour grace period. |
 | **What's shared** | Find: match reasons built from the posting, never your data. Pipeline: aggregate counts only; a hidden stat has no number at all. Intel: emails, phone numbers, @handles and exact dates are scrubbed; dates become "this week". |
 | **When humans are asked** | Find: nothing is tracked until you tap "Track it". Intel: you choose to write a report and what goes in it. |
+
+## Pay it forward
+
+Newcomers have nothing to trade yet, so a prep circle can't form for them. In the **Community** tab their agent posts
+a standing, anonymous help request instead, and mentors earn points and levels for helping.
+
+**Points never buy a referral.** There is no way to spend points at all: they unlock perks by level (matching
+priority, a badge on your proof of work, question packs), and `redeemForReferral()` exists only to refuse. A referral
+still comes only from a referrer's own decision after a chat (Referral tab). What referrers can see is your mentoring
+("helped 2 newcomers, ★ 4.8"), never your points, so helping others counts toward a referral without ever guaranteeing one.
+
+| Rule | Why |
+|---|---|
+| Base 10 points; helping a newcomer 3x, someone a level below 2x, a peer 1x | Rewards helping people who have the least |
+| Points only after **both** sides confirm the session happened | No points for a session that didn't happen |
+| One pair earns points at most twice a week (either direction) | Two friends can't farm points off each other |
+| Newcomer status ends after 3 completed sessions | The 3x bonus can't be farmed forever |
+| Saying no never costs points | No pressure to accept; capacity rules stay private |
+| Only the helper earns; a mentor gets one ask at a time | No points for being helped; no flooding a mentor |
+| Levels: Newcomer 0, Contributor 30, Mentor 100, Senior mentor 250 | Perks only: priority, badge, packs (1, 3, all) |
+| Projects: hours capped per junior per week; juniors leave anytime and keep their credit and points | Seniors can't overload juniors; leaving is free |
+
+All of it is deterministic code (`src/features/community/points.ts`, `community.ts`, `projects.ts`); no model decides a
+point, a match or an unlock. Question packs are copied word for word from the anonymized mock and intel reports, each
+item labelled with its source; there is no pack for a company with no reports.
 
 ## Privacy proof
 
@@ -225,6 +258,21 @@ their proof of work. **No one in your round?** shows the practice-with-your-agen
 4. **Next applicant: Theo →** keeps Nadia's month: Theo fails the rating rule (and the limit). Theo's phone only
    says "not right now". From the start screen, **Not a fit? See Theo's application** shows the rating failure alone.
 5. **🔍 See what the agents are doing** shows the fit check per rule, which stage has been shared, and referrals left.
+
+### 🌱 Community (Pay it forward)
+1. Click **Priya, a freshman, needs help with DSA for Microsoft →**. Her agent explains that a circle needs something
+   to trade, posts an anonymous request and gives her a free starter question pack. Leo's and Sam's agents pass on
+   their own (open the drawer to see why); the request shows **Waiting for a mentor**.
+2. Click **A mentor comes online →**. Aditya's agent checks his private rules (DSA, 0 of 2 newcomers this week,
+   evenings) and asks him. With `?live=1` this is a real Discord DM: tap **I can help** or type yes.
+3. Tap **I'm in** on Priya's phone. Names unlock and both get a calendar card for 7:30–8:15 PM.
+4. Tap **We had the session** on both phones. Aditya earns **+30 (10 x 3, helped a newcomer)**, reaches
+   **Contributor**, unlocks 3 question packs, and after both rate privately his proof of work shows the Contributor
+   badge and "Helped 1 newcomer".
+5. In the side card, **Trade points for a referral?** shows the rule: points can't buy one.
+6. Switch to **Project board** and click **Sam posts a project**: three juniors apply anonymously, Sam's agent
+   shortlists two (Riya is over the hours cap), Sam picks Priya, she joins, logs 4 hours, both confirm the week (Sam
+   +30), then she leaves and keeps her credit and points.
 
 ### 📄 Apply and live search
 1. Find → turn on **Live search** (top right), pick a level, **Search live boards**, then **Track** a posting. The agent

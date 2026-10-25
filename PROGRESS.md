@@ -210,6 +210,18 @@ Phase C, as built (`src/features/community/projects.ts`, `ProjectBoardView.tsx`,
 - Tests: shortlist + hours cap, anonymity, consent (the pick alone unlocks nothing), decline costs nothing, weekly
   cap, points only after both confirm, leaving keeps points and credit, team-size cap. 537 tests, 15/15 sabotages.
 
+Finish (10:08 AM):
+- Typecheck, 537 tests (34 files), `test:sabotage` 15/15, build: all pass.
+- Real-browser pass at 1440x900 and 1280x800: all 8 tabs render with no emoji, no console errors and no horizontal
+  overflow; global Reset returns Prep circle and both Community views to their start screens. Golden paths run in a
+  browser: help request offline and in mocked live mode (one `help` DM, reply applied), project board end to end.
+- README: journey row, criteria table, "Pay it forward" section (points never buy referrals; anti-abuse rules), demo
+  steps. Landing: a "Pay it forward" section in the Problem section's style (existing site.css classes only); the
+  sabotage terminal now reads 15 of 15 and 537 tests.
+- Deploy: no new SQL for Pay it forward (the live `help` DM reuses the live tables). The Discord ratings functions
+  from `claude/focused-archimedes-i453fr` (`t2_live_put_rating`, `t2_live_get_ratings`) must already be in Supabase
+  for live ratings; they are included in `supabase/live.sql` here too.
+
 ### Apply suite (`feature/apply-suite`, not merged; deadline 12:00 PM Phoenix)
 | Phase | Scope | Status |
 |---|---|---|
