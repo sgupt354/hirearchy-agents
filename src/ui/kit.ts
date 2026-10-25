@@ -16,6 +16,8 @@ export {
   type CalendarCardData,
 } from './chat';
 export { Drawer } from './Drawer';
+export { Icon, Mark, glyphIcon, type IconName } from './Icon';
+export { clean } from './text';
 export { UnderTheHood } from './UnderTheHood';
 export { Inspector } from './Inspector';
 export { JudgeLegend } from './JudgeLegend';

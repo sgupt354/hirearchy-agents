@@ -69,7 +69,7 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
             live={live}
             canEnd={live && interactive && !next}
             rate={TIMER_RATE[timerRate]}
-            onEnd={() => onAction({ type: 'end-round' }, `⏱ Ended round ${n}`)}
+            onEnd={() => onAction({ type: 'end-round' }, `Ended round ${n}`)}
           />
         );
       }
@@ -95,7 +95,7 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
       {canAct && last?.kind === 'ask' && (
         <QuickReplies
           options={[
-            { label: "✅ I'm in", tone: 'yes', onClick: () => onAction({ type: 'accept' }, "✅ I'm in") },
+            { label: "I'm in", tone: 'yes', onClick: () => onAction({ type: 'accept' }, "I'm in") },
             { label: 'Not this time', tone: 'no', onClick: () => onAction({ type: 'decline' }, 'Not this time') },
           ]}
         />
@@ -103,21 +103,21 @@ export function MockPhone({ owner, caption, items, interactive, pace, timerRate,
       {canAct && last?.kind === 'solo-offer' && (
         <QuickReplies
           options={[
-            { label: '🤖 Practice with my agent', tone: 'yes', onClick: () => onAction({ type: 'solo' }, '🤖 Practice with my agent') },
+            { label: 'Practice with my agent', tone: 'yes', onClick: () => onAction({ type: 'solo' }, 'Practice with my agent') },
             { label: 'Not now', tone: 'no', onClick: () => onAction({ type: 'solo-no' }, 'Not now') },
           ]}
         />
       )}
       {canAct && last?.kind === 'solo-question' && (
-        <QuickReplies options={[{ label: '✅ Done answering', tone: 'yes', onClick: () => onAction({ type: 'done' }, '✅ Done answering') }]} />
+        <QuickReplies options={[{ label: 'Done answering', tone: 'yes', onClick: () => onAction({ type: 'done' }, 'Done answering') }]} />
       )}
       {canAct && (last?.kind === 'rubric' || last?.kind === 'solo-rubric') && (
         <RubricForm
           self={last.kind === 'solo-rubric'}
           onSubmit={(rubric, note) =>
             last.kind === 'solo-rubric'
-              ? onAction({ type: 'self-scores', rubric }, '📝 Rated myself')
-              : onAction({ type: 'scores', rubric, note }, '🔒 Sent my scores privately')
+              ? onAction({ type: 'self-scores', rubric }, 'Rated myself')
+              : onAction({ type: 'scores', rubric, note }, 'Sent my scores privately')
           }
         />
       )}
@@ -161,7 +161,7 @@ function RoundCard({ n, text, role, live, canEnd, rate, onEnd }: {
   return (
     <div className={`round-card ${live ? 'live' : 'done'}`}>
       <div className="round-top">
-        <span className="round-badge">{role === 'interviewer' ? '🎤 You ask' : '💬 You answer'}</span>
+        <span className="round-badge">{role === 'interviewer' ? 'You ask' : 'You answer'}</span>
         <span className={`timer ${left === 0 ? 'up' : ''}`}>{live ? (left === 0 ? "Time's up" : mmss(left)) : '✓ Done'}</span>
       </div>
       <p>{text}</p>
@@ -206,7 +206,7 @@ function RubricForm({ self, onSubmit }: { self: boolean; onSubmit: (rubric: Rubr
         </div>
       ))}
       {!self && <input value={note} onChange={(e) => setNote(e.target.value)} maxLength={280} placeholder="One note to help them improve" aria-label="Feedback note" />}
-      <button type="submit" className="cal-add" disabled={!done}>{self ? 'Save privately' : 'Send privately 🔒'}</button>
+      <button type="submit" className="cal-add" disabled={!done}>{self ? 'Save privately' : 'Send privately'}</button>
     </form>
   );
 }
@@ -225,7 +225,7 @@ function ScoresCard({ scores }: { scores: ScoreEntry[] }) {
       ))}
       {latest.note && !latest.practice && <p className="score-note">“{latest.note}”</p>}
       <p className="score-foot">
-        {latest.practice ? '🔒 Only you can see this. Practice self-scores stay in your notes, not your proof of work.' : '🔒 Only you can see this. It goes into your proof of work.'}
+        {latest.practice ? 'Only you can see this. Practice self-scores stay in your notes, not your proof of work.' : 'Only you can see this. It goes into your proof of work.'}
       </p>
     </div>
   );

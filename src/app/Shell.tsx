@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon, Mark } from '../ui/Icon';
 import type { Speed } from './speed';
 import { DEFAULT_TAB, VISIBLE_TABS, type TabId } from './tabs';
 
@@ -11,7 +12,7 @@ export function Shell() {
   return (
     <div className="shell">
       <nav className="topbar">
-        <span className="brand"><span className="logo">◆</span>Hirearchy</span>
+        <span className="brand"><span className="logo"><Mark size={18} /></span>Hirearchy</span>
         <div className="tabs" role="tablist" aria-label="Your job hunt">
           {VISIBLE_TABS.map((t) => (
             <button
@@ -23,7 +24,7 @@ export function Shell() {
               className={`tab ${t.id === active ? 'on' : ''}`}
               onClick={() => setActive(t.id)}
             >
-              <span aria-hidden>{t.icon}</span> {t.label}
+              <Icon name={t.icon} size={15} /> {t.label}
             </button>
           ))}
         </div>
@@ -33,11 +34,11 @@ export function Shell() {
               <button key={s} className={s === speed ? 'on' : ''} aria-pressed={s === speed} onClick={() => setSpeed(s)}>{s}</button>
             ))}
           </div>
-          <button className="icon-btn reset" onClick={() => setResetKey((k) => k + 1)} title="Reset demo" aria-label="Reset demo">↺</button>
+          <button className="icon-btn reset" onClick={() => setResetKey((k) => k + 1)} title="Reset demo" aria-label="Reset demo"><Icon name="reset" size={16} /></button>
         </div>
       </nav>
       <p className="journey-line">
-        Find the job. Prep with your pipeline. Earn the referral. <b>Your agent negotiates; you decide.</b>
+        Find the job. Prep with your pipeline. Earn the referral. <b>Your agent negotiates. You decide.</b>
       </p>
       {VISIBLE_TABS.map(({ id, Component }) => (
         <section key={id} id={`panel-${id}`} role="tabpanel" aria-labelledby={`tab-${id}`} className="tab-panel" hidden={id !== active}>

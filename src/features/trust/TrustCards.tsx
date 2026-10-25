@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from '../../ui/Icon';
 import { RUBRIC } from '../mock/scores';
 import { mockOverall, type EvidenceFile } from './evidence';
 import { MIN_RATINGS, type Rating } from './ledger';
@@ -44,7 +45,7 @@ export function RatingCard({ people, onSubmit }: { people: { id: string; name: s
           )}
         </fieldset>
       ))}
-      <button type="submit" className="cal-add" disabled={!complete}>Rate privately 🔒</button>
+      <button type="submit" className="cal-add" disabled={!complete}>Rate privately</button>
     </form>
   );
 }
@@ -55,7 +56,7 @@ export function EvidenceCard({ file }: { file: EvidenceFile }) {
   return (
     <div className="evidence-card">
       <div className="ev-title">
-        <span aria-hidden>🏅</span>
+        <Icon name="award" />
         <b>Your proof of work</b>
       </div>
       <dl>
@@ -81,7 +82,7 @@ export function EvidenceCard({ file }: { file: EvidenceFile }) {
         {file.skillsTaught.map((s) => <span key={s} className="taught">Taught {s}</span>)}
         {file.targetRoles.map((r) => <span key={r}>{r}</span>)}
       </div>
-      <p className="score-foot">🔒 Private to you. Your agent shares it step by step, only with your OK.</p>
+      <p className="score-foot">Private to you. Your agent shares it step by step, only with your OK.</p>
     </div>
   );
 }

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentEvent } from '../engine/types';
 import { describe, prettify, type EventView, type FeedContext } from './copy';
 import { matchesLens, type Lens } from './view';
+import { Icon, glyphIcon } from './Icon';
+import { clean } from './text';
 
 /** Live agent feed for judges: human titles, raw type as a tag, compact disclosure that expands. */
 export function Inspector({ events, label, lenses, describeEvent = describe }: {
@@ -40,14 +42,14 @@ export function Inspector({ events, label, lenses, describeEvent = describe }: {
         const expanded = open === e.id;
         return (
           <li key={e.id} className={`row tone-${v.tone} ${lensClass(e)}`}>
-            <span className="row-icon">{v.icon}</span>
+            <span className="row-icon"><Icon name={glyphIcon(v.icon)} size={15} /></span>
             <div className="row-main">
               <div className="row-head">
-                <b>{v.title}</b>
+                <b>{clean(v.title)}</b>
                 <span className="tag">{e.type}</span>
                 <span className="route">{label(e.from)} → {e.to.length > 3 ? `${e.to.length} agents` : e.to.map(label).join(', ')}</span>
               </div>
-              <p>{v.body}</p>
+              <p>{clean(v.body)}</p>
               {total > 0 && (
                 <button className={`disclosure ${expanded ? 'open' : ''}`} onClick={() => setOpen(expanded ? null : e.id)} aria-expanded={expanded}>
                   {[
@@ -62,7 +64,7 @@ export function Inspector({ events, label, lenses, describeEvent = describe }: {
                 <div className="chips">
                   {d.shared.map((s) => <span key={`s${s}`} className="chip shared">↗ {prettify(s)}</span>)}
                   {d.abstracted.map((s) => <span key={`a${s}`} className="chip abstracted">≈ {prettify(s)}</span>)}
-                  {d.withheld.map((s) => <span key={`w${s}`} className="chip withheld">🔒 {prettify(s)}</span>)}
+                  {d.withheld.map((s) => <span key={`w${s}`} className="chip withheld"><Icon name="lock" size={10} /> {prettify(s)}</span>)}
                 </div>
               )}
             </div>

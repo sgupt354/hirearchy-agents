@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChatBubble, Drawer, PhoneFrame, SPEEDS, TypingIndicator, clock, type TabProps } from '../../ui/kit';
+import { ChatBubble, Drawer, Icon, PhoneFrame, SPEEDS, TypingIndicator, clock, type TabProps } from '../../ui/kit';
 import {
   MIN_REPORTS,
   STAT_KEYS,
@@ -21,7 +21,7 @@ const STAT_LABEL: Record<StatKey, string> = {
 /** Split "23 in your pipeline" into the number and its caption for the stat card. */
 function splitDisplay(display: string): { value: string; caption: string } {
   const match = display.match(/^(\d+)\s+(.*)$/);
-  return match ? { value: match[1], caption: match[2] } : { value: '🔒', caption: display };
+  return match ? { value: match[1], caption: match[2] } : { value: '', caption: display };
 }
 
 /** Pipeline: anonymous cohort stats, shown only once enough students have reported. */
@@ -73,9 +73,9 @@ export function PipelineTab({ speed, resetKey }: TabProps) {
           after {MIN_REPORTS}+ anonymous reports, never before.
         </p>
         <div className="hero-meta">
-          <span className="proof-pill">🔒 Anonymous cohort · stats require {MIN_REPORTS}+ reports</span>
+          <span className="proof-pill">Anonymous cohort · stats require {MIN_REPORTS}+ reports</span>
           <button className="hood-btn" onClick={() => setDrawer(true)}>
-            🔍 See which stats were held back
+            See which stats were held back
           </button>
         </div>
       </header>
@@ -120,7 +120,7 @@ export function PipelineTab({ speed, resetKey }: TabProps) {
             return (
               <article key={key} className="card">
                 <span className="tag">{STAT_LABEL[key]}</span>
-                <h3>{stat.visible ? value : '🔒'}</h3>
+                <h3>{stat.visible ? value : <Icon name="lock" size={22} />}</h3>
                 <p className="sub">{stat.visible ? caption : stat.display}</p>
               </article>
             );

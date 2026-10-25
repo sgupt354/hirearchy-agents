@@ -44,9 +44,9 @@ const STATE_TEXT: Record<MockState, string> = {
 
 function heroStatus(state: MockState, solo: boolean): { text: string; tone: string } {
   if (state === 'COMPLETED') return { text: solo ? '✓ Practice done · self-scores saved privately' : '✓ Mock swap done · scores went privately to each person', tone: 'good' };
-  if (state === 'ROUND_1' || state === 'ROUND_2') return { text: `${state === 'ROUND_1' ? 'Round 1' : 'Round 2'} of 2 is live. Timer's running ⏱`, tone: 'human' };
+  if (state === 'ROUND_1' || state === 'ROUND_2') return { text: `${state === 'ROUND_1' ? 'Round 1' : 'Round 2'} of 2 is live. Timer's running`, tone: 'human' };
   if (state === 'SCORING') return { text: 'Rounds done. Each side scores the other, privately.', tone: 'human' };
-  if (state === 'AWAITING_HUMANS' || state === 'AWAITING_CONSENT') return { text: 'Over to the students. Check their phones 👇', tone: 'human' };
+  if (state === 'AWAITING_HUMANS' || state === 'AWAITING_CONSENT') return { text: 'Over to the students. Check their phones', tone: 'human' };
   if (state === 'NO_PEER' || state === 'SOLO') return { text: 'No one free in this round, so the agent offers practice instead', tone: 'warn' };
   if (state === 'DECLINED') return { text: 'Partner couldn’t make it. Trying the backup…', tone: 'warn' };
   return { text: "Aditya's agent is finding a mock partner…", tone: 'busy' };
@@ -174,7 +174,7 @@ export function MockTab({ speed, resetKey }: TabProps) {
       items.push({ key: 't-rate', from: 'agent', text: '', custom: <RatingCard people={[{ id: other, name }]} onSubmit={(r) => ratePartner(id, r)} /> });
       return items;
     }
-    items.push({ key: 't-done', from: 'me', text: '🔒 Rated privately', time: ratedAt[id] });
+    items.push({ key: 't-done', from: 'me', text: 'Rated privately', time: ratedAt[id] });
     items.push({ key: 't-thanks', from: 'agent', text: "Thanks! Here's your proof of work so far:" });
     items.push({ key: 't-evidence', from: 'agent', text: '', custom: <EvidenceCard file={trustNet.evidence(me, me)} /> });
     return items;
@@ -212,7 +212,7 @@ export function MockTab({ speed, resetKey }: TabProps) {
         <div className="cta-row">
           {idle ? (
             <>
-              <button className="cta" onClick={() => begin(false)}>🎤 Aditya's Microsoft technical round is Thursday →</button>
+              <button className="cta" onClick={() => begin(false)}>Aditya's Microsoft technical round is Thursday →</button>
               <button className="ghost" onClick={() => begin(true)}>No one in your round? See Riya's Google round</button>
             </>
           ) : (
@@ -223,8 +223,8 @@ export function MockTab({ speed, resetKey }: TabProps) {
           )}
         </div>
         <div className="hero-meta">
-          <span className="proof-pill">🔒 Scores go only to the person scored · names unlock after both say yes</span>
-          <button className="hood-btn" onClick={() => setDrawer(true)}>🔍 See what the agents are doing</button>
+          <span className="proof-pill">Scores go only to the person scored · names unlock after both say yes</span>
+          <button className="hood-btn" onClick={() => setDrawer(true)}>See what the agents are doing</button>
         </div>
       </header>
 

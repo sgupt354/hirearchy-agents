@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Icon } from './Icon';
 
 /** Right-side drawer with a scrim, title, optional badge and close button. */
 export function Drawer({ open, onClose, title, subtitle, badge, label, children }: {
@@ -20,7 +21,7 @@ export function Drawer({ open, onClose, title, subtitle, badge, label, children 
             {subtitle && <p>{subtitle}</p>}
           </div>
           {badge}
-          <button className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Close"><Icon name="x" size={16} /></button>
         </header>
         {children}
       </aside>
